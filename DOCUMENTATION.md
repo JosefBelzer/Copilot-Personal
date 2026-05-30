@@ -41,7 +41,7 @@
 cd "YourVault/.obsidian/plugins"
 
 # 2. Clone the repository
-git clone https://github.com/JosefBelzer/copilot-personal.git
+git clone https://github.com/JosefBelzer/Copilot-Personal.git
 
 # 3. Install dependencies and build
 cd copilot-personal
@@ -59,7 +59,7 @@ npm run dev            # Dev mode with sourcemaps and watch
 > ⚠️ **IMPORTANT:** For the Obsidian Community Plugin store, ALWAYS use `npm run build:store`. The obfuscated build (`npm run build`) will be REJECTED by reviewers. Obfuscation is for external distribution only (Gumroad, ZIP, BRAT) to protect intellectual property.
 
 ### Manual Install
-1. Download the ZIP from [Releases](https://github.com/JosefBelzer/copilot-personal/releases)
+1. Download the ZIP from [Releases](https://github.com/JosefBelzer/Copilot-Personal/releases)
 2. Extract to `YourVault/.obsidian/plugins/copilot-personal/`
 3. Enable in Settings → Community plugins → Copilot Personal
 
@@ -379,7 +379,7 @@ Fundamentals_of_Quality_Management.pdf, page 27
 
 ## Support
 
-- **GitHub Issues:** [Report bug or suggest feature](https://github.com/JosefBelzer/copilot-personal/issues)
+- **GitHub Issues:** [Report bug or suggest feature](https://github.com/JosefBelzer/Copilot-Personal/issues)
 - **Email:** soporte@copilot-personal.dev
 
 ---

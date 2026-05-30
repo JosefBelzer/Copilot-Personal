@@ -90,7 +90,7 @@ src/
 ### Quick Install
 ```bash
 cd "YourVault/.obsidian/plugins"
-git clone https://github.com/JosefBelzer/copilot-personal.git
+git clone https://github.com/JosefBelzer/Copilot-Personal.git
 cd copilot-personal
 npm install
 npm run build
@@ -107,7 +107,7 @@ npm run dev            # Dev mode with sourcemaps and watch
 > Obfuscated builds (`npm run build`) will be REJECTED by reviewers. Obfuscation is for external distribution only.
 
 ### Manual Install
-1. Download ZIP from [Releases](https://github.com/JosefBelzer/copilot-personal/releases)
+1. Download ZIP from [Releases](https://github.com/JosefBelzer/Copilot-Personal/releases)
 2. Extract to `YourVault/.obsidian/plugins/copilot-personal/`
 3. Enable in Settings → Community plugins → Copilot Personal
 
