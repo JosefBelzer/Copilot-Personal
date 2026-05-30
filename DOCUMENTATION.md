@@ -1,135 +1,132 @@
-# Copilot Personal — Documentación v1.4.1
+# Copilot Personal — Documentation v1.4.1
 
-> Asistente de IA con capacidades agentivas avanzadas para Obsidian. Chat multimodal con streaming real, RAG semántico, agente autónomo (17 herramientas), 11 proveedores LLM con tool calling nativo y fallback multi-proveedor, renderizado de PDFs con `unpdf`, sistema de licencias Free/Pro con validación cloud + grace period, CircuitBreaker en todos los providers, dual-build (store limpio / distribution ofuscado), y auto-guardado inteligente de notas. 151 tests.
+> AI assistant with advanced agent capabilities for Obsidian. Multimodal chat with real streaming, semantic RAG, autonomous agent (17 tools), 11 LLM providers with native tool calling and multi-provider fallback, PDF rendering with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (clean store / obfuscated distribution), and intelligent note auto-save. 151 tests.
+
+> 📖 [Documentación en Español](DOCUMENTATION_ES.md)
 
 ---
 
-## Índice
+## Table of Contents
 
-1. [Instalación](#1-instalación)
-2. [Licencias Free vs Pro](#2-licencias-free-vs-pro)
-3. [Configuración inicial](#3-configuración-inicial)
-4. [Uso del chat](#4-uso-del-chat)
-5. [Slash commands](#5-slash-commands)
-6. [Modo Agente](#6-modo-agente)
-7. [Herramientas del agente](#7-herramientas-del-agente)
-8. [Trabajar con PDFs](#8-trabajar-con-pdfs)
-9. [Búsqueda semántica (RAG)](#9-búsqueda-semántica-rag)
-10. [Exportar conversaciones](#10-exportar-conversaciones)
-11. [Comandos de Obsidian](#11-comandos-de-obsidian)
-12. [Privacidad y seguridad](#12-privacidad-y-seguridad)
-13. [Resolución de problemas](#13-resolución-de-problemas)
-14. [Atajos de teclado](#14-atajos-de-teclado)
+1. [Installation](#1-installation)
+2. [Free vs Pro Licensing](#2-free-vs-pro-licensing)
+3. [Initial Setup](#3-initial-setup)
+4. [Chat Usage](#4-chat-usage)
+5. [Slash Commands](#5-slash-commands)
+6. [Agent Mode](#6-agent-mode)
+7. [Agent Tools](#7-agent-tools)
+8. [Working with PDFs](#8-working-with-pdfs)
+9. [Semantic Search (RAG)](#9-semantic-search-rag)
+10. [Exporting Conversations](#10-exporting-conversations)
+11. [Obsidian Commands](#11-obsidian-commands)
+12. [Privacy & Security](#12-privacy--security)
+13. [Troubleshooting](#13-troubleshooting)
+14. [Keyboard Shortcuts](#14-keyboard-shortcuts)
 15. [Roadmap](#15-roadmap)
 
 ---
 
-## 1. Instalación
+## 1. Installation
 
-### Requisitos
-- Obsidian v1.0.0 o superior
-- Node.js 18+ (solo para desarrollo)
-- Para funciones locales: [LM Studio](https://lmstudio.ai/) con un modelo cargado
-- Para PDFs: sin dependencias adicionales (pdfjs-dist incluido)
+### Requirements
+- Obsidian v1.7.0 or higher
+- Node.js 18+ (development only)
+- For local features: [LM Studio](https://lmstudio.ai/) with a loaded model
+- For PDFs: no extra dependencies (pdfjs-dist included)
 
-### Instalación rápida
+### Quick Install
 
 ```bash
-# 1. Navega a la carpeta de plugins de tu vault
-cd "TuVault/.obsidian/plugins"
+# 1. Navigate to your vault's plugins folder
+cd "YourVault/.obsidian/plugins"
 
-# 2. Clona el repositorio
+# 2. Clone the repository
 git clone https://github.com/JosefBelzer/copilot-personal.git
 
-# 3. Instala dependencias y compila
+# 3. Install dependencies and build
 cd copilot-personal
 npm install
 npm run build
+```
 
-# 3b. (Opcional) Para extraer imágenes de PDFs:
-npm install unpdf
-
-### Build modes
+### Build Modes
 ```bash
-npm run build          # main.js ofuscado (distribución externa: ZIP, Gumroad, BRAT)
-npm run build:store    # main.js limpio (PR a Obsidian Community Plugins)
-npm run dev            # Dev mode con sourcemaps y watch
+npm run build          # Obfuscated main.js (external distribution: ZIP, Gumroad, BRAT)
+npm run build:store    # Clean main.js (PR to Obsidian Community Plugins)
+npm run dev            # Dev mode with sourcemaps and watch
 ```
 
-> ⚠️ **IMPORTANTE:** Para publicar en la tienda oficial de Obsidian, **SIEMPRE** usa `npm run build:store`. El build ofuscado (`npm run build`) será **RECHAZADO** por los revisores. La ofuscación es solo para distribución externa (Gumroad, ZIP, BRAT) para proteger la propiedad intelectual.
+> ⚠️ **IMPORTANT:** For the Obsidian Community Plugin store, ALWAYS use `npm run build:store`. The obfuscated build (`npm run build`) will be REJECTED by reviewers. Obfuscation is for external distribution only (Gumroad, ZIP, BRAT) to protect intellectual property.
 
-# 4. Recarga Obsidian (Ctrl+Shift+I → Console → location.reload())
-```
+### Manual Install
+1. Download the ZIP from [Releases](https://github.com/JosefBelzer/copilot-personal/releases)
+2. Extract to `YourVault/.obsidian/plugins/copilot-personal/`
+3. Enable in Settings → Community plugins → Copilot Personal
 
-### Instalación manual
-1. Descarga el ZIP desde [Releases](https://github.com/JosefBelzer/copilot-personal/releases)
-2. Extrae en `TuVault/.obsidian/plugins/copilot-personal/`
-3. Activa el plugin en Settings → Community plugins → Copilot Personal
-
-### Servidor de búsqueda web (opcional)
+### Web Search Server (optional)
 ```bash
 cd web_search_server
 pip install -r requirements.txt
-# Configura el token compartido (debe coincidir con el del plugin)
-set COPILOT_WEB_TOKEN=tu-token-seguro
+# Set the shared token (must match the plugin setting)
+set COPILOT_WEB_TOKEN=your-secure-token
 uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
-> ⚠️ **Importante:** Configura un token seguro tanto en el servidor (`COPILOT_WEB_TOKEN`) como en el plugin (Settings → Web Search → Web search token). El valor por defecto `copilot-default-token-change-me` es inseguro.
+> ⚠️ **Important:** Configure a secure token on both the server (`COPILOT_WEB_TOKEN`) and the plugin (Settings → Web Search → Web search token). The default value `copilot-default-token-change-me` is insecure.
 
 ---
 
-## 2. Licencias Free vs Pro
+## 2. Free vs Pro Licensing
 
-### 🆓 Free (por defecto)
-- Chat básico ilimitado
-- 50 mensajes/día (persistente — sobrevive reinicios)
-- 3 herramientas: `read_note`, `read_pdf`, `find_files`
-- Sin agent mode · Sin web search · Sin imágenes PDF · Sin RAG semántico
-- Las opciones Pro aparecen **deshabilitadas** (🔒) en la UI de settings
+### 🆓 Free (default)
+- Unlimited basic chat
+- 50 messages/day (persistent — survives restarts)
+- 3 tools: `read_note`, `read_pdf`, `find_files`
+- No agent mode · No web search · No PDF images · No semantic RAG
+- Pro options appear **disabled** (🔒) in settings UI
 
-### ⭐ Pro ($4.99/mes vía Lemon Squeezy)
-- **Mensajes ilimitados** · **Agent mode** (17 herramientas)
-- **Web search** · **PDF con imágenes** · **RAG semántico**
-- **Export chat** (MD/JSON) · **Slash commands** · Soporte prioritario
-- **Multi-provider fallback** · **API keys por proveedor**
+### ⭐ Pro ($4.99/mo via Lemon Squeezy)
+- **Unlimited messages** · **Agent mode** (17 tools)
+- **Web search** · **PDF with images** · **Semantic RAG**
+- **Chat export** (MD/JSON) · **Slash commands** · Priority support
+- **Multi-provider fallback** · **Per-provider API keys**
 
-### Activar Pro
-1. Compra una suscripción Pro en la página de venta
-2. Recibirás tu **License Key** por email (formato UUID de Lemon Squeezy, ej: `056b9494-...`)
-3. Settings → Copilot Personal → License Key → pega la key
-4. Verás `✅ Licencia Pro activada correctamente.`
-5. El badge en chat cambia a `⭐ Pro`
-6. Todas las opciones Pro se desbloquean automáticamente en settings
+### Activating Pro
+1. Purchase a Pro subscription on the sales page
+2. You'll receive your **License Key** via email (Lemon Squeezy UUID format, e.g., `056b9494-...`)
+3. Settings → Copilot Personal → License Key → paste the key
+4. You'll see `✅ Licencia Pro activada correctamente.`
+5. The chat badge changes to `⭐ Pro`
+6. All Pro options unlock automatically in settings
 
-> **Key de prueba:** `COPIPRO-DEMO-DEMO-DEMO` (solo en modo debug — `COPILOT_DEBUG=1`).
+> **Test key:** `COPIPRO-DEMO-DEMO-DEMO` (debug mode only — `COPILOT_DEBUG=1`).
 
-### 🔒 Seguridad de licencias
+### License Security
 
-| Mecanismo | Descripción |
+| Mechanism | Description |
 |-----------|-------------|
-| **Validación cloud** | Cada activación se verifica contra el Cloudflare Worker en `copilot-personal-worker.copilot-personal.workers.dev` |
-| **Device binding** | La licencia se asocia a tu dispositivo (vía fingerprint). Máximo 3 dispositivos por licencia |
-| **Grace period** | Si no hay internet, la licencia Pro sigue funcionando 24h antes de degradar a Free |
-| **Persistencia anti-reinicio** | El contador de mensajes y estado de licencia se guardan en `data.json` |
-| **Anti-sharing** | Límite de 3 dispositivos por licencia. Cambiar de dispositivo frecuentemente dispara protecciones |
-| **Demo restringida** | Solo funciona en modo desarrollo (`COPILOT_DEBUG=1`) |
+| **Cloud validation** | Each activation is verified against the Cloudflare Worker at `copilot-personal-worker.copilot-personal.workers.dev` |
+| **Device binding** | License is tied to your device via fingerprint. Max 3 devices per license |
+| **Grace period** | If offline, Pro continues working for 24h before degrading to Free |
+| **Persistent state** | Message count and license state are saved in `data.json` |
+| **Anti-sharing** | 3-device limit. Frequent device changes trigger protections |
+| **Demo restricted** | Only works in development mode (`COPILOT_DEBUG=1`) |
 
 ---
 
-## 3. Configuración inicial
+## 3. Initial Setup
 
-### Paso 1: Elige tu proveedor
+### Step 1: Choose your provider
 
-| Opción | Recomendado para | Configuración |
-|--------|-----------------|---------------|
-| **🔒 LM Studio (local)** | Privacidad total, sin API key | Inicia LM Studio, carga un modelo, URL: `http://localhost:1234/v1` |
-| **☁️ DeepSeek (cloud)** | Mejor rendimiento, barato | API key desde [platform.deepseek.com](https://platform.deepseek.com) |
-| **☁️ OpenAI** | GPT-4o, tareas complejas | API key desde [platform.openai.com](https://platform.openai.com) |
-| **☁️ Anthropic** | Claude Sonnet/Opus | API key desde [console.anthropic.com](https://console.anthropic.com) |
-| **☁️ Gemini** | Google, multi-modal | API key desde [aistudio.google.com](https://aistudio.google.com) |
+| Option | Best for | Setup |
+|--------|----------|-------|
+| **🔒 LM Studio (local)** | Complete privacy, no API key | Start LM Studio, load a model, URL: `http://localhost:1234/v1` |
+| **☁️ DeepSeek (cloud)** | Best performance, affordable | API key from [platform.deepseek.com](https://platform.deepseek.com) |
+| **☁️ OpenAI** | GPT-4o, complex tasks | API key from [platform.openai.com](https://platform.openai.com) |
+| **☁️ Anthropic** | Claude Sonnet/Opus | API key from [console.anthropic.com](https://console.anthropic.com) |
+| **☁️ Gemini** | Google, multi-modal | API key from [aistudio.google.com](https://aistudio.google.com) |
 
-### Proveedores soportados (11) — Capacidades reales
+### Supported Providers (11) — Actual Capabilities
 
 | Provider | Chat | Streaming | Embeddings | Vision | Tool Calling | Thinking |
 |----------|:----:|:---------:|:----------:|:------:|:------------:|:--------:|
@@ -144,243 +141,247 @@ uvicorn main:app --host 127.0.0.1 --port 8000
 | OpenRouter | ✅ | ✅ Real | ✅ | ✅ | ✅ | ❌ |
 | LM Studio | ✅ | ✅ Real | ✅ | ✅ | ✅ | ❌ |
 
-> 💡 **Tool calling nativo:** OpenAI, Anthropic (input_schema), Gemini (functionDeclarations) — cada uno usa el formato específico de su API.
-> 💡 **Streaming real:** fetch + ReadableStream en todos los providers.
-> 💡 **Settings inteligentes:** Los campos no soportados por el provider se deshabilitan automáticamente en Settings.
+> 💡 **Native tool calling:** OpenAI, Anthropic (input_schema), Gemini (functionDeclarations) — each uses their API's specific format.
+> 💡 **Real streaming:** fetch + ReadableStream on all providers.
+> 💡 **Smart settings:** Fields unsupported by the provider are automatically disabled in Settings.
 
 ### 🔄 Multi-Provider Fallback (Pro)
 
-Si tu proveedor principal no soporta ciertas capacidades, puedes configurar un **segundo proveedor** para compensar:
+If your primary provider lacks certain capabilities, you can configure a **second provider** to compensate:
 
-| Proveedor → Carece de | Fallback típico | Configuración |
-|-----------------------|-----------------|---------------|
+| Provider → Missing | Typical Fallback | Configuration |
+|---------------------|------------------|---------------|
 | **Anthropic** → Embeddings | LM Studio (`nomic-embed-text`) | Settings → Multi-Provider Fallback |
-| **Groq** → Embeddings, Vision | LM Studio | Ambos fallbacks a LM Studio |
-| **Perplexity** → Embeddings, Vision | LM Studio | Igual que Groq |
-| **DeepSeek** → (nada, opcional) | LM Studio (ahorro costes) | Configurar ambos fallbacks para usar local |
+| **Groq** → Embeddings, Vision | LM Studio | Both fallbacks to LM Studio |
+| **Perplexity** → Embeddings, Vision | LM Studio | Same as Groq |
+| **DeepSeek** → (none, optional) | LM Studio (cost savings) | Configure both fallbacks for local use |
 
-**Cómo funciona:** El sistema detecta automáticamente qué capacidades le faltan a tu proveedor principal y redirige esas tareas al proveedor de fallback configurado. El chat siempre usa el proveedor principal. *Requiere licencia Pro.*
+**How it works:** The system automatically detects which capabilities your primary provider lacks and redirects those tasks to the configured fallback provider. Chat always uses the primary provider. *Requires Pro license.*
 
-### Paso 2: Configura tu API Key
-1. Ve a Settings → Copilot Personal → API Configuration
-2. Pega tu API key en el campo correspondiente
-3. Selecciona el provider (Auto-detect funciona en la mayoría de casos)
+### Step 2: Configure your API Key
+1. Go to Settings → Copilot Personal → API Configuration
+2. Paste your API key in the appropriate field
+3. Select the provider (Auto-detect works in most cases)
 
-> 💡 **API Keys por proveedor:** Cada proveedor recuerda su propia API key. Si cambias de DeepSeek a Gemini, el campo de API key se vacía y muestra la key guardada para Gemini. Así puedes tener configurados varios proveedores sin que las keys se mezclen.
+> 💡 **Per-Provider API Keys:** Each provider remembers its own API key. Switching from DeepSeek to Gemini clears the field and shows the key saved for Gemini. This lets you configure multiple providers without mixing keys.
 
-> ⚠️ **Atención:** Las API keys se guardan en `data.json` dentro de la carpeta del plugin (sin encriptar). Este archivo NO debe incluirse en Git (está en `.gitignore`). Si sincronizas tu vault, asegúrate de excluir `.obsidian/plugins/copilot-personal/data.json`.
+> ⚠️ **Warning:** API keys are stored in `data.json` inside the plugin folder (unencrypted). This file must NOT be committed to Git (it's in `.gitignore`). If you sync your vault, exclude `.obsidian/plugins/copilot-personal/data.json`.
 
-### Paso 3: Selecciona tu modelo
-- **Chat Model:** `deepseek-v4-flash` (rápido) o `deepseek-v4-pro` (potente)
-- **Embedding Model:** `text-embedding-nomic-embed-text-v1.5` (local, gratuito)
-- **Vision Model:** `qwen2.5-vl-27b-instruct` (LM Studio) o el mismo chat model
+### Step 3: Select your model
+- **Chat Model:** `deepseek-v4-flash` (fast) or `deepseek-v4-pro` (powerful)
+- **Embedding Model:** `text-embedding-nomic-embed-text-v1.5` (local, free)
+- **Vision Model:** `qwen2.5-vl-27b-instruct` (LM Studio) or the same chat model
 
-### Configuración recomendada para LM Studio
+### Recommended LM Studio Setup
 ```
 API URL:    http://localhost:1234/v1
-Provider:   Auto-detect (detectará LM Studio automáticamente)
-Chat Model: qwen3.6-35b-a3b (cárgalo en LM Studio)
+Provider:   Auto-detect (detects LM Studio automatically)
+Chat Model: qwen3.6-35b-a3b (load in LM Studio)
 Embedding:  text-embedding-nomic-embed-text-v1.5
-Vision:     qwen2.5-vl-27b-instruct (opcional)
+Vision:     qwen2.5-vl-27b-instruct (optional)
 ```
 
 ---
 
-## 4. Uso del chat
+## 4. Chat Usage
 
-### Operaciones básicas
-- Escribe tu mensaje y presiona **Enter** para enviar
-- Usa **Shift+Enter** para nueva línea
-- Arrastra archivos al chat: `.md` (como contexto), `.pdf` (extrae texto), `.png/.jpg` (preview)
-- Haz clic en el botón **Agent** para activar el modo autónomo
-- Haz clic en **Think** para activar el modo de razonamiento (modelos DeepSeek)
+### Basic Operations
+- Type your message and press **Enter** to send
+- Use **Shift+Enter** for a new line
+- Drag files to chat: `.md` (as context), `.pdf` (extracts text), `.png/.jpg` (preview)
+- Click **Agent** to activate autonomous mode
+- Click **Think** to activate reasoning mode (DeepSeek models)
 
-### Indicadores visuales
-| Indicador | Significado |
-|-----------|-------------|
-| `🆓 Free` | Tier gratuito — 50 mensajes/día, funciones limitadas |
-| `⭐ Pro` | Licencia Pro activa — todas las funciones desbloqueadas |
-| `🔒 Local` | Datos procesados en tu equipo (LM Studio) |
-| `☁️ Cloud` | Datos enviados a servidor externo (DeepSeek/OpenAI) |
-| `⏳ Paso N: tool...` | El agente está ejecutando una herramienta |
-| `⚠️ NOTA NO GUARDADA` | El modelo escribió en el chat sin guardar en una nota |
-| `⚠️ Links inventados` | El modelo sugirió enlaces a notas que no existen |
+### Visual Indicators
+| Indicator | Meaning |
+|-----------|---------|
+| `🆓 Free` | Free tier — 50 messages/day, limited features |
+| `⭐ Pro` | Pro license active — all features unlocked |
+| `🔒 Local` | Data processed on your machine (LM Studio) |
+| `☁️ Cloud` | Data sent to external server (DeepSeek/OpenAI) |
+| `⏳ Step N: tool...` | Agent is running a tool |
+| `⚠️ NOT SAVED` | Model wrote note content without saving |
+| `⚠️ Invented links` | Model suggested links to non-existent notes |
 
 ---
 
-## 5. Slash commands
+## 5. Slash Commands
 
-Escribe `/` seguido del comando y presiona Enter. El comando se expande automáticamente:
+Type `/` followed by the command and press Enter. The command expands automatically:
 
-| Comando | Acción |
+| Command | Action |
 |---------|--------|
-| `/summarize` | Resume el contenido seleccionado |
-| `/translate` | Traduce el texto al inglés |
-| `/explain` | Explica un concepto en detalle |
-| `/toc` | Genera una tabla de contenidos |
-| `/flashcards` | Crea 10 flashcards pregunta/respuesta |
-| `/rewrite` | Reescribe mejorando claridad y estilo |
-| `/expand` | Expande añadiendo más detalles |
+| `/summarize` | Summarize selected content |
+| `/translate` | Translate text to English |
+| `/explain` | Explain a concept in detail |
+| `/toc` | Generate a table of contents |
+| `/flashcards` | Create 10 Q&A flashcards |
+| `/rewrite` | Rewrite for clarity and style |
+| `/expand` | Expand with more details |
 
-**Ejemplo:**
+**Example:**
 ```
-/summarize arrastra aquí el texto de una nota o PDF
+/summarize drag note or PDF text here
 ```
 
 ---
 
-## 6. Modo Agente
+## 6. Agent Mode
 
-El modo agente permite al LLM usar herramientas autónomamente. Es la característica diferencial del plugin.
+Agent mode allows the LLM to use tools autonomously. This is the plugin's key differentiator.
 
-### Cómo activarlo
-1. Haz clic en el botón **Agent** en el chat
-2. Escribe tu instrucción (ej: "crea notas para cada capítulo del PDF")
-3. El agente ejecutará las herramientas necesarias automáticamente
+### How to Activate
+1. Click the **Agent** button in the chat
+2. Write your instruction (e.g., "create notes for each chapter of the PDF")
+3. The agent will execute the necessary tools automatically
 
-### Ejemplos de uso
+### Usage Examples
 
-**Poblar notas desde un PDF:**
+**Populate notes from a PDF:**
 ```
-lee la nota 01_02 para entender la estructura. Después pobla las notas 
-[[03_03_Aufgaben]], [[03_03_01_Planung]], [[03_03_02_Lenkung]] con 
-información del PDF Grundlagen_des_Qualitätsmanagements.pdf, páginas 116-138.
-Incluye imágenes y conexiones entre notas.
-```
-
-**Crear notas desde una lista:**
-```
-crea una nota para cada uno de los siguientes puntos:
-- [[05_01_Ziele_und_ihre_Abhaengigkeit]]
-- [[05_01_01_Gesamtheitlicher_Fokus_Prozessgestaltung]]
-- [[05_02_Kontinuierlicher_Verbesserungsprozess]]
+read note 01_02 to understand the structure. Then populate notes
+[[03_03_Tasks]], [[03_03_01_Planning]], [[03_03_02_Control]] with
+information from PDF Fundamentals_of_Quality_Management.pdf, pages 116-138.
+Include images and connections between notes.
 ```
 
-**Revisar nota contra el PDF:**
+**Create notes from a list:**
 ```
-revisa la nota 01_03_01_Reklamationen según el PDF 
-Grundlagen_des_Qualitätsmanagements.pdf, página 27
+create a note for each of the following items:
+- [[05_01_Goals_and_Dependencies]]
+- [[05_01_01_Holistic_Focus_Process_Design]]
+- [[05_02_Continuous_Improvement_Process]]
 ```
 
-### Mecanismos de seguridad del agente
-- **ToolRouter:** Clasifica la tarea antes de ejecutar y solo proporciona las herramientas necesarias (ahorro 70-90% tokens)
-- **DECIDE NOW:** Fuerza al modelo a elegir entre actuar o responder
-- **Anti-loop:** Detecta planificación repetida y fuerza conclusión
-- **Force-write:** Si el modelo re-lee 3+ veces, fuerza cambio a escritura
-- **WriteCount:** Verifica que todas las notas se hayan creado antes de declarar "completado"
+**Review note against PDF:**
+```
+review note 01_03_01_Complaints against PDF
+Fundamentals_of_Quality_Management.pdf, page 27
+```
+
+### Agent Safety Mechanisms
+- **ToolRouter:** Classifies the task before execution and only provides the necessary tools (70-90% token savings)
+- **DECIDE NOW:** Forces the model to choose between acting or responding
+- **Anti-loop:** Detects repeated planning and forces conclusion
+- **Force-write:** If the model re-reads 3+ times, forces switch to writing
+- **WriteCount:** Verifies all notes were created before declaring "complete"
 
 ---
 
-## 7. Herramientas del agente
+## 7. Agent Tools
 
-| Herramienta | Función | Cuándo se usa |
-|-------------|---------|---------------|
-| `read_note` | Leer una nota del vault | Necesitas ver contenido de una nota |
-| `read_pdf` | Extraer texto de PDF (requiere pagesOnly) | Trabajar con PDFs grandes |
-| `create_note` | Crear nueva nota | Generar contenido nuevo |
-| `update_note` | Modificar nota existente | Actualizar notas |
-| `find_files` | Buscar archivos por nombre | Localizar PDFs, imágenes, notas |
-| `list_notes` | Listar notas en carpeta | Explorar el vault |
-| `render_pdf_pages` | Renderizar páginas PDF a PNG | Extraer figuras/diagramas |
-| `extract_pdf_images` | Extraer imágenes individuales de PDF | Obtener figuras incrustadas |
-| `analyze_image` | Describir imagen con modelo de visión | Analizar diagramas, fotos |
-| `search_vault_semantic` | Búsqueda semántica (RAG) | Encontrar conceptos en el vault |
-| `search_vault_fulltext` | Búsqueda de texto exacto | Encontrar palabras específicas |
-| `search_web` | Búsqueda en internet | Información externa |
-| `get_vault_stats` | Estadísticas del vault | Saber tamaño, # notas |
-| `get_active_file` | Archivo abierto actualmente | Trabajar con nota activa |
-| `get_frontmatter` | Metadatos YAML de nota | Leer tags, fecha, etc. |
-| `extract_youtube_transcript` | Transcripción de video | Analizar contenido de videos |
+| Tool | Function | When to use |
+|------|----------|-------------|
+| `read_note` | Read a note from the vault | Need to view note content |
+| `read_pdf` | Extract PDF text (requires pagesOnly) | Working with large PDFs |
+| `create_note` | Create a new note | Generate new content |
+| `update_note` | Modify existing note | Update notes |
+| `find_files` | Search files by name | Locate PDFs, images, notes |
+| `list_notes` | List notes in a folder | Explore the vault |
+| `render_pdf_pages` | Render PDF pages to PNG | Extract figures/diagrams |
+| `extract_pdf_images` | Extract individual images from PDF | Get embedded figures |
+| `analyze_image` | Describe image with vision model | Analyze diagrams, photos |
+| `search_vault_semantic` | Semantic search (RAG) | Find concepts in the vault |
+| `search_vault_fulltext` | Exact text search | Find specific words |
+| `search_web` | Web search | External information |
+| `get_vault_stats` | Vault statistics | Know size, # notes |
+| `get_active_file` | Currently open file | Work with active note |
+| `get_frontmatter` | YAML metadata of a note | Read tags, date, etc. |
+| `extract_youtube_transcript` | Video transcript | Analyze video content |
 
 ---
 
-## 8. Trabajar con PDFs
-## 9. Búsqueda semántica
-## 10. Exportar conversaciones
-## 11. Comandos de Obsidian
-## 12. Privacidad y seguridad
+## 8. Working with PDFs
 
-- **API keys:** Almacenadas en `data.json` local. Cada proveedor tiene su propio campo. Nunca se envían a servidores del autor del plugin.
-- **Datos del vault:** Enviados solo al proveedor LLM que configures (DeepSeek, OpenAI, etc.). Sin telemetría ni analytics.
-- **Web search:** Requiere un microservicio Python local (`web_search_server/`). El token de autenticación es configurable desde settings.
-- **Validación de licencias:** Las keys Pro se validan contra el Cloudflare Worker en `copilot-personal-worker.copilot-personal.workers.dev`. Free tier no requiere conexión a internet.
-- **Path traversal:** Protección multicapa en `read_note` contra escapes de directorio (`..`, `%2e%2e`, paths absolutos).
-- **Timing attacks:** El endpoint admin del Worker usa comparación constant-time para tokens.
-- **Sin telemetría, sin analytics, sin tracking.**
+## 9. Semantic Search
 
-## 13. Resolución de problemas
-## 14. Atajos de teclado
+## 10. Exporting Conversations
+
+## 11. Obsidian Commands
+
+## 12. Privacy & Security
+
+- **API keys:** Stored locally in `data.json`. Each provider has its own field. Never sent to plugin author's servers.
+- **Vault data:** Sent only to the LLM provider you configure (DeepSeek, OpenAI, etc.). No telemetry or analytics.
+- **Web search:** Requires a local Python microservice (`web_search_server/`). Authentication token is configurable in settings.
+- **License validation:** Pro keys are validated against the Cloudflare Worker at `copilot-personal-worker.copilot-personal.workers.dev`. Free tier requires no internet connection.
+- **Path traversal:** Multi-layer protection in `read_note` against directory escapes (`..`, `%2e%2e`, absolute paths).
+- **Timing attacks:** The Worker's admin endpoint uses constant-time comparison for tokens.
+- **No telemetry, no analytics, no tracking.**
+
+## 13. Troubleshooting
+
+## 14. Keyboard Shortcuts
+
 ## 15. Roadmap
 
-### v1.4.1 (Actual — Mayo 2026)
-- [x] **Dual-build**: `npm run build:store` (limpio, Obsidian review) + `npm run build` (ofuscado, distribución)
-- [x] **Cloudflare Worker desplegado**: `copilot-personal-worker.copilot-personal.workers.dev` — validación cloud, webhook Lemon Squeezy, device limit
-- [x] **API Keys por proveedor**: cada provider recuerda su propia key (DeepSeek, OpenAI, Gemini, etc.)
-- [x] **Licencias Lemon Squeezy**: keys nativas UUID, sin formato COPILOT-, validación 100% cloud
-- [x] **UI gating Free/Pro**: toggles deshabilitados (🔒) en settings cuando tier=free, mensajes de error al validar
-- [x] **Persistencia del contador**: límite diario de mensajes sobrevive reinicios de Obsidian
-- [x] **Web search token** configurable desde settings (ya no hardcoded)
-- [x] **Path traversal protection** mejorada en `readNoteTool` (detección de `..`, `.`, paths absolutos, encoded)
-- [x] **Timing-safe auth** en admin endpoint del Worker
-- [x] **Test suite**: 151 tests en 16 suites
-- [x] **CircuitBreaker** en TODOS los providers (chat + stream + embed)
-- [x] **Sanitización Markdown**: protección contra `<script>` y `on*` handlers
-- [x] **Console output disabled** en bundle ofuscado
-- [x] **Licencia UNLICENSED** para producto comercial
+### v1.4.1 (Current — May 2026)
+- [x] **Dual-build**: `npm run build:store` (clean, Obsidian review) + `npm run build` (obfuscated, distribution)
+- [x] **Cloudflare Worker deployed**: `copilot-personal-worker.copilot-personal.workers.dev` — cloud validation, Lemon Squeezy webhook, device limit
+- [x] **Per-Provider API Keys**: each provider remembers its own key (DeepSeek, OpenAI, Gemini, etc.)
+- [x] **Lemon Squeezy licensing**: native UUID keys, no COPILOT- format, 100% cloud validation
+- [x] **UI gating Free/Pro**: toggles disabled (🔒) in settings when tier=free, error messages on validation
+- [x] **Persistent counter**: daily message limit survives Obsidian restarts
+- [x] **Web search token** configurable from settings (no longer hardcoded)
+- [x] **Path traversal protection** improved in `readNoteTool` (detects `..`, `.`, absolute paths, encoded)
+- [x] **Timing-safe auth** on Worker admin endpoint
+- [x] **Real-time UI updates**: header badges and model selector refresh instantly on settings change
+- [x] **Test suite**: 151 tests in 16 suites
+- [x] **CircuitBreaker** on ALL providers (chat + stream + embed)
+- [x] **Markdown sanitization**: protection against `<script>` and `on*` handlers
+- [x] **Console output disabled** on obfuscated bundle
+- [x] **UNLICENSED** for commercial product
 
 ### v1.4
-- [x] **Multi-Provider Fallback (Pro)** — compensación automática de capacidades entre proveedores
-- [x] **Seguridad HMAC-SHA256** + fingerprint binding + persistencia anti-reinicio
-- [x] Modo agente con 17 herramientas
-- [x] ToolRouter con clasificación LLM (ahorro 70-90% tokens)
-- [x] PDF renderizado + extracción de imágenes con `unpdf`
+- [x] **Multi-Provider Fallback (Pro)** — automatic capability compensation
+- [x] Agent mode with 17 tools
+- [x] ToolRouter with LLM classification (70-90% token savings)
+- [x] PDF rendering + image extraction with `unpdf`
 - [x] 7 Slash commands + Export MD/JSON
-- [x] Circuit breaker + timeouts + backoff en todos los providers (chat + stream + embed)
-- [x] Session auto-save crash recovery (sessionStorage cada 30s)
-- [x] Indicador de privacidad (🔒 Local / ☁️ Cloud) + tier badge (🆓 Free / ⭐ Pro)
-- [x] LicenseManager con rate limiting + feature gating + fingerprint binding
-- [x] Validación de wiki-links inventados + auto-guardado multi-nota
-- [x] 11 proveedores con streaming real (fetch + ReadableStream)
-- [x] Gemini provider nativo con tool calling (functionDeclarations)
-- [x] Anthropic provider con tool calling nativo (input_schema) + CircuitBreaker
-- [x] BaseOpenAIProvider unificado + buildBody() centralizado
-- [x] AutoSaveManager integrado — splitNoteSections, validateWikiLinks, findNoteByHeading
-- [x] Avatares en chat (👤/🤖/🔧) + animación fade-in
-- [x] Progress tracker visual del agente (⏳ Paso N: tool...)
-- [x] Landing page + documentación completa
-- [x] TypeScript strict mode (0 errores)
-- [x] Ofuscación de build con javascript-obfuscator (rc4, CF flattening, dead code)
-- [x] `fetchWithFallback()` — compatibilidad Obsidian desktop + mobile
-- [x] `normalizeApiUrl()` unificada para todos los providers
-- [x] 9 auditorías de código superadas (10/10 en providers, tools, seguridad)
+- [x] Circuit breaker + timeouts + backoff on all providers
+- [x] Session auto-save crash recovery (sessionStorage every 30s)
+- [x] Privacy indicator (🔒 Local / ☁️ Cloud) + tier badge (🆓 Free / ⭐ Pro)
+- [x] LicenseManager with rate limiting + feature gating + fingerprint binding
+- [x] Invented wiki-link validation + multi-note auto-save
+- [x] 11 providers with real streaming (fetch + ReadableStream)
+- [x] Gemini native provider with tool calling (functionDeclarations)
+- [x] Anthropic native provider with tool calling (input_schema)
+- [x] Unified BaseOpenAIProvider + centralized buildBody()
+- [x] AutoSaveManager — splitNoteSections, validateWikiLinks, findNoteByHeading
+- [x] Chat avatars (👤/🤖/🔧) + fade-in animation
+- [x] Visual agent progress tracker (⏳ Step N: tool...)
+- [x] Landing page + complete documentation
+- [x] TypeScript strict mode (0 errors)
+- [x] Build obfuscation with javascript-obfuscator
+- [x] `fetchWithFallback()` — Obsidian desktop + mobile compatibility
+- [x] `normalizeApiUrl()` unified for all providers
+- [x] 9 code audits passed
 
-### v1.3 (Próximamente)
+### v1.3 (Upcoming)
 - [ ] Voice input (Web Speech API)
-- [ ] Templates de prompts personalizables
-- [ ] Custom agent instructions (similar a Custom GPTs)
-- [ ] Gemini tool calling nativo
-- [ ] Export PDF con tool results
-- [ ] Notificaciones al completar tareas largas
-- [ ] Sync de configuración entre dispositivos
+- [ ] Customizable prompt templates
+- [ ] Custom agent instructions (similar to Custom GPTs)
+- [ ] Export PDF with tool results
+- [ ] Notifications on long task completion
+- [ ] Cross-device settings sync
 
-### v2.0 (Pro — Comercial)
-- [x] Sistema de licencias free vs pro
-- [x] Servidor de validación cloud (Cloudflare Worker desplegado)
-- [x] Web search ilimitado (Pro)
-- [x] API Keys por proveedor
-- [ ] Soporte multi-vault
-- [ ] Embeddings locales optimizados (ANN/HNSW)
-- [ ] Soporte prioritario
-- [ ] Templates premium
+### v2.0 (Pro — Commercial)
+- [x] Free vs Pro licensing system
+- [x] Cloud validation server (Cloudflare Worker deployed)
+- [x] Unlimited web search (Pro)
+- [x] Per-Provider API Keys
+- [ ] Multi-vault support
+- [ ] Optimized local embeddings (ANN/HNSW)
+- [ ] Priority support
+- [ ] Premium templates
 
 ---
 
-## Soporte
+## Support
 
-- **GitHub Issues:** [Reportar bug o sugerir feature](https://github.com/JosefBelzer/copilot-personal/issues)
-- **Discord:** [Comunidad de Copilot Personal](https://discord.gg/tu-invitacion)
+- **GitHub Issues:** [Report bug or suggest feature](https://github.com/JosefBelzer/copilot-personal/issues)
 - **Email:** soporte@copilot-personal.dev
 
 ---
 
-**Copilot Personal v1.4.1** — Hecho con ❤️ para la comunidad Obsidian.
+**Copilot Personal v1.4.1** — Made with ❤️ for the Obsidian community.
