@@ -1,0 +1,6 @@
+node_modules
+main.js
+*.js.map
+src/tools/pdfWorkerUri.ts
+data.json
+*.log

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Copilot Personal — AI Agent para Obsidian</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #e0e0e0; line-height: 1.6; }
+    .hero { text-align: center; padding: 80px 20px 60px; background: linear-gradient(135deg, #16213e, #1a1a2e); }
+    .hero h1 { font-size: 2.8em; color: #7c83ff; margin-bottom: 16px; }
+    .hero h2 { font-size: 1.2em; font-weight: 400; color: #a0a0c0; max-width: 600px; margin: 0 auto; }
+    .cta { display: inline-block; margin-top: 25px; padding: 14px 40px; background: #7c83ff; color: white; border-radius: 8px; text-decoration: none; font-size: 1.1em; font-weight: 600; }
+    .cta:hover { background: #6b72e0; }
+    .features { max-width: 900px; margin: 50px auto; padding: 0 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+    .card { background: #16213e; border: 1px solid #2a2a4e; border-radius: 12px; padding: 28px; transition: transform .2s; }
+    .card:hover { transform: translateY(-4px); }
+    .card .icon { font-size: 2em; margin-bottom: 12px; }
+    .card h3 { font-size: 1.15em; color: #7c83ff; margin-bottom: 8px; }
+    .card p { font-size: 0.9em; color: #a0a0c0; }
+    .pricing { max-width: 600px; margin: 50px auto; padding: 0 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .plan { background: #16213e; border: 1px solid #2a2a4e; border-radius: 12px; padding: 30px; text-align: center; }
+    .plan.pro { border-color: #7c83ff; background: #1e1e3e; }
+    .plan h3 { font-size: 1.3em; margin-bottom: 8px; }
+    .plan .price { font-size: 2em; color: #7c83ff; font-weight: 700; margin: 12px 0; }
+    .plan ul { list-style: none; margin: 16px 0; text-align: left; }
+    .plan li { padding: 4px 0; color: #a0a0c0; font-size: 0.9em; }
+    .plan li::before { content: "✓ "; color: #4ecca3; }
+    .plan .btn { display: inline-block; margin-top: 12px; padding: 10px 28px; border-radius: 6px; text-decoration: none; font-weight: 600; }
+    .plan .btn-free { background: #2a2a4e; color: #e0e0e0; }
+    .plan .btn-pro { background: #7c83ff; color: white; }
+    .footer { text-align: center; padding: 30px; color: #606080; font-size: 0.85em; }
+    code { background: #2a2a4e; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    .comparison { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+    .comparison table { width: 100%; border-collapse: collapse; }
+    .comparison td, .comparison th { padding: 10px 16px; border-bottom: 1px solid #2a2a4e; text-align: left; }
+    .comparison th { color: #7c83ff; font-size: 0.95em; }
+    .comparison td:not(:first-child) { text-align: center; }
+    .check { color: #4ecca3; }
+    .cross { color: #e74c3c; }
+  </style>
+</head>
+<body>
+  <section class="hero">
+    <h1>🧠 Copilot Personal</h1>
+    <h2>El primer agente de IA autónomo para Obsidian. Lee tus notas, analiza PDFs, busca en el vault, crea contenido — automáticamente.</h2>
+    <a href="https://github.com/JosefBelzer/copilot-personal" class="cta">Descargar gratis</a>
+  </section>
+
+  <section class="features">
+    <div class="card">
+      <div class="icon">🤖</div>
+      <h3>Agente Autónomo</h3>
+      <p>El único plugin de Obsidian con un agente que usa 16 herramientas por sí solo. Lee PDFs, busca en el vault, renderiza páginas, extrae imágenes, y escribe notas — sin intervención manual.</p>
+    </div>
+    <div class="card">
+      <div class="icon">📄</div>
+      <h3>PDF Avanzado</h3>
+      <p>Lectura de texto, renderizado de páginas a PNG, y extracción de imágenes individuales. Pobla notas enteras desde un PDF con <code>pagesOnly</code>.</p>
+    </div>
+    <div class="card">
+      <div class="icon">🔍</div>
+      <h3>RAG Semántico</h3>
+      <p>Indexa todo tu vault con embeddings. El agente encuentra automáticamente la información relevante y la cita en sus respuestas.</p>
+    </div>
+    <div class="card">
+      <div class="icon">🌐</div>
+      <h3>10+ Proveedores</h3>
+      <p>DeepSeek, OpenAI, Anthropic, LM Studio, OpenRouter, Gemini, Mistral, Groq — o ejecuta todo localmente con LM Studio para privacidad total.</p>
+    </div>
+    <div class="card">
+      <div class="icon">✍️</div>
+      <h3>Auto-guardado</h3>
+      <p>El agente escribe automáticamente en tus notas. Si olvida guardar, el sistema lo detecta y guarda el contenido por él.</p>
+    </div>
+    <div class="card">
+      <div class="icon">⚡</div>
+      <h3>ToolRouter Inteligente</h3>
+      <p>Clasifica cada tarea y solo envía las herramientas necesarias al LLM — ahorrando 70-90% de tokens por llamada.</p>
+    </div>
+  </section>
+
+  <section class="pricing">
+    <div class="plan">
+      <h3>🆓 Free</h3>
+      <div class="price">$0</div>
+      <ul>
+        <li>Chat básico ilimitado</li>
+        <li>Lectura de notas y PDFs</li>
+        <li>Búsqueda de archivos</li>
+        <li>50 mensajes/día</li>
+        <li>3 herramientas</li>
+      </ul>
+      <a href="#" class="btn btn-free">Empezar gratis</a>
+    </div>
+    <div class="plan pro">
+      <h3>⭐ Pro</h3>
+      <div class="price">$4.99<span style="font-size:0.5em">/mes</span></div>
+      <ul>
+        <li>Todo lo de Free</li>
+        <li>Modo Agente completo</li>
+        <li>16 herramientas autónomas</li>
+        <li>Web search ilimitado</li>
+        <li>PDF con imágenes</li>
+        <li>Export chat (MD/JSON)</li>
+        <li>Soporte prioritario</li>
+        <li>Sin límite de mensajes</li>
+      </ul>
+      <a href="#" class="btn btn-pro">Obtener Pro</a>
+    </div>
+  </section>
+
+  <section class="comparison">
+    <h3 style="text-align:center;color:#7c83ff;margin-bottom:20px">Comparativa con otros plugins</h3>
+    <table>
+      <tr><th>Feature</th><th>Copilot Personal</th><th>Text Generator</th><th>Smart Connections</th><th>BMO</th></tr>
+      <tr><td>Agente autónomo</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+      <tr><td>PDF multi-página + imágenes</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+      <tr><td>RAG semántico</td><td class="check">✓</td><td class="cross">✗</td><td class="check">✓</td><td class="cross">✗</td></tr>
+      <tr><td>10+ proveedores</td><td class="check">✓</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+      <tr><td>Web search</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+      <tr><td>Auto-guardado notas</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+      <tr><td>ToolRouter (ahorro tokens)</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+      <tr><td>Local (LM Studio)</td><td class="check">✓</td><td class="check">✓</td><td class="cross">✗</td><td class="check">✓</td></tr>
+    </table>
+  </section>
+
+  <footer class="footer">
+    <p>Copilot Personal v1.4.1 — Hecho con ❤️ para la comunidad Obsidian.</p>
+    <p><a href="https://github.com/JosefBelzer/copilot-personal" style="color:#7c83ff">GitHub</a> · <a href="#" style="color:#7c83ff">Documentación</a> · <a href="#" style="color:#7c83ff">Discord</a></p>
+  </footer>
+</body>
+</html>
