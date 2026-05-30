@@ -44,5 +44,6 @@ jobs:
             main.js
             manifest.json
             styles.css
+            pdf.worker.min.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

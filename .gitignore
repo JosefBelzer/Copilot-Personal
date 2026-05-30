@@ -1,6 +1,5 @@
 node_modules
 *.js.map
-src/tools/pdfWorkerUri.ts
 data.json
 *.log
 copilot-personal-pro.zip
