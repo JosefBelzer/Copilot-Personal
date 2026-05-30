@@ -303,10 +303,10 @@
   background: var(--background-modifier-hover);
 }
 
-.copilot-agent-active {
-  background: var(--interactive-accent) !important;
-  color: var(--text-on-accent) !important;
-  border-color: var(--interactive-accent) !important;
+button.copilot-agent-toggle.copilot-agent-active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
 }
 
 /* Context Pills */

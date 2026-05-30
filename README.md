@@ -160,10 +160,12 @@ uvicorn main:app --host 127.0.0.1 --port 8000
 
 - **API keys:** Stored locally in `data.json`. Each provider has its own field — switching providers won't leak keys. Masked (`type="password"`) in settings UI. Never sent to plugin author's servers.
 - **Vault data:** Sent only to your configured LLM provider. No telemetry or analytics.
+- **Vault enumeration:** This plugin calls `vault.getFiles()` and `vault.getMarkdownFiles()` to enable semantic search (RAG), file lookup tools (`find_files`, `read_note`), and auto-save post-processing. File contents are only read when explicitly requested by the user or the agent.
 - **Web search:** Requires a local Python microservice (`web_search_server/`). Authentication token is configurable in settings.
 - **License validation:** Pro keys are validated against the Cloudflare Worker. Free tier requires no internet connection.
 - **Path traversal:** Multi-layer protection against directory escape attacks in `read_note`.
 - **Timing-safe auth:** Admin endpoint uses constant-time comparison for secret tokens.
+- **sessionStorage:** Used only for temporary chat session crash recovery (auto-saved every 30s, cleared on new chat). All persistent data uses Obsidian's `loadData()/saveData()` API.
 - **No telemetry, no analytics, no tracking.**
 
 ---
