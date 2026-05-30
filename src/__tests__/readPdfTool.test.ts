@@ -36,14 +36,14 @@ describe("readPdfTool", () => {
       const tool = createReadPdfTool({ vault: obsidian.Vault } as any);
       const result = await tool.execute({});
       expect(result).toContain("Error");
-      expect(result).toContain("ruta no proporcionada");
+      expect(result).toContain("no path provided");
     });
 
     test("returns error when file does not exist", async () => {
       const tool = createReadPdfTool({ vault: obsidian.Vault } as any);
       const result = await tool.execute({ path: "nonexistent.pdf" });
       expect(result).toContain("Error");
-      expect(result).toContain("no existe");
+      expect(result).toContain("does not exist");
     });
   });
 

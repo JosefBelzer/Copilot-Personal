@@ -12,38 +12,38 @@ export function createSemanticSearchTool(
   return {
     name: "search_vault_semantic",
     description:
-      "Busca información en las notas del vault usando búsqueda semántica (RAG). Devuelve fragmentos relevantes segun la consulta.",
+      "Searches vault notes using semantic search (RAG). Returns relevant fragments based on the query.",
     parameters: {
       type: "object",
       properties: {
-        query: { type: "string", description: "La consulta de búsqueda." },
-        start_date: { type: "string", description: "Filtro opcional: fecha inicio ISO." },
-        end_date: { type: "string", description: "Filtro opcional: fecha fin ISO." },
+        query: { type: "string", description: "The search query." },
+        start_date: { type: "string", description: "Optional filter: ISO start date." },
+        end_date: { type: "string", description: "Optional filter: ISO end date." },
       },
       required: ["query"],
     },
     execute: async (params: Record<string, unknown>): Promise<string> => {
       const query = params.query as string;
-      if (!query) return "Error: consulta vacia.";
+      if (!query) return "Error: empty query.";
 
       if (!indexOps || !settings.enableSemanticSearch) {
-        return "Error: la búsqueda semántica no esta habilitada. Habilita 'enableSemanticSearch' en la configuracion e indexa el vault.";
+        return "Error: semantic search is not enabled. Enable 'enableSemanticSearch' in settings and index the vault.";
       }
 
       try {
         const results = await indexOps.searchSimilar(query);
         if (results.length === 0) {
-          return "No se encontraron fragmentos relevantes para la consulta.";
+          return "No relevant fragments found for the query.";
         }
 
         return results
           .map(
             (r: { path: string; text: string; score?: number }, i: number) =>
-              `[Fragmento ${i + 1}] (${r.path}, relevancia: ${r.score ? (r.score * 100).toFixed(0) + "%" : "N/A"})\n${r.text}`
+              `[Fragment ${i + 1}] (${r.path}, relevance: ${r.score ? (r.score * 100).toFixed(0) + "%" : "N/A"})\n${r.text}`
           )
           .join("\n\n");
       } catch (err) {
-        return `Error en la búsqueda semántica: ${err instanceof Error ? err.message : String(err)}`;
+        return `Error in semantic search: ${err instanceof Error ? err.message : String(err)}`;
       }
     },
   };

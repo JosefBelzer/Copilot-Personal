@@ -183,7 +183,7 @@ export class CopilotChatView extends ItemView {
     this.agentToggleEl.addEventListener("click", () => {
       // License gate — Pro only for agent mode
       if (!this.agentMode && !this.plugin.licenseManager.canUseAgent()) {
-        this.addMessage("system", "🔒 Agent mode requiere licencia Pro. Settings → License Key.");
+        this.addMessage("system", "🔒 Agent mode requires a Pro license. Settings → License Key.");
         return;
       }
       this.agentMode = !this.agentMode;
@@ -403,7 +403,7 @@ export class CopilotChatView extends ItemView {
     if (!this.plugin.licenseManager.trackMessage()) {
       const limit = this.plugin.licenseManager.getRateLimit();
       this.addMessage("system",
-        `⚠️ Límite diario alcanzado (${limit.used}/${limit.limit}). Actualiza a Pro para mensajes ilimitados.`);
+        `⚠️ Daily limit reached (${limit.used}/${limit.limit}). Upgrade to Pro for unlimited messages.`);
       return;
     }
 
@@ -418,7 +418,7 @@ export class CopilotChatView extends ItemView {
     // Web search gate — Pro only
     if (userText.startsWith("!search")) {
       if (!this.plugin.licenseManager.canUseWebSearch()) {
-        this.addMessage("system", "🔒 Web search requiere licencia Pro. Settings → License Key.");
+        this.addMessage("system", "🔒 Web search requires a Pro license. Settings → License Key.");
         this.isGenerating = false;
         this.sendBtnEl.disabled = false;
         this.stopBtnEl.style.display = "none";
@@ -591,7 +591,7 @@ export class CopilotChatView extends ItemView {
         const hallucinatedSave = !writingToolCalled && !saveMarker && looksLikeCompletionClaim(cleanResponse);
         let displayResponse = cleanResponse;
         if (hallucinatedSave) {
-          displayResponse = `⚠️ **NOTA: El modelo afirmó haber guardado/modificado una nota, pero NO se usó ninguna herramienta de escritura (update_note, create_note) ni marcador <!--save:-->. La afirmación es una alucinación.**\n\n---\n\n${cleanResponse}`;
+          displayResponse = `⚠️ **NOTE: The model claimed to have saved/modified a note, but NO write tool (update_note, create_note) or <!--save:--> marker was used. The claim is a hallucination.**\n\n---\n\n${cleanResponse}`;
         }
 
         // Validate wiki-links: flag any [[link]] that doesn't exist in the vault
@@ -605,7 +605,7 @@ export class CopilotChatView extends ItemView {
               name
             );
           }
-          displayResponse = `⚠️ ${inventedLinks.length} links inventados eliminados: ${inventedLinks.join(", ")}\n\n---\n\n${savedContent}`;
+          displayResponse = `⚠️ ${inventedLinks.length} invented links removed: ${inventedLinks.join(", ")}\n\n---\n\n${savedContent}`;
         } else {
           displayResponse = savedContent;
         }
@@ -633,13 +633,13 @@ export class CopilotChatView extends ItemView {
                   results.push(`❌ ${target.path}: ${err}`);
                 }
               } else {
-                results.push(`⚠️ nota no encontrada: "${noteName}"`);
+                results.push(`⚠️ note not found: "${noteName}"`);
               }
             }
 
             const saved = results.filter(r => r.startsWith("✅")).length;
             writeCount += saved; // count auto-saved notes as successful writes
-            displayResponse = `📝 Auto-guardado ${saved}/${sections.length} notas:\n${results.join("\n")}\n\n---\n\n${displayResponse}`;
+            displayResponse = `📝 Auto-saved ${saved}/${sections.length} notes:\n${results.join("\n")}\n\n---\n\n${displayResponse}`;
           }
         }
 
@@ -651,7 +651,7 @@ export class CopilotChatView extends ItemView {
         // Verify task completion: model claims "all done" but write count (tools + auto-save) doesn't match
         if (expectedNotes >= 2 && writeCount < expectedNotes && /(todas|todos|all|complet|listo|done|finished)/i.test(displayResponse)) {
           const missing = expectedNotes - writeCount;
-          const warn = this.addMessage("system", `⚠️ El modelo afirma haber completado pero solo se guardaron ${writeCount} de ${expectedNotes} notas. Faltan ${missing}.`);
+          const warn = this.addMessage("system", `⚠️ Model claims completion but only ${writeCount} of ${expectedNotes} notes were saved. ${missing} missing.`);
           warn.style.color = "var(--text-warning)";
         }
       }
@@ -933,16 +933,16 @@ export class CopilotChatView extends ItemView {
                       s.apiUrl?.includes("127.0.0.1");
       this.privacyEl.setText(isLocal ? "🔒 Local" : "☁️ Cloud");
       this.privacyEl.title = isLocal
-        ? "Datos procesados localmente. No salen de tu equipo."
-        : "Datos enviados a servidor externo. Revisa Settings > API Configuration.";
+        ? "Data processed locally. Never leaves your device."
+        : "Data sent to external server. Check Settings > API Configuration.";
     }
 
     // License tier
     if (this.tierEl) {
       this.tierEl.setText(tier === "pro" ? "⭐ Pro" : "🆓 Free");
       this.tierEl.title = tier === "pro"
-        ? "Licencia Pro activa — todas las funciones desbloqueadas"
-        : "Tier gratuito — 50 mensajes/día, funciones limitadas";
+        ? "Pro license active — all features unlocked"
+        : "Free tier — 50 messages/day, limited features";
     }
 
     // Model selector — refresh when provider changes
@@ -951,6 +951,9 @@ export class CopilotChatView extends ItemView {
 
   /**
    * Save current chat session for crash recovery.
+   * sessionStorage is used ONLY for temporary crash recovery (cleared on new chat).
+   * All persistent data (settings, API keys, license, message counts) uses
+   * Obsidian's loadData()/saveData() API as required by review guidelines.
    */
   private saveSession(): void {
     try {
@@ -958,6 +961,7 @@ export class CopilotChatView extends ItemView {
       const state = { messages: msgs.slice(-20), timestamp: Date.now() };
       const json = JSON.stringify(state);
       if (json.length > 100000) return; // skip if too large for sessionStorage
+      // sessionStorage — temporary crash recovery only
       sessionStorage.setItem("copilot-session-backup", json);
     } catch { /* full or unavailable */ }
   }
@@ -982,7 +986,7 @@ export class CopilotChatView extends ItemView {
         for (const m of this.messages) {
           this.addMessage(m.role as "user" | "assistant" | "system", m.content);
         }
-        this.addMessage("system", "📝 Sesión anterior restaurada (recuperación tras cierre).");
+        this.addMessage("system", "📝 Previous session restored (crash recovery).");
       }
       sessionStorage.removeItem("copilot-session-backup");
     } catch {
@@ -992,13 +996,13 @@ export class CopilotChatView extends ItemView {
 
   // Slash commands — quick prompt templates
   private readonly SLASH_COMMANDS: Record<string, string> = {
-    "/summarize": "Resume el siguiente contenido de forma concisa, destacando los puntos clave:\n\n",
-    "/translate": "Traduce el siguiente contenido al inglés, manteniendo el formato y los términos técnicos:\n\n",
-    "/explain": "Explica en detalle el siguiente concepto, con ejemplos y aplicaciones prácticas:\n\n",
-    "/toc": "Genera una tabla de contenidos (índice) estructurada para el siguiente contenido:\n\n",
-    "/flashcards": "Crea 10 flashcards de pregunta/respuesta basadas en el siguiente contenido. Formato: **P:** pregunta → **R:** respuesta.\n\n",
-    "/rewrite": "Reescribe el siguiente contenido mejorando la claridad, estructura y estilo:\n\n",
-    "/expand": "Expande el siguiente contenido añadiendo más detalles, contexto y ejemplos:\n\n",
+    "/summarize": "Summarize the following content concisely, highlighting key points:\n\n",
+    "/translate": "Translate the following content to English, preserving formatting and technical terms:\n\n",
+    "/explain": "Explain the following concept in detail, with examples and practical applications:\n\n",
+    "/toc": "Generate a structured table of contents for the following content:\n\n",
+    "/flashcards": "Create 10 Q&A flashcards in Q: ... A: ... format:\n\n",
+    "/rewrite": "Rewrite the following content improving clarity, structure, and style:\n\n",
+    "/expand": "Expand the following content adding more details, context, and examples:\n\n",
   };
 
   /**
@@ -1024,7 +1028,7 @@ export class CopilotChatView extends ItemView {
       `Messages: ${this.messages.length}\n`,
     ];
     for (const m of this.messages) {
-      const role = m.role === "user" ? "👤 Usuario" : m.role === "assistant" ? "🤖 Asistente" : "🔧 Sistema";
+      const role = m.role === "user" ? "👤 User" : m.role === "assistant" ? "🤖 Assistant" : "🔧 System";
       lines.push(`### ${role}`);
       lines.push(m.content);
       lines.push("");

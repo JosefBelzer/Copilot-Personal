@@ -10,17 +10,17 @@ export function createUpdateNoteTool(app: App): AgentTool {
   return {
     name: "update_note",
     description:
-      "Sobreescribe el contenido de una nota existente en el vault. Usa la ruta completa. Si la nota no existe, da error (usa create_note para notas nuevas).",
+      "Overwrites the content of an existing note in the vault. Use the full path. If the note does not exist, it returns an error (use create_note for new notes).",
     parameters: {
       type: "object",
       properties: {
         path: {
           type: "string",
-          description: "Ruta completa de la nota a modificar (ej. '10_Mundo/Reinos.md').",
+          description: "Full path of the note to modify (e.g. '10_Mundo/Reinos.md').",
         },
         content: {
           type: "string",
-          description: "Nuevo contenido completo de la nota en formato Markdown.",
+          description: "New full content of the note in Markdown format.",
         },
       },
       required: ["path", "content"],
@@ -29,15 +29,15 @@ export function createUpdateNoteTool(app: App): AgentTool {
       const raw = (params.path as string)?.trim();
       const content = params.content as string;
 
-      if (!raw) return "Error: ruta no proporcionada.";
-      if (content === undefined || content === null) return "Error: contenido no proporcionado.";
+      if (!raw) return "Error: no path provided.";
+      if (content === undefined || content === null) return "Error: no content provided.";
 
       const path = normalizePath(raw);
 
       try {
         const exists = await app.vault.adapter.exists(path);
         if (!exists) {
-          return `Error: la nota "${path}" no existe. Usa create_note para crear una nueva.`;
+          return `Error: the note "${path}" does not exist. Use create_note to create a new one.`;
         }
 
         await app.vault.adapter.write(path, content);
@@ -45,13 +45,13 @@ export function createUpdateNoteTool(app: App): AgentTool {
         // Verify content was actually written
         const written = await app.vault.adapter.read(path);
         if (written !== content) {
-          return `Error: La nota "${path}" se reportó como actualizada pero el contenido no coincide (esperado ${content.length} chars, leído ${written.length} chars).`;
+          return `Error: The note "${path}" was reported as updated but the content does not match (expected ${content.length} chars, read ${written.length} chars).`;
         }
 
-        return `Nota "${path}" actualizada correctamente (${content.length} caracteres).`;
+        return `Note "${path}" updated successfully (${content.length} characters).`;
       } catch (err) {
         console.error("[update_note] Failed:", err);
-        return `Error al actualizar "${raw}": ${err instanceof Error ? err.message : String(err)}`;
+        return `Error updating "${raw}": ${err instanceof Error ? err.message : String(err)}`;
       }
     },
   };

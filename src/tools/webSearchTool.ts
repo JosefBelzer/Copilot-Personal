@@ -8,30 +8,30 @@ export function createWebSearchTool(webSearchClient: WebSearchClient): AgentTool
   return {
     name: "search_web",
     description:
-      "Realiza una busqueda en la web usando un navegador automatizado y devuelve los resultados mas relevantes (titulo, url, snippet).",
+      "Performs a web search using an automated browser and returns the most relevant results (title, url, snippet).",
     parameters: {
       type: "object",
       properties: {
         query: {
           type: "string",
-          description: "La consulta de busqueda web.",
+          description: "The web search query.",
         },
       },
       required: ["query"],
     },
     execute: async (params: Record<string, unknown>): Promise<string> => {
       const query = params.query as string;
-      if (!query) return "Error: consulta vacia.";
+      if (!query) return "Error: empty query.";
 
       try {
         const response = await webSearchClient.search(query);
         if (response.results.length === 0) {
-          return `No se encontraron resultados para: "${query}".`;
+          return `No results found for: "${query}".`;
         }
 
         return webSearchClient.formatResultsForLLM(response.results);
       } catch (err) {
-        return `Error en la busqueda web: ${err instanceof Error ? err.message : String(err)}`;
+        return `Error in web search: ${err instanceof Error ? err.message : String(err)}`;
       }
     },
   };

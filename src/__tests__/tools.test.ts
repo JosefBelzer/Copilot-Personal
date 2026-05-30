@@ -75,7 +75,7 @@ describe("Agent Tools", () => {
       const settings = { ...DEFAULT_SETTINGS, enableSemanticSearch: false };
       const tool = createSemanticSearchTool(null, settings as any);
       const result = await tool.execute({ query: "anything" });
-      expect(result).toContain("no esta habilitada");
+      expect(result).toContain("is not enabled");
     });
 
     test("calls IndexOperations.searchSimilar when enabled", async () => {
@@ -147,7 +147,7 @@ describe("Agent Tools", () => {
         content: "# Hello\n\nWorld content.",
       });
 
-      expect(result).toContain("Nota creada exitosamente");
+      expect(result).toContain("Note created successfully");
       expect(result).toContain("MyTestNote.md");
       expect(created).toHaveLength(1);
       expect(created[0].path).toBe("MyTestNote.md");
@@ -163,7 +163,7 @@ describe("Agent Tools", () => {
       };
       const tool = createCreateNoteTool(app as any);
       const result = await tool.execute({ title: "exists", content: "content" });
-      expect(result).toContain("ya existe");
+      expect(result).toContain("already exists");
     });
 
     test("returns error for empty title", async () => {

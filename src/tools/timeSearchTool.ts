@@ -8,17 +8,17 @@ export function createTimeSearchTool(app: App): AgentTool {
   return {
     name: "search_vault_by_timeframe",
     description:
-      "Busca notas del vault modificadas entre dos fechas en formato ISO 8601 (YYYY-MM-DDTHH:mm:ss). Utíl para saber que hizo el usuario en un periodo de tiempo.",
+      "Searches vault notes modified between two dates in ISO 8601 format (YYYY-MM-DDTHH:mm:ss). Useful to see what the user did in a time period.",
     parameters: {
       type: "object",
       properties: {
         start_date: {
           type: "string",
-          description: "Fecha de inicio en formato ISO 8601, ej. 2026-05-01T00:00:00",
+          description: "Start date in ISO 8601 format, e.g. 2026-05-01T00:00:00",
         },
         end_date: {
           type: "string",
-          description: "Fecha de fin en formato ISO 8601, ej. 2026-05-10T23:59:59",
+          description: "End date in ISO 8601 format, e.g. 2026-05-10T23:59:59",
         },
       },
       required: ["start_date", "end_date"],
@@ -28,7 +28,7 @@ export function createTimeSearchTool(app: App): AgentTool {
       const endDate = new Date(params.end_date as string);
 
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        return "Error: fechas invalidas. Usa formato ISO 8601 (YYYY-MM-DDTHH:mm:ss).";
+        return "Error: invalid dates. Use ISO 8601 format (YYYY-MM-DDTHH:mm:ss).";
       }
 
       const files = app.vault.getMarkdownFiles();
@@ -49,13 +49,13 @@ export function createTimeSearchTool(app: App): AgentTool {
       }
 
       if (matched.length === 0) {
-        return `No se encontraron notas modificadas entre ${params.start_date} y ${params.end_date}.`;
+        return `No notes found modified between ${params.start_date} and ${params.end_date}.`;
       }
 
       return matched
         .map(
           (m, i) =>
-            `[${i + 1}] ${m.title} (${m.path})\nModificado: ${new Date(m.mtime).toISOString()}\nContenido: ${m.snippet}...`
+            `[${i + 1}] ${m.title} (${m.path})\nModified: ${new Date(m.mtime).toISOString()}\nContent: ${m.snippet}...`
         )
         .join("\n\n");
     },

@@ -10,17 +10,17 @@ export function createCreateNoteTool(app: App): AgentTool {
   return {
     name: "create_note",
     description:
-      "Crea una nueva nota en el vault con el título y contenido proporcionados (en formato Markdown).",
+      "Creates a new note in the vault with the given title and content (Markdown format).",
     parameters: {
       type: "object",
       properties: {
         title: {
           type: "string",
-          description: "Titulo de la nota (sin extensión).",
+          description: "Note title (without extension).",
         },
         content: {
           type: "string",
-          description: "Contenido de la nota en formato Markdown.",
+          description: "Note content in Markdown format.",
         },
       },
       required: ["title", "content"],
@@ -28,8 +28,8 @@ export function createCreateNoteTool(app: App): AgentTool {
     execute: async (params: Record<string, unknown>): Promise<string> => {
       const title = (params.title as string)?.trim();
       const content = params.content as string;
-      if (!title) return "Error: título no proporcionado.";
-      if (content === undefined || content === null) return "Error: contenido no proporcionado.";
+      if (!title) return "Error: no title provided.";
+      if (content === undefined || content === null) return "Error: no content provided.";
 
       try {
         const fileName = normalizePath(ensureMd(title));
@@ -37,7 +37,7 @@ export function createCreateNoteTool(app: App): AgentTool {
         // Check for existing note
         const existing = app.vault.getAbstractFileByPath(fileName);
         if (existing) {
-          return `Error: ya existe una nota con el nombre "${fileName}".`;
+          return `Error: a note already exists with the name "${fileName}".`;
         }
 
         // Ensure parent directory exists
@@ -50,10 +50,10 @@ export function createCreateNoteTool(app: App): AgentTool {
         }
 
         await app.vault.create(fileName, content);
-        return `Nota creada exitosamente: "${fileName}" (${content.length} caracteres).`;
+        return `Note created successfully: "${fileName}" (${content.length} characters).`;
       } catch (err) {
         console.error("[create_note] Failed:", err);
-        return `Error al crear la nota: ${err instanceof Error ? err.message : String(err)}`;
+        return `Error creating note: ${err instanceof Error ? err.message : String(err)}`;
       }
     },
   };

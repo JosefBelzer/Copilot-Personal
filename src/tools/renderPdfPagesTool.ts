@@ -15,25 +15,25 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
   return {
     name: "render_pdf_pages",
     description:
-      "Renderiza páginas específicas de un PDF como imágenes PNG y las guarda en el vault. Devuelve las rutas exactas (ej: 'Resources/PDF_images/PDF_page_40.png'). IMPORTANTE: usa las rutas EXACTAS devueltas por esta herramienta para los ![[embeds]]. NO inventes rutas.",
+      "Renders specific PDF pages as PNG images and saves them in the vault. Returns exact paths (e.g. 'Resources/PDF_images/PDF_page_40.png'). IMPORTANT: use the EXACT paths returned by this tool for ![[embeds]]. Do NOT invent paths.",
     parameters: {
       type: "object",
       properties: {
         path: {
           type: "string",
-          description: "Ruta del PDF en el vault.",
+          description: "Path to the PDF in the vault.",
         },
         pages: {
           type: "string",
-          description: "Páginas a renderizar (ej. '30-33', '5,8,12', '30').",
+          description: "Pages to render (e.g. '30-33', '5,8,12', '30').",
         },
         outputFolder: {
           type: "string",
-          description: "Carpeta donde guardar las imágenes (opcional, por defecto: junto al PDF).",
+          description: "Folder to save the images (optional, default: next to PDF).",
         },
         scale: {
           type: "number",
-          description: "Escala de renderizado (1.0 = 72 DPI, 2.0 = 144 DPI). Por defecto: 2.0.",
+          description: "Render scale (1.0 = 72 DPI, 2.0 = 144 DPI). Default: 2.0.",
         },
       },
       required: ["path", "pages"],
@@ -44,8 +44,8 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
       const outputFolder = (params.outputFolder as string)?.trim() || "";
       const scale = (params.scale as number) || 2.0;
 
-      if (!raw) return "Error: ruta del PDF no proporcionada.";
-      if (!pagesSpec) return "Error: páginas no especificadas.";
+      if (!raw) return "Error: no PDF path provided.";
+      if (!pagesSpec) return "Error: no pages specified.";
 
       try {
         // Auto-find the PDF if the path is wrong
@@ -61,14 +61,14 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
             resolvedPath = pdfFiles[0].path;
             exists = true;
           } else if (pdfFiles.length > 1) {
-            return `Múltiples PDFs coinciden con "${raw}". Especifica la ruta exacta.`;
+            return `Multiple PDFs match "${raw}". Specify the exact path.`;
           }
         }
-        if (!exists) return `Error: "${raw}" no existe.`;
+        if (!exists) return `Error: "${raw}" does not exist.`;
 
         // Parse page range
         const pageNums = parsePageRange(pagesSpec, 9999);
-        if (pageNums.length === 0) return `Error: rango de páginas inválido: "${pagesSpec}".`;
+        if (pageNums.length === 0) return `Error: invalid page range: "${pagesSpec}".`;
 
         // Determine output folder
         const pdfDir = resolvedPath.substring(0, resolvedPath.lastIndexOf("/") + 1);
@@ -90,7 +90,7 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
               }
             }
           } catch (err) {
-            return `Error: no se pudo crear la carpeta de salida "${outDir}": ${err instanceof Error ? err.message : String(err)}`;
+            return `Error: could not create output folder "${outDir}": ${err instanceof Error ? err.message : String(err)}`;
           }
         }
 
@@ -105,7 +105,7 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
 
         const validPages = pageNums.filter(n => n >= 1 && n <= pdf.numPages);
         if (validPages.length === 0) {
-          return `Error: ninguna página válida. El PDF tiene ${pdf.numPages} páginas.`;
+          return `Error: no valid pages. The PDF has ${pdf.numPages} pages.`;
         }
 
         const results: string[] = [];
@@ -121,7 +121,7 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
             canvas.height = Math.floor(viewport.height);
             const ctx = canvas.getContext("2d");
             if (!ctx) {
-              const err = `Error: no se pudo crear canvas 2D context para página ${pageNum}.`;
+              const err = `Error: could not create canvas 2D context for page ${pageNum}.`;
               console.error(`[renderPdfPages] ${err}`);
               results.push(err);
               continue;
@@ -132,7 +132,7 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
             try {
               await page.render(renderParams).promise;
             } catch (renderErr) {
-              const err = `Error renderizando página ${pageNum}: ${renderErr instanceof Error ? renderErr.message : String(renderErr)}`;
+              const err = `Error rendering page ${pageNum}: ${renderErr instanceof Error ? renderErr.message : String(renderErr)}`;
               console.error(`[renderPdfPages] ${err}`);
               results.push(`❌ ${err}`);
               continue;
@@ -159,15 +159,15 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
 
             results.push(`✅ ${filePath}`);
           } catch (err) {
-            results.push(`❌ Página ${pageNum}: ${err instanceof Error ? err.message : String(err)}`);
+            results.push(`❌ Page ${pageNum}: ${err instanceof Error ? err.message : String(err)}`);
           }
         }
 
-        return `Renderizadas ${results.filter(r => r.startsWith("✅")).length}/${validPages.length} páginas:\n${results.join("\n")}`;
+        return `Rendered ${results.filter(r => r.startsWith("✅")).length}/${validPages.length} pages:\n${results.join("\n")}`;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`${TAG} Failed:`, msg);
-        return `Error al renderizar páginas del PDF: ${msg}`;
+        return `Error rendering PDF pages: ${msg}`;
       }
     },
   };

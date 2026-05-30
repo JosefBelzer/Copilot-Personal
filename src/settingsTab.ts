@@ -66,9 +66,9 @@ export class CopilotSettingTab extends PluginSettingTab {
       if (result.error) {
         new Notice(`⚠️ ${result.error}`);
       } else if (result.tier === "pro" && key !== "FREE") {
-        new Notice("✅ Licencia Pro activada correctamente.");
+        new Notice("✅ Pro license activated successfully.");
       } else {
-        new Notice("🆓 Modo Free activado.");
+        new Notice("🆓 Free mode activated.");
       }
       this.display();
     };
@@ -771,15 +771,15 @@ export class CopilotSettingTab extends PluginSettingTab {
       containerEl.createEl("h3", { text: `🔄 Multi-Provider Fallback${isPro ? "" : " (Pro)"}` });
 
       if (!isPro) {
-        containerEl.createEl("div", { text: "🔒 La compensación multi-proveedor requiere licencia Pro. Con Pro, puedes usar un segundo proveedor para las capacidades que tu proveedor principal no tiene.", cls: "copilot-setting-hint" }).style.cssText = "font-size:12px;color:var(--text-muted);margin-bottom:12px;";
+        containerEl.createEl("div", { text: "🔒 Multi-provider fallback requires a Pro license. With Pro, you can use a second provider for capabilities your primary provider lacks.", cls: "copilot-setting-hint" }).style.cssText = "font-size:12px;color:var(--text-muted);margin-bottom:12px;";
       }
 
       for (const cap of missing) {
-        containerEl.createEl("h4", { text: `⚠️ ${this.plugin.settings.providerType} no soporta ${cap.label}` });
+        containerEl.createEl("h4", { text: `⚠️ ${this.plugin.settings.providerType} does not support ${cap.label}` });
 
         new Setting(containerEl)
-          .setName(`Fallback para ${cap.label}`)
-          .setDesc(isPro ? `Selecciona un proveedor que SÍ tenga ${cap.label}` : "🔒 Requiere licencia Pro")
+          .setName(`Fallback for ${cap.label}`)
+          .setDesc(isPro ? `Select a provider that DOES support ${cap.label}` : "🔒 Requires Pro license")
           .addDropdown((dropdown) => {
             const allTypes: ProviderType[] = ["deepseek", "openai", "anthropic", "openrouter", "lmstudio", "gemini", "mistral", "groq", "perplexity", "xai"];
             for (const pt of allTypes) {
@@ -792,8 +792,8 @@ export class CopilotSettingTab extends PluginSettingTab {
           });
 
         new Setting(containerEl)
-          .setName(`Modelo ${cap.label} (fallback)`)
-          .setDesc(`Nombre del modelo para ${cap.label} en el proveedor de fallback`)
+          .setName(`Model ${cap.label} (fallback)`)
+          .setDesc(`Model name for ${cap.label} in fallback provider`)
           .addText((text) => {
             text.setPlaceholder(cap.modelPlaceholder).setValue((this.plugin.settings as any)[cap.modelKey] || "").onChange(async (v) => { (this.plugin.settings as any)[cap.modelKey] = v; await this.plugin.saveSettings(); });
             if (!isPro) text.inputEl.disabled = true;

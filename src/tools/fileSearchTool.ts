@@ -10,19 +10,19 @@ export function createFileSearchTool(app: App): AgentTool {
   return {
     name: "find_files",
     description:
-      "Busca archivos en el vault cuyo nombre coincida con un término. Devuelve las rutas de los archivos encontrados. Útil para localizar imágenes, PDFs o notas cuando no conoces la ruta exacta.",
+      "Searches files in the vault by name pattern. Returns paths of matching files. Useful for finding images, PDFs or notes when you don't know the exact path.",
     parameters: {
       type: "object",
       properties: {
         nameQuery: {
           type: "string",
           description:
-            "Parte del nombre del archivo a buscar (ej. 'MapaPolitico', 'diagrama', 'foto.png'). No distingue mayúsculas/minúsculas.",
+            "Part of the file name to search for (e.g. 'MapaPolitico', 'diagram', 'photo.png'). Case-insensitive.",
         },
         extension: {
           type: "string",
           description:
-            "Filtrar por extensión (ej. 'png', 'pdf', 'md'). Opcional.",
+            "Filter by extension (e.g. 'png', 'pdf', 'md'). Optional.",
         },
       },
       required: ["nameQuery"],
@@ -32,7 +32,7 @@ export function createFileSearchTool(app: App): AgentTool {
       const nameQuery = ((params.nameQuery || params.query || "") as string).toLowerCase();
       const extension = ((params.extension || "") as string).toLowerCase();
 
-      if (!nameQuery) return "Error: término de búsqueda vacío.";
+      if (!nameQuery) return "Error: empty search term.";
 
       try {
         const allFiles = app.vault.getFiles();
@@ -45,7 +45,7 @@ export function createFileSearchTool(app: App): AgentTool {
         });
 
         if (matched.length === 0) {
-          return `No se encontraron archivos que coincidan con "${nameQuery}"${extension ? " (." + extension + ")" : ""}.`;
+          return `No files found matching "${nameQuery}"${extension ? " (." + extension + ")" : ""}.`;
         }
 
         // Limit to 15 results
@@ -53,9 +53,9 @@ export function createFileSearchTool(app: App): AgentTool {
         return limited
           .map((f, i) => `[${i + 1}] ${f.path}`)
           .join("\n") +
-          (matched.length > 15 ? `\n... y ${matched.length - 15} más.` : "");
+          (matched.length > 15 ? `\n... and ${matched.length - 15} more.` : "");
       } catch (err) {
-        return `Error al buscar archivos: ${err instanceof Error ? err.message : String(err)}`;
+        return `Error searching files: ${err instanceof Error ? err.message : String(err)}`;
       }
     },
   };

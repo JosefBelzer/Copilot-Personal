@@ -9,40 +9,40 @@ export function createYoutubeTranscriptTool(): AgentTool {
   return {
     name: "extract_youtube_transcript",
     description:
-      "Obtiene la transcripción (subtitulos) de un video de YouTube a partir de su URL.",
+      "Gets the transcript (subtitles) of a YouTube video from its URL.",
     parameters: {
       type: "object",
       properties: {
         videoUrl: {
           type: "string",
           description:
-            "URL del video de YouTube (ej. https://www.youtube.com/watch?v=... o https://youtu.be/...).",
+            "YouTube video URL (e.g. https://www.youtube.com/watch?v=... or https://youtu.be/...).",
         },
       },
       required: ["videoUrl"],
     },
     execute: async (params: Record<string, unknown>): Promise<string> => {
       const videoUrl = params.videoUrl as string;
-      if (!videoUrl) return "Error: URL del video no proporcionada.";
+      if (!videoUrl) return "Error: no video URL provided.";
 
       const videoId = extractVideoId(videoUrl);
       if (!videoId) {
-        return `Error: no se pudo extraer el ID del video de la URL: ${videoUrl}`;
+        return `Error: could not extract video ID from URL: ${videoUrl}`;
       }
 
       try {
         const transcript = await YoutubeTranscript.fetchTranscript(videoId);
         if (!transcript || transcript.length === 0) {
-          return "No se encontro transcripción para este video (puede no tener subtitulos disponibles).";
+          return "No transcript found for this video (subtitles may not be available).";
         }
 
         const fullText = transcript
           .map((item: { text: string }) => item.text)
           .join(" ");
 
-        return `Transcripcion del video ${videoId}:\n\n${fullText}`;
+        return `Transcript of video ${videoId}:\n\n${fullText}`;
       } catch (err) {
-        return `Error al obtener la transcripción: ${err instanceof Error ? err.message : String(err)}`;
+        return `Error getting transcript: ${err instanceof Error ? err.message : String(err)}`;
       }
     },
   };

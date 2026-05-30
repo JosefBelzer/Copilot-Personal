@@ -13,13 +13,13 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
   return {
     name: "extract_pdf_images",
     description:
-      "Extrae imágenes JPG/PNG incrustadas de páginas de un PDF. Requiere 'unpdf' instalado (npm install unpdf). Si no hay imágenes raster (gráficos vectoriales/diagramas), renderiza la página completa como PNG. Usa render_pdf_pages si solo necesitas las páginas completas.",
+      "Extracts embedded JPG/PNG images from PDF pages. Requires 'unpdf' installed (npm install unpdf). If no raster images (vector graphics/diagrams), renders the full page as PNG. Use render_pdf_pages if you only need full pages.",
     parameters: {
       type: "object",
       properties: {
-        path: { type: "string", description: "Ruta del PDF en el vault." },
-        pages: { type: "string", description: "Páginas (ej. '49-54', '27,30')." },
-        outputFolder: { type: "string", description: "Carpeta de salida (opcional)." },
+        path: { type: "string", description: "Path to the PDF in the vault." },
+        pages: { type: "string", description: "Pages (e.g. '49-54', '27,30')." },
+        outputFolder: { type: "string", description: "Output folder (optional)." },
       },
       required: ["path", "pages"],
     },
@@ -28,7 +28,7 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
       const pagesSpec = (params.pages as string)?.trim();
       const outputFolder = (params.outputFolder as string)?.trim() || "";
 
-      if (!raw || !pagesSpec) return "Error: path y pages requeridos.";
+      if (!raw || !pagesSpec) return "Error: path and pages required.";
 
       try {
         let resolvedPath = normalizePath(raw);
@@ -38,12 +38,12 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
             f.name.toLowerCase().endsWith(".pdf") && f.name.toLowerCase().includes(basename)
           );
           if (pdfFiles.length === 1) resolvedPath = pdfFiles[0].path;
-          else if (pdfFiles.length > 1) return "Múltiples PDFs coinciden. Especifica ruta exacta.";
-          else return `Error: "${raw}" no existe.`;
+          else if (pdfFiles.length > 1) return "Multiple PDFs match. Specify exact path.";
+          else return `Error: "${raw}" does not exist.`;
         }
 
         const pageNums = parsePageRange(pagesSpec, 9999);
-        if (pageNums.length === 0) return `Error: rango inválido: "${pagesSpec}".`;
+        if (pageNums.length === 0) return `Error: invalid range: "${pagesSpec}".`;
 
         const pdfDir = resolvedPath.substring(0, resolvedPath.lastIndexOf("/") + 1);
         const pdfBasename = resolvedPath.split("/").pop()?.replace(/\.pdf$/i, "") || "pdf";
@@ -63,7 +63,7 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
         const pdf = await pdfjsLib.getDocument({ data: uint8 }).promise;
 
         const validPages = pageNums.filter(n => n >= 1 && n <= pdf.numPages);
-        if (validPages.length === 0) return `Error: páginas fuera de rango (${pdf.numPages} total).`;
+        if (validPages.length === 0) return `Error: pages out of range (${pdf.numPages} total).`;
 
         const results: string[] = [];
         let totalExtracted = 0;
@@ -108,7 +108,7 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
             canvas.height = Math.floor(viewport.height);
             const ctx = canvas.getContext("2d");
             if (!ctx) {
-              results.push(`❌ Página ${pageNum}: no se pudo crear canvas`);
+              results.push(`❌ Page ${pageNum}: could not create canvas`);
               continue;
             }
             await page.render({ canvasContext: ctx, canvas, viewport } as any).promise;
@@ -119,14 +119,14 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
             const fileName = `${pdfBasename}_page_${pageNum}.png`;
             const filePath = normalizePath(`${outDir}/${fileName}`);
             await app.vault.createBinary(filePath, arrayBuffer);
-            results.push(`🖼️ ${filePath} (página completa)`);
+            results.push(`🖼️ ${filePath} (full page)`);
             totalExtracted++;
           } catch (err) {
-            results.push(`⚠️ Página ${pageNum}: falló el renderizado`);
+            results.push(`⚠️ Page ${pageNum}: rendering failed`);
           }
         }
 
-        return `Extraídas ${totalExtracted} imágenes de ${validPages.length} páginas:\n${results.join("\n")}`;
+        return `Extracted ${totalExtracted} images from ${validPages.length} pages:\n${results.join("\n")}`;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`${TAG} Failed:`, msg);

@@ -316,7 +316,7 @@ export default class CopilotPlugin extends Plugin {
       const query = inputEl.value.trim();
       if (!query) return;
       if (!this.licenseManager.trackMessage()) {
-        new Notice("⚠️ Límite diario alcanzado. Actualiza a Pro para mensajes ilimitados.");
+        new Notice("⚠️ Daily limit reached. Upgrade to Pro for unlimited messages.");
         return;
       }
       btnEl.disabled = true;

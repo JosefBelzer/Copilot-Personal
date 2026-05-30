@@ -16,17 +16,17 @@ export function createImageAnalysisTool(
   return {
     name: "analyze_image",
     description:
-      "Analiza una imagen del vault y proporciona una descripción detallada. Usa la ruta de la imagen (ej. 'carpeta/diagrama.png'). Soporta png, jpg, jpeg, gif, webp.",
+      "Analyzes an image from the vault and provides a detailed description. Use the image path (e.g. 'folder/diagram.png'). Supports png, jpg, jpeg, gif, webp.",
     parameters: {
       type: "object",
       properties: {
-        imagePath: { type: "string", description: "Ruta del archivo de imagen dentro del vault." },
+        imagePath: { type: "string", description: "Path to the image file within the vault." },
       },
       required: ["imagePath"],
     },
     execute: async (params: Record<string, unknown>): Promise<string> => {
       const imagePath = params.imagePath as string;
-      if (!imagePath) return "Error: ruta de imagen no proporcionada.";
+      if (!imagePath) return "Error: no image path provided.";
 
       let provider;
       try {
@@ -50,7 +50,7 @@ export function createImageAnalysisTool(
           messages: [{
             role: "user",
             content: [
-              { type: "text", text: "Describe detalladamente esta imagen. Si contiene texto, diagramas, gráficos o tablas, descríbelos con precisión." },
+              { type: "text", text: "Describe this image in detail. If it contains text, diagrams, charts or tables, describe them accurately." },
               { type: "image_url", image_url: { url: `data:image/${mimeType};base64,${base64}` } },
             ],
           }],
@@ -66,15 +66,15 @@ export function createImageAnalysisTool(
         });
 
         const data = response.json;
-        if (data.error) return `Error de API: ${data.error.message || JSON.stringify(data.error)}`;
-        return data.choices?.[0]?.message?.content ?? "No se obtuvo respuesta del modelo de visión.";
+        if (data.error) return `API error: ${data.error.message || JSON.stringify(data.error)}`;
+        return data.choices?.[0]?.message?.content ?? "No response received from the vision model.";
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`${TAG} Failed:`, msg);
         if (msg.includes("ECONNREFUSED") || msg.includes("fetch failed")) {
-          return "Error: No se pudo conectar al servidor de visión. Asegúrate de que LM Studio esté corriendo con un modelo de visión cargado.";
+          return "Error: Could not connect to the vision server. Make sure your local vision model is running with a compatible model loaded.";
         }
-        return `Error al analizar la imagen: ${msg}`;
+        return `Error analyzing the image: ${msg}`;
       }
     },
   };

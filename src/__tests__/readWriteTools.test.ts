@@ -53,7 +53,7 @@ describe("readNoteTool — path resolution", () => {
   test("Strategy 3: returns list when multiple notes share basename", async () => {
     const tool = createReadNoteTool(makeApp() as any);
     const result = await tool.execute({ path: "01_02_Qualitaet_als_Erfolgsfaktor" });
-    expect(result).toContain("Encontradas 2 notas");
+    expect(result).toContain("Found 2 notes");
     expect(result).toContain("QM/01_02_Qualitaet_als_Erfolgsfaktor.md");
     expect(result).toContain("Grundlagen_QM/01_02_Qualitaet_als_Erfolgsfaktor.md");
   });
@@ -68,14 +68,14 @@ describe("readNoteTool — path resolution", () => {
     const tool = createReadNoteTool(makeApp() as any);
     const result = await tool.execute({ path: "Qualitaet" });
     // Should find partial matches
-    expect(result).toContain("Notas similares");
+    expect(result).toContain("Similar notes");
     expect(result).toContain("01_02_Qualitaet");
   });
 
   test("Returns error for completely non-existent note", async () => {
     const tool = createReadNoteTool(makeApp() as any);
     const result = await tool.execute({ path: "ZXYZ_DoesNotExist" });
-    expect(result).toContain("no existe");
+    expect(result).toContain("does not exist");
   });
 
   test("Error when path is empty", async () => {
@@ -111,7 +111,7 @@ describe("updateNoteTool — write verification", () => {
     const newContent = "# Updated\n\nNew content here.";
     const result = await tool.execute({ path: "existing.md", content: newContent });
 
-    expect(result).toContain("actualizada correctamente");
+    expect(result).toContain("updated successfully");
     expect(result).toContain(String(newContent.length));
 
     // Verify the file was actually written
@@ -123,20 +123,20 @@ describe("updateNoteTool — write verification", () => {
     const tool = createUpdateNoteTool(makeApp() as any);
     const result = await tool.execute({ path: "", content: "x" });
     expect(result).toContain("Error");
-    expect(result).toContain("ruta no proporcionada");
+    expect(result).toContain("no path provided");
   });
 
   test("returns error when content is null/undefined", async () => {
     const tool = createUpdateNoteTool(makeApp() as any);
     const result = await tool.execute({ path: "existing.md", content: null });
     expect(result).toContain("Error");
-    expect(result).toContain("contenido no proporcionado");
+    expect(result).toContain("no content provided");
   });
 
   test("returns error when note does not exist", async () => {
     const tool = createUpdateNoteTool(makeApp() as any);
     const result = await tool.execute({ path: "nonexistent.md", content: "content" });
-    expect(result).toContain("no existe");
+    expect(result).toContain("does not exist");
   });
 
   test("rejects write when verification fails (content mismatch)", async () => {
@@ -170,6 +170,6 @@ describe("createNoteTool — duplicate prevention", () => {
     };
     const tool = createCreateNoteTool(app as any);
     const result = await tool.execute({ title: "exists", content: "x" });
-    expect(result).toContain("ya existe");
+    expect(result).toContain("already exists");
   });
 });

@@ -6,21 +6,21 @@ export function createReadPdfTool(app: App): AgentTool {
   return {
     name: "read_pdf",
     description:
-      "Extrae texto del PDF. REQUIERE pagesOnly para PDFs grandes (>20 págs). Usa pagesOnly: '116-138' para páginas concretas. Usa tocOnly: true para el índice. Sin parámetros solo funciona en PDFs de ≤20 páginas.",
+      "Extracts text from a PDF. REQUIRES pagesOnly for large PDFs (>20 pages). Use pagesOnly: '116-138' for specific pages. Use tocOnly: true for the table of contents. Without parameters it only works on PDFs of ≤20 pages.",
     customPromptInstructions:
       "For read_pdf: ALWAYS use find_files FIRST to locate the PDF. Use pagesOnly to request specific pages. NEVER call read_pdf without first finding the correct path.",
     parameters: {
       type: "object",
       properties: {
-        path: { type: "string", description: "Ruta del PDF en el vault." },
-        tocOnly: { type: "boolean", description: "Solo devuelve el índice/TOC del PDF." },
-        pagesOnly: { type: "string", description: "Rango específico de páginas (ej. '10-20' o '5,8,12')." },
+        path: { type: "string", description: "Path to the PDF in the vault." },
+        tocOnly: { type: "boolean", description: "Only returns the PDF table of contents / TOC." },
+        pagesOnly: { type: "string", description: "Specific page range (e.g. '10-20' or '5,8,12')." },
       },
       required: ["path"],
     },
     execute: async (params: Record<string, unknown>): Promise<string> => {
       const path = (params.path as string)?.trim();
-      if (!path) return "Error: ruta no proporcionada.";
+      if (!path) return "Error: no path provided.";
 
       try {
         let resolvedPath = path;
@@ -47,11 +47,11 @@ export function createReadPdfTool(app: App): AgentTool {
             exists = true;
           } else if (pdfFiles.length > 1) {
             const paths = pdfFiles.map(f => `  - ${f.path}`).join("\n");
-            return `Múltiples PDFs coinciden con "${path}":\n${paths}\nEspecifica la ruta exacta.`;
+            return `Multiple PDFs match "${path}":\n${paths}\nSpecify the exact path.`;
           }
         }
 
-        if (!exists) return `Error: "${path}" no existe.`;
+        if (!exists) return `Error: "${path}" does not exist.`;
 
         const arrayBuffer = await app.vault.adapter.readBinary(resolvedPath);
         const uint8 = new Uint8Array(arrayBuffer);
@@ -79,7 +79,7 @@ export function createReadPdfTool(app: App): AgentTool {
           for (let i = 1; i <= pdf.numPages; i++) pageRange.push(i);
         } else {
           // Large PDF without pagesOnly → force the model to specify
-          return `El PDF tiene ${pdf.numPages} páginas. Usa pagesOnly para leer páginas concretas (ej: pagesOnly: "116-138") o tocOnly: true para el índice.`;
+          return `The PDF has ${pdf.numPages} pages. Use pagesOnly to read specific pages (e.g. pagesOnly: "116-138") or tocOnly: true for the table of contents.`;
         }
 
         // Extract text with column awareness and header/footer filtering
@@ -91,7 +91,7 @@ export function createReadPdfTool(app: App): AgentTool {
           const txt = extractPageText(tc.items, pw, ph);
           if (txt) allPages.push({ num: i, text: txt });
         }
-        if (allPages.length === 0) return "No se encontró texto.";
+        if (allPages.length === 0) return "No text found.";
 
         // Detect TRUE TOC pages — only pages that are clearly a table of contents.
         // Uses multiple signals: heading words + dot-leader pattern (e.g. "Einleitung......42")
@@ -109,7 +109,7 @@ export function createReadPdfTool(app: App): AgentTool {
 
         // If tocOnly, return just the TOC
         if (tocOnly && tocPages.length > 0) {
-          let out = `[Índice del PDF — ${pdf.numPages} páginas totales]\n\n`;
+          let out = `[PDF Table of Contents — ${pdf.numPages} total pages]\n\n`;
           for (const p of tocPages) out += `${p.text}\n\n`;
           return out;
         }
@@ -118,25 +118,25 @@ export function createReadPdfTool(app: App): AgentTool {
         // (pagesOnly), skip the TOC/Content split — just show pages as-is since the
         // user explicitly asked for those pages (they are the content, not TOC).
         if (pagesOnly) {
-          let result = `[Páginas ${pagesOnly} de ${pdf.numPages} totales]\n\n`;
+          let result = `[Pages ${pagesOnly} of ${pdf.numPages} total]\n\n`;
           for (const p of allPages) {
-            result += `[Página ${p.num}]\n${p.text.substring(0, 1200)}\n\n`;
+            result += `[Page ${p.num}]\n${p.text.substring(0, 1200)}\n\n`;
           }
           return result;
         }
 
-        let result = `[${pdf.numPages} páginas totales]\n\n`;
+        let result = `[${pdf.numPages} total pages]\n\n`;
         if (tocPages.length > 0) {
-          result += `═══ ÍNDICE / TOC ═══\n\n`;
+          result += `═══ TABLE OF CONTENTS / TOC ═══\n\n`;
           for (const p of tocPages) result += `${p.text}\n\n`;
-          result += `═══ CONTENIDO ═══\n\n`;
+          result += `═══ CONTENT ═══\n\n`;
         }
         for (const p of contentPages) {
-          result += `[Página ${p.num}]\n${p.text.substring(0, 1200)}\n\n`;
+          result += `[Page ${p.num}]\n${p.text.substring(0, 1200)}\n\n`;
         }
 
         if (!pagesOnly && !tocOnly && pdf.numPages > 500) {
-          result += `[Nota: PDF de ${pdf.numPages} páginas. Solo se muestran las primeras 500.]`;
+          result += `[Note: PDF has ${pdf.numPages} pages. Only the first 500 are shown.]`;
         }
 
         return result;

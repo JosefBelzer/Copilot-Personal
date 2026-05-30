@@ -40,24 +40,33 @@ const CLASSIFICATION_PROMPT = `Classify this user request into tool categories. 
 
 Categories explained:
 - "read": user wants to READ content (notes, PDFs, frontmatter, active file)
-- "write": user wants to CREATE or MODIFY notes (crea, actualiza, poblar, escribe, modifica, genera, añade, completa, reescribe, etc.)
+- "write": user wants to CREATE or MODIFY notes (create, update, populate, write, modify, generate, add, complete, rewrite, crea, actualiza, poblar, escribe, modifica, genera, añade, completa, reescribe)
 - "search": user wants to FIND or LOCATE files, list notes, fulltext search, vault stats
-- "semantic": user wants semantic/vector search (busca información, encuentra conceptos)
+- "semantic": user wants semantic/vector search (find information, discover concepts)
 - "web": user wants internet/web search
 - "media": user wants image analysis OR PDF page rendering OR PDF image extraction OR YouTube transcripts
 
 Examples:
 "crea una nota para cada uno: [[A]], [[B]]" → ["write"]
+"create a note for each: [[Readme]], [[Changelog]]" → ["write"]
+"read note X and tell me what it says" → ["read"]
 "lee la nota X y dime qué dice" → ["read"]
+"search all notes about quality management" → ["search", "semantic"]
 "busca todas las notas sobre calidad" → ["search", "semantic"]
+"review note X against PDF Y page 27" → ["read", "search", "write"]
 "revisa la nota X según el PDF Y pag 27" → ["read", "search", "write"]
+"create notes for: [[A]], [[B]], [[C]]" → ["write"]
 "crea notas para: [[A]], [[B]], [[C]]" → ["write"]
+"search the web about ISO 9001" → ["web"]
 "busca en internet sobre ISO 9001" → ["web"]
+"analyze this image" → ["media"]
 "analiza esta imagen" → ["media"]
+"update note X with info from PDF" → ["read", "write", "search"]
 "actualiza la nota X con info del PDF" → ["read", "write", "search"]
+"populate notes X, Y, Z with content from PDF pages 30-40" → ["read", "write", "search", "media"]
 "pobla las notas X, Y, Z con contenido del PDF páginas 30-40" → ["read", "write", "search", "media"]
+"summarize the chapter from PDF and include images" → ["read", "write", "search", "media"]
 "resume el capítulo del PDF e incluye las imágenes" → ["read", "write", "search", "media"]
-"pobles la nota X" → ["read", "write", "search"]
 
 Request: `;
 
@@ -77,7 +86,7 @@ export class ToolRouter {
   async route(userQuery: string): Promise<RoutedTools> {
     // Fast path: unambiguous wiki-link list with create verbs — skip LLM to save tokens
     const wikiLinks = userQuery.match(/\[\[([^\]]+)\]\]/g);
-    if (wikiLinks && wikiLinks.length >= 2 && /\b(crea|genera|crear|generar|a[nñ]ade)\b/i.test(userQuery)) {
+    if (wikiLinks && wikiLinks.length >= 2 && /\b(crea|genera|crear|generar|a[nñ]ade|create|generate|make|add|populate)\b/i.test(userQuery)) {
       return this.buildRouted(["write"]);
     }
 
