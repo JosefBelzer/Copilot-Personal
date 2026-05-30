@@ -4,6 +4,8 @@ AI assistant for Obsidian. Multimodal chat with real streaming, RAG semantic sea
 
 > 📖 [Documentación en Español](DOCUMENTATION_ES.md)
 
+> ⚠️ **Commercial Disclosure:** This plugin offers a Free tier (unlimited basic chat, 50 messages/day, 3 tools) and a **Pro tier** ($4.99/mo via Lemon Squeezy) that unlocks Agent Mode, web search, semantic RAG, PDF image extraction, and multi-provider fallback. The Pro tier requires a paid license key validated against a Cloudflare Worker (`copilot-personal-worker.copilot-personal.workers.dev`). No account or payment is required for the Free tier. No telemetry or analytics are collected.
+
 ---
 
 ## Key Features
@@ -184,4 +186,4 @@ npx jest --verbose    # Run 151 tests across 16 suites
 
 ## License
 
-UNLICENSED — Commercial software. All rights reserved.
+MIT License — see [LICENSE](LICENSE) file for details.

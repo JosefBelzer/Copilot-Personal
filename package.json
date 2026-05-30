@@ -11,7 +11,7 @@
   },
   "keywords": [],
   "author": "Josef",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "dependencies": {
     "pdfjs-dist": "^5.4.449",
     "unpdf": "^1.6.2",
