@@ -2,7 +2,7 @@
 
 > AI assistant with advanced agent capabilities for Obsidian. Multimodal chat with real streaming, semantic RAG, autonomous agent (17 tools), 11 LLM providers with native tool calling and multi-provider fallback, PDF rendering with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (clean store / obfuscated distribution), and intelligent note auto-save. 151 tests.
 
-> 📖 [Documentación en Español](DOCUMENTATION_ES.md)
+> 📖 [Spanish documentation](DOCUMENTATION_ES.md)
 
 ---
 
@@ -85,17 +85,20 @@ uvicorn main:app --host 127.0.0.1 --port 8000
 - No agent mode · No web search · No PDF images · No semantic RAG
 - Pro options appear **disabled** (🔒) in settings UI
 
-### ⭐ Pro ($4.99/mo via Lemon Squeezy)
+### ⭐ Pro ($4.99/mo — pending payment gateway activation)
+
+> ⏳ **Note:** The payment gateway (Lemon Squeezy) is pending account approval. Pro licenses are not yet available for purchase. You'll be notified as soon as payments are live. In the meantime, enjoy the full Free tier with no limitations.
+
 - **Unlimited messages** · **Agent mode** (17 tools)
 - **Web search** · **PDF with images** · **Semantic RAG**
 - **Chat export** (MD/JSON) · **Slash commands** · Priority support
 - **Multi-provider fallback** · **Per-provider API keys**
 
 ### Activating Pro
-1. Purchase a Pro subscription on the sales page
+1. Purchase a Pro subscription (once the payment gateway is activated)
 2. You'll receive your **License Key** via email (Lemon Squeezy UUID format, e.g., `056b9494-...`)
 3. Settings → Copilot Personal → License Key → paste the key
-4. You'll see `✅ Licencia Pro activada correctamente.`
+4. You'll see `✅ Pro license activated successfully.`
 5. The chat badge changes to `⭐ Pro`
 6. All Pro options unlock automatically in settings
 
@@ -330,7 +333,7 @@ Fundamentals_of_Quality_Management.pdf, page 27
 - [x] **CircuitBreaker** on ALL providers (chat + stream + embed)
 - [x] **Markdown sanitization**: protection against `<script>` and `on*` handlers
 - [x] **Console output disabled** on obfuscated bundle
-- [x] **UNLICENSED** for commercial product
+- [x] **MIT License** for open-source compliance
 
 ### v1.4
 - [x] **Multi-Provider Fallback (Pro)** — automatic capability compensation

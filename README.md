@@ -1,8 +1,8 @@
-# Copilot Personal v1.4.1 — Obsidian AI Agent Plugin
+# Copilot Personal v1.4.3 — Obsidian AI Agent Plugin
 
 AI assistant for Obsidian. Multimodal chat with real streaming, RAG semantic search, autonomous agent (17 tools), 11 LLM providers, multi-provider fallback, PDF processing with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (store/obfuscated). 151 tests. TypeScript strict mode.
 
-> 📖 [Documentación en Español](DOCUMENTATION_ES.md)
+> 📖 [Spanish documentation](DOCUMENTATION_ES.md)
 
 > ⚠️ **Commercial Disclosure:** This plugin offers a Free tier (unlimited basic chat, 50 messages/day, 3 tools) and a **Pro tier** ($4.99/mo via Lemon Squeezy) that unlocks Agent Mode, web search, semantic RAG, PDF image extraction, and multi-provider fallback. The Pro tier requires a paid license key validated against a Cloudflare Worker (`copilot-personal-worker.copilot-personal.workers.dev`). No account or payment is required for the Free tier. No telemetry or analytics are collected.
 
@@ -131,17 +131,19 @@ uvicorn main:app --host 127.0.0.1 --port 8000
 - 3 tools: `read_note`, `read_pdf`, `find_files`
 - Pro options appear **disabled** (🔒) in settings UI
 
-### ⭐ Pro ($4.99/mo via Lemon Squeezy)
+### ⭐ Pro ($4.99/mo — pending payment gateway activation)
+> ⏳ **Note:** The payment gateway (Lemon Squeezy) is pending account approval. Pro licenses are not yet available for purchase. You'll be notified as soon as payments are live. In the meantime, enjoy the full Free tier with no limitations.
+
 - **Unlimited messages** · **Agent mode** (17 tools)
 - **Web search** · **PDF with images** · **Semantic RAG**
 - **Chat export** (MD/JSON) · **Slash commands** · Priority support
 - **Multi-provider fallback** · **Per-provider API keys**
 
-### Activating Pro
+### Activating Pro (once payments are live)
 1. Purchase a Pro subscription
 2. Receive your **License Key** via email (Lemon Squeezy UUID format, e.g., `056b9494-...`)
 3. Settings → Copilot Personal → License Key → paste the key
-4. You'll see `✅ Licencia Pro activada correctamente.`
+4. You'll see `✅ Pro license activated successfully.`
 5. Chat badge changes to `⭐ Pro`
 
 ### License Security
