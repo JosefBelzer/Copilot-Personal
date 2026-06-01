@@ -496,7 +496,7 @@ export class CopilotChatView extends ItemView {
           progressEl.className = "copilot-agent-progress";
           this.chatHistoryEl.appendChild(progressEl);
         }
-        progressEl.setText(`⏳ Paso ${toolStepCount}: ${event.toolName}...`);
+        progressEl.setText(`⏳ Step ${toolStepCount}: ${event.toolName}...`);
         progressEl.style.color = "var(--text-accent)";
       } else if (event.type === "tool-end") {
         // Track writing tools
