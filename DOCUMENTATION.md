@@ -1,4 +1,4 @@
-# Copilot Personal — Documentation v1.4.1
+# Copilot Personal — Documentation v1.4.4
 
 > AI assistant with advanced agent capabilities for Obsidian. Multimodal chat with real streaming, semantic RAG, autonomous agent (17 tools), 11 LLM providers with native tool calling and multi-provider fallback, PDF rendering with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (clean store / obfuscated distribution), and intelligent note auto-save. 151 tests.
 
@@ -318,7 +318,14 @@ Fundamentals_of_Quality_Management.pdf, page 27
 
 ## 15. Roadmap
 
-### v1.4.1 (Current — May 2026)
+### v1.4.4 (Current — June 2026)
+- [x] All remaining Spanish UI strings translated to English
+- [x] Agent progress indicator: `Paso` → `Step`
+- [x] Legacy `apiKey` auto-migrated to per-provider key on load
+- [x] `pdf.worker.min.mjs` removed from release (CDN fallback)
+- [x] GitHub artifact attestations via release workflow
+
+### v1.4.3
 - [x] **Dual-build**: `npm run build:store` (clean, Obsidian review) + `npm run build` (obfuscated, distribution)
 - [x] **Cloudflare Worker deployed**: `copilot-personal-worker.copilot-personal.workers.dev` — cloud validation, Lemon Squeezy webhook, device limit
 - [x] **Per-Provider API Keys**: each provider remembers its own key (DeepSeek, OpenAI, Gemini, etc.)
@@ -326,16 +333,13 @@ Fundamentals_of_Quality_Management.pdf, page 27
 - [x] **UI gating Free/Pro**: toggles disabled (🔒) in settings when tier=free, error messages on validation
 - [x] **Persistent counter**: daily message limit survives Obsidian restarts
 - [x] **Web search token** configurable from settings (no longer hardcoded)
-- [x] **Path traversal protection** improved in `readNoteTool` (detects `..`, `.`, absolute paths, encoded)
+- [x] **Path traversal protection** improved in `readNoteTool`
 - [x] **Timing-safe auth** on Worker admin endpoint
 - [x] **Real-time UI updates**: header badges and model selector refresh instantly on settings change
 - [x] **Test suite**: 151 tests in 16 suites
 - [x] **CircuitBreaker** on ALL providers (chat + stream + embed)
 - [x] **Markdown sanitization**: protection against `<script>` and `on*` handlers
-- [x] **Console output disabled** on obfuscated bundle
 - [x] **MIT License** for open-source compliance
-
-### v1.4
 - [x] **Multi-Provider Fallback (Pro)** — automatic capability compensation
 - [x] Agent mode with 17 tools
 - [x] ToolRouter with LLM classification (70-90% token savings)
@@ -387,4 +391,4 @@ Fundamentals_of_Quality_Management.pdf, page 27
 
 ---
 
-**Copilot Personal v1.4.1** — Made with ❤️ for the Obsidian community.
+**Copilot Personal v1.4.4** — Made with ❤️ for the Obsidian community.

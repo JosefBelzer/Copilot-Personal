@@ -1,4 +1,4 @@
-# Copilot Personal — Documentación v1.4.1
+# Copilot Personal — Documentación v1.4.4
 
 > Asistente de IA con capacidades agentivas avanzadas para Obsidian. Chat multimodal con streaming real, RAG semántico, agente autónomo (17 herramientas), 11 proveedores LLM con tool calling nativo y fallback multi-proveedor, renderizado de PDFs con `unpdf`, sistema de licencias Free/Pro con validación cloud + grace period, CircuitBreaker en todos los providers, dual-build (store limpio / distribution ofuscado), y auto-guardado inteligente de notas. 151 tests.
 
@@ -202,7 +202,7 @@ Vision:     qwen2.5-vl-27b-instruct (opcional)
 | `⭐ Pro` | Licencia Pro activa — todas las funciones desbloqueadas |
 | `🔒 Local` | Datos procesados en tu equipo (LM Studio) |
 | `☁️ Cloud` | Datos enviados a servidor externo (DeepSeek/OpenAI) |
-| `⏳ Paso N: tool...` | El agente está ejecutando una herramienta |
+| `⏳ Step N: tool...` | El agente está ejecutando una herramienta |
 | `⚠️ NOTA NO GUARDADA` | El modelo escribió en el chat sin guardar en una nota |
 | `⚠️ Links inventados` | El modelo sugirió enlaces a notas que no existen |
 
@@ -312,7 +312,14 @@ Grundlagen_des_Qualitätsmanagements.pdf, página 27
 ## 14. Atajos de teclado
 ## 15. Roadmap
 
-### v1.4.1 (Actual — Mayo 2026)
+### v1.4.4 (Actual — Junio 2026)
+- [x] Todos los strings de UI restantes traducidos al inglés
+- [x] Indicador de progreso del agente: `Paso` → `Step`
+- [x] Migración automática de `apiKey` legacy a clave por proveedor
+- [x] `pdf.worker.min.mjs` eliminado del release (usa CDN)
+- [x] GitHub artifact attestations vía workflow
+
+### v1.4.3
 - [x] **Dual-build**: `npm run build:store` (limpio, Obsidian review) + `npm run build` (ofuscado, distribución)
 - [x] **Cloudflare Worker desplegado**: `copilot-personal-worker.copilot-personal.workers.dev` — validación cloud, webhook Lemon Squeezy, device limit
 - [x] **API Keys por proveedor**: cada provider recuerda su propia key (DeepSeek, OpenAI, Gemini, etc.)
@@ -326,7 +333,7 @@ Grundlagen_des_Qualitätsmanagements.pdf, página 27
 - [x] **CircuitBreaker** en TODOS los providers (chat + stream + embed)
 - [x] **Sanitización Markdown**: protección contra `<script>` y `on*` handlers
 - [x] **Console output disabled** en bundle ofuscado
-- [x] **Licencia UNLICENSED** para producto comercial
+- [x] **Licencia MIT** para cumplimiento open-source
 
 ### v1.4
 - [x] **Multi-Provider Fallback (Pro)** — compensación automática de capacidades entre proveedores
@@ -346,7 +353,7 @@ Grundlagen_des_Qualitätsmanagements.pdf, página 27
 - [x] BaseOpenAIProvider unificado + buildBody() centralizado
 - [x] AutoSaveManager integrado — splitNoteSections, validateWikiLinks, findNoteByHeading
 - [x] Avatares en chat (👤/🤖/🔧) + animación fade-in
-- [x] Progress tracker visual del agente (⏳ Paso N: tool...)
+- [x] Progress tracker visual del agente (⏳ Step N: tool...)
 - [x] Landing page + documentación completa
 - [x] TypeScript strict mode (0 errores)
 - [x] Ofuscación de build con javascript-obfuscator (rc4, CF flattening, dead code)
@@ -383,4 +390,4 @@ Grundlagen_des_Qualitätsmanagements.pdf, página 27
 
 ---
 
-**Copilot Personal v1.4.1** — Hecho con ❤️ para la comunidad Obsidian.
+**Copilot Personal v1.4.4** — Hecho con ❤️ para la comunidad Obsidian.

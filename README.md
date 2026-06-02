@@ -1,4 +1,4 @@
-# Copilot Personal v1.4.3 — Obsidian AI Agent Plugin
+# Copilot Personal v1.4.4 — Obsidian AI Agent Plugin
 
 AI assistant for Obsidian. Multimodal chat with real streaming, RAG semantic search, autonomous agent (17 tools), 11 LLM providers, multi-provider fallback, PDF processing with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (store/obfuscated). 151 tests. TypeScript strict mode.
 
@@ -184,7 +184,11 @@ npx jest --verbose    # Run 151 tests across 16 suites
 ```
 
 ### Testing
-16 test suites covering: license management, circuit breaker, provider auto-detection, tool registry, agent detection, read/write tools, PDF tools, vector store CRUD, index operations, LM Studio service, settings, singleton reset, chat flow.
+16 test suites covering: license management, circuit breaker, provider auto-detection, tool registry, agent detection, read/write tools, PDF tools, vector store CRUD, index operations, LM Studio service, settings, singleton reset, chat flow. Run with `npx jest --verbose`.
+
+### Notes
+- **Legacy API key migration:** If you previously stored your API key in the old single-key field, it is automatically migrated to the per-provider key on first load after upgrading to v1.4.4.
+- **Lemon Squeezy:** Payment gateway is pending account approval. Pro licenses not yet available.
 
 ---
 
