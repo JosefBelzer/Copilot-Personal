@@ -3,3 +3,4 @@ node_modules
 data.json
 *.log
 copilot-personal-pro.zip
+pdf.worker.min.mjs
