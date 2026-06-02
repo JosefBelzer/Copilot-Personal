@@ -160,7 +160,7 @@ export function getApiKeyForProvider(settings: CopilotSettings, provider: string
     lmstudio: settings.lmStudioApiKey,
   };
 
-  // Per-provider key exists (even if empty — don't fallback to legacy)
+  // Per-provider key (migration from legacy apiKey happens in main.ts onload)
   if (provider in keyMap) {
     return keyMap[provider] || "";
   }

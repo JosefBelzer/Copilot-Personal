@@ -42,6 +42,9 @@ export default class CopilotPlugin extends Plugin {
   async onload() {
     await this.loadSettings();
 
+    // Migrate legacy apiKey to per-provider keys for backward compatibility
+    this.migrateLegacyApiKey();
+
     this.providerManager = new ProviderManager(this.settings);
     const llmProvider = this.providerManager.getProviderFor("embeddings");
 
@@ -238,6 +241,19 @@ export default class CopilotPlugin extends Plugin {
 
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  }
+
+  /** Migrate legacy single apiKey to the current provider's per-provider key */
+  private migrateLegacyApiKey(): void {
+    if (!this.settings.apiKey) return;
+    const provider = this.settings.providerType === "auto" ? "deepseek" : this.settings.providerType;
+    const keyField = `${provider}ApiKey` as keyof CopilotSettings;
+    if (!this.settings[keyField]) {
+      (this.settings as any)[keyField] = this.settings.apiKey;
+      // Also save after migration
+      this.saveData(this.settings);
+      console.log(`[Migrate] Legacy apiKey copied to ${keyField}`);
+    }
   }
 
   async saveSettings() {
