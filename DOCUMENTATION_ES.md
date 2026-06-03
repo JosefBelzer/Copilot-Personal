@@ -1,4 +1,4 @@
-# Copilot Personal — Documentación v1.4.4
+# Copilot Personal — Documentación v1.4.5
 
 > Asistente de IA con capacidades agentivas avanzadas para Obsidian. Chat multimodal con streaming real, RAG semántico, agente autónomo (17 herramientas), 11 proveedores LLM con tool calling nativo y fallback multi-proveedor, renderizado de PDFs con `unpdf`, sistema de licencias Free/Pro con validación cloud + grace period, CircuitBreaker en todos los providers, dual-build (store limpio / distribution ofuscado), y auto-guardado inteligente de notas. 151 tests.
 
@@ -390,4 +390,4 @@ Grundlagen_des_Qualitätsmanagements.pdf, página 27
 
 ---
 
-**Copilot Personal v1.4.4** — Hecho con ❤️ para la comunidad Obsidian.
+**Copilot Personal v1.4.5** — Hecho con ❤️ para la comunidad Obsidian.

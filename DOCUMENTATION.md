@@ -1,4 +1,4 @@
-# Copilot Personal — Documentation v1.4.4
+# Copilot Personal — Documentation v1.4.5
 
 > AI assistant with advanced agent capabilities for Obsidian. Multimodal chat with real streaming, semantic RAG, autonomous agent (17 tools), 11 LLM providers with native tool calling and multi-provider fallback, PDF rendering with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (clean store / obfuscated distribution), and intelligent note auto-save. 151 tests.
 
@@ -294,11 +294,40 @@ Fundamentals_of_Quality_Management.pdf, page 27
 
 ## 8. Working with PDFs
 
-## 9. Semantic Search
+- **Text extraction:** `read_pdf` extracts text from any PDF in your vault. Use `pagesOnly: "10-20"` for specific pages or `tocOnly: true` for the table of contents.
+- **Page rendering:** `render_pdf_pages` converts PDF pages to PNG images saved in your vault. Use for embedding diagrams and figures with `![[path]]`.
+- **Image extraction:** `extract_pdf_images` extracts embedded JPG/PNG images from PDF pages. Falls back to full-page rendering if no raster images are found.
+- **Auto-find:** All PDF tools automatically search your vault to locate the file — you don't need the full path.
+
+## 9. Semantic Search (RAG)
+
+- Enable in Settings → `Enable semantic search`
+- Run **"Copilot: Index vault for semantic search"** from the command palette (Ctrl+P) to create the initial index
+- After indexing, semantic search is available via the Agent or the `search_vault_semantic` tool
+- The index auto-updates when files are created, modified, or deleted
+- Results include relevance scores and file paths
 
 ## 10. Exporting Conversations
 
+- **Markdown:** Ctrl+P → "Copilot: Export chat as Markdown" → saves to your vault
+- **JSON:** Ctrl+P → "Copilot: Export chat as JSON" → structured export with full metadata
+- **Save to file:** Click the 💾 button in chat to save the current conversation
+
 ## 11. Obsidian Commands
+
+Available via Ctrl+P (Command Palette):
+
+| Command | Action |
+|---------|--------|
+| Open Copilot Chat | Open the chat panel |
+| Send selection to Copilot | Pass selected text to chat |
+| Index vault for semantic search | Build/rebuild search index |
+| Clear semantic search index | Wipe the index |
+| New chat | Start a fresh conversation |
+| Save chat to file | Save current conversation |
+| Quick Ask | Fast query popup without opening the chat |
+| Export chat as Markdown | Export conversation to .md |
+| Export chat as JSON | Export conversation to .json |
 
 ## 12. Privacy & Security
 
@@ -312,7 +341,24 @@ Fundamentals_of_Quality_Management.pdf, page 27
 
 ## 13. Troubleshooting
 
+| Problem | Solution |
+|---------|----------|
+| **Empty assistant bubble** | Check your API key in Settings → API Configuration. Run `location.reload()` in the Obsidian console (Ctrl+Shift+I). |
+| **"License rejected: not_found"** | The key hasn't been provisioned yet. Wait for the confirmation email after purchase. |
+| **Agent mode disabled (🔒 Pro)** | Requires a Pro license or the `COPIPRO-DEMO-DEMO-DEMO` key in debug mode. |
+| **Provider error / ECONNREFUSED** | Check your API URL, key, and internet connection. For LM Studio, make sure the server is running. |
+| **Semantic search not working** | Run **"Index vault"** from the command palette first. Check that your embedding model generates valid vectors. |
+| **Plugin not responding** | Open DevTools (Ctrl+Shift+I) → check Console for errors. Reload Obsidian. |
+| **Rate limit reached** | Free tier: 50 messages/day. Upgrade to Pro for unlimited messages. |
+
 ## 14. Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Enter` | Send message |
+| `Shift+Enter` | New line in message |
+| `Ctrl+P` → Copilot | All plugin commands |
+| `Drag & Drop` | Add file context to chat (.md, .pdf, .png, .jpg) |
 
 ## 15. Roadmap
 
@@ -389,4 +435,4 @@ Fundamentals_of_Quality_Management.pdf, page 27
 
 ---
 
-**Copilot Personal v1.4.4** — Made with ❤️ for the Obsidian community.
+**Copilot Personal v1.4.5** — Made with ❤️ for the Obsidian community.

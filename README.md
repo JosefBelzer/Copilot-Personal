@@ -1,4 +1,4 @@
-# Copilot Personal v1.4.4 — Obsidian AI Agent Plugin
+# Copilot Personal v1.4.5 — Obsidian AI Agent Plugin
 
 AI assistant for Obsidian. Multimodal chat with real streaming, RAG semantic search, autonomous agent (17 tools), 11 LLM providers, multi-provider fallback, PDF processing with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (store/obfuscated). 151 tests. TypeScript strict mode.
 
