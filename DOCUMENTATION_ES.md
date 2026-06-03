@@ -95,7 +95,7 @@ uvicorn main:app --host 127.0.0.1 --port 8000
 - **Multi-provider fallback** · **API keys por proveedor**
 
 ### Activar Pro
-1. Compra una suscripción Pro en la página de venta
+1. Compra una suscripción Pro en [belzersoftware.lemonsqueezy.com](https://belzersoftware.lemonsqueezy.com/checkout/buy/85655f95-93f7-4649-954a-8bc62472f302)
 2. Recibirás tu **License Key** por email (formato UUID de Lemon Squeezy, ej: `056b9494-...`)
 3. Settings → Copilot Personal → License Key → pega la key
 4. Verás `✅ Licencia Pro activada correctamente.`

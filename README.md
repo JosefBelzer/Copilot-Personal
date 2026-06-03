@@ -131,16 +131,15 @@ uvicorn main:app --host 127.0.0.1 --port 8000
 - 3 tools: `read_note`, `read_pdf`, `find_files`
 - Pro options appear **disabled** (🔒) in settings UI
 
-### ⭐ Pro ($4.99/mo — pending payment gateway activation)
-> ⏳ **Note:** The payment gateway (Lemon Squeezy) is pending account approval. Pro licenses are not yet available for purchase. You'll be notified as soon as payments are live. In the meantime, enjoy the full Free tier with no limitations.
+### ⭐ Pro ($4.99/mo via Lemon Squeezy)
 
 - **Unlimited messages** · **Agent mode** (17 tools)
 - **Web search** · **PDF with images** · **Semantic RAG**
 - **Chat export** (MD/JSON) · **Slash commands** · Priority support
 - **Multi-provider fallback** · **Per-provider API keys**
 
-### Activating Pro (once payments are live)
-1. Purchase a Pro subscription
+### Activating Pro
+1. Purchase a Pro subscription at [belzersoftware.lemonsqueezy.com](https://belzersoftware.lemonsqueezy.com/checkout/buy/85655f95-93f7-4649-954a-8bc62472f302)
 2. Receive your **License Key** via email (Lemon Squeezy UUID format, e.g., `056b9494-...`)
 3. Settings → Copilot Personal → License Key → paste the key
 4. You'll see `✅ Pro license activated successfully.`
@@ -188,7 +187,6 @@ npx jest --verbose    # Run 151 tests across 16 suites
 
 ### Notes
 - **Legacy API key migration:** If you previously stored your API key in the old single-key field, it is automatically migrated to the per-provider key on first load after upgrading to v1.4.4.
-- **Lemon Squeezy:** Payment gateway is pending account approval. Pro licenses not yet available.
 
 ---
 
