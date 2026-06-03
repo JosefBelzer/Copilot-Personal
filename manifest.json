@@ -1,7 +1,7 @@
 {
   "id": "copilot-personal",
   "name": "Copilot Personal",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "minAppVersion": "1.7.0",
   "description": "AI agent with 17 tools, multi-provider LLM (11 providers), RAG semantic search, PDF extraction, web search, and autonomous note creation.",
   "author": "Josef",
