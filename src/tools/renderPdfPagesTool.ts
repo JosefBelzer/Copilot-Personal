@@ -1,6 +1,7 @@
 import { App } from "obsidian";
 import { AgentTool } from "../agent/ToolRegistry";
 import { normalizePath } from "../utils/pathUtils";
+import { t } from "../i18n";
 
 const TAG = "[render_pdf_pages]";
 
@@ -15,25 +16,25 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
   return {
     name: "render_pdf_pages",
     description:
-      "Renders specific PDF pages as PNG images and saves them in the vault. Returns exact paths (e.g. 'Resources/PDF_images/PDF_page_40.png'). IMPORTANT: use the EXACT paths returned by this tool for ![[embeds]]. Do NOT invent paths.",
+      t("tools.renderPdfPages.description"),
     parameters: {
       type: "object",
       properties: {
         path: {
           type: "string",
-          description: "Path to the PDF in the vault.",
+          description: t("tools.renderPdfPages.paramPath"),
         },
         pages: {
           type: "string",
-          description: "Pages to render (e.g. '30-33', '5,8,12', '30').",
+          description: t("tools.renderPdfPages.paramPages"),
         },
         outputFolder: {
           type: "string",
-          description: "Folder to save the images (optional, default: next to PDF).",
+          description: t("tools.renderPdfPages.paramOutputFolder"),
         },
         scale: {
           type: "number",
-          description: "Render scale (1.0 = 72 DPI, 2.0 = 144 DPI). Default: 2.0.",
+          description: t("tools.renderPdfPages.paramScale"),
         },
       },
       required: ["path", "pages"],
@@ -44,8 +45,8 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
       const outputFolder = (params.outputFolder as string)?.trim() || "";
       const scale = (params.scale as number) || 2.0;
 
-      if (!raw) return "Error: no PDF path provided.";
-      if (!pagesSpec) return "Error: no pages specified.";
+      if (!raw) return t("tools.renderPdfPages.error.noPath");
+      if (!pagesSpec) return t("tools.renderPdfPages.error.noPages");
 
       try {
         // Auto-find the PDF if the path is wrong
@@ -61,14 +62,14 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
             resolvedPath = pdfFiles[0].path;
             exists = true;
           } else if (pdfFiles.length > 1) {
-            return `Multiple PDFs match "${raw}". Specify the exact path.`;
+            return t("tools.renderPdfPages.multiplePdfs", { path: raw });
           }
         }
-        if (!exists) return `Error: "${raw}" does not exist.`;
+        if (!exists) return t("tools.renderPdfPages.error.notFound", { path: raw });
 
         // Parse page range
         const pageNums = parsePageRange(pagesSpec, 9999);
-        if (pageNums.length === 0) return `Error: invalid page range: "${pagesSpec}".`;
+        if (pageNums.length === 0) return t("tools.renderPdfPages.error.invalidRange", { range: pagesSpec });
 
         // Determine output folder
         const pdfDir = resolvedPath.substring(0, resolvedPath.lastIndexOf("/") + 1);
@@ -90,7 +91,7 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
               }
             }
           } catch (err) {
-            return `Error: could not create output folder "${outDir}": ${err instanceof Error ? err.message : String(err)}`;
+            return t("tools.renderPdfPages.error.createFolder", { folder: outDir, error: err instanceof Error ? err.message : String(err) });
           }
         }
 
@@ -105,7 +106,7 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
 
         const validPages = pageNums.filter(n => n >= 1 && n <= pdf.numPages);
         if (validPages.length === 0) {
-          return `Error: no valid pages. The PDF has ${pdf.numPages} pages.`;
+          return t("tools.renderPdfPages.error.noValidPages", { pages: pdf.numPages });
         }
 
         const results: string[] = [];
@@ -121,9 +122,8 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
             canvas.height = Math.floor(viewport.height);
             const ctx = canvas.getContext("2d");
             if (!ctx) {
-              const err = `Error: could not create canvas 2D context for page ${pageNum}.`;
-              console.error(`[renderPdfPages] ${err}`);
-              results.push(err);
+              console.error(`[renderPdfPages] Error: could not create canvas 2D context for page ${pageNum}.`);
+              results.push(t("tools.renderPdfPages.error.canvas", { page: pageNum }));
               continue;
             }
 
@@ -132,9 +132,10 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
             try {
               await page.render(renderParams).promise;
             } catch (renderErr) {
-              const err = `Error rendering page ${pageNum}: ${renderErr instanceof Error ? renderErr.message : String(renderErr)}`;
+              const renderMsg = renderErr instanceof Error ? renderErr.message : String(renderErr);
+              const err = t("tools.renderPdfPages.error.renderError", { page: pageNum, error: renderMsg });
               console.error(`[renderPdfPages] ${err}`);
-              results.push(`❌ ${err}`);
+              results.push(t("tools.renderPdfPages.fail", { error: err }));
               continue;
             }
 
@@ -157,17 +158,18 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
             const filePath = normalizePath(`${outDir}/${fileName}`);
             await app.vault.createBinary(filePath, arrayBuffer);
 
-            results.push(`✅ ${filePath}`);
+            results.push(t("tools.renderPdfPages.success", { path: filePath }));
           } catch (err) {
-            results.push(`❌ Page ${pageNum}: ${err instanceof Error ? err.message : String(err)}`);
+            results.push(t("tools.renderPdfPages.fail", { error: `Page ${pageNum}: ${err instanceof Error ? err.message : String(err)}` }));
           }
         }
 
-        return `Rendered ${results.filter(r => r.startsWith("✅")).length}/${validPages.length} pages:\n${results.join("\n")}`;
+        const rendered = results.filter(r => r.startsWith("✅")).length;
+        return t("tools.renderPdfPages.result", { rendered, total: validPages.length, results: results.join("\n") });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`${TAG} Failed:`, msg);
-        return `Error rendering PDF pages: ${msg}`;
+        return t("tools.renderPdfPages.error.topLevel", { error: msg });
       }
     },
   };

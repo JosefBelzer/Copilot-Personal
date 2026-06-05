@@ -15,7 +15,8 @@ export interface CopilotSettings {
   xaiApiKey: string;
   // LM Studio already has its own key (lmStudioApiKey below) — kept for clarity
   apiUrl: string;
-  providerType: "auto" | "deepseek" | "openai" | "anthropic" | "openrouter" | "lmstudio" | "gemini" | "mistral" | "groq" | "perplexity" | "xai";
+  providerType: "auto" | "deepseek" | "openai" | "anthropic" | "openrouter" | "lmstudio" | "gemini" | "mistral" | "groq" | "perplexity" | "xai" | "budget";
+  language: string;
   chatModel: string;
   embeddingModel: string;
   visionModel: string;
@@ -91,6 +92,7 @@ export const DEFAULT_SETTINGS: CopilotSettings = {
   xaiApiKey: "",
   apiUrl: "https://api.deepseek.com",
   providerType: "auto",
+  language: "en",
   chatModel: "deepseek-v4-flash",
   embeddingModel: "deepseek-embedding",
   visionModel: "deepseek-v4-flash",

@@ -1,6 +1,7 @@
 import { App } from "obsidian";
 import { AgentTool } from "../agent/ToolRegistry";
 import { normalizePath } from "../utils/pathUtils";
+import { t } from "../i18n";
 
 const TAG = "[extract_pdf_images]";
 
@@ -13,13 +14,13 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
   return {
     name: "extract_pdf_images",
     description:
-      "Extracts embedded JPG/PNG images from PDF pages. Requires 'unpdf' installed (npm install unpdf). If no raster images (vector graphics/diagrams), renders the full page as PNG. Use render_pdf_pages if you only need full pages.",
+      t("tools.extractPdfImages.description"),
     parameters: {
       type: "object",
       properties: {
-        path: { type: "string", description: "Path to the PDF in the vault." },
-        pages: { type: "string", description: "Pages (e.g. '49-54', '27,30')." },
-        outputFolder: { type: "string", description: "Output folder (optional)." },
+        path: { type: "string", description: t("tools.extractPdfImages.paramPath") },
+        pages: { type: "string", description: t("tools.extractPdfImages.paramPages") },
+        outputFolder: { type: "string", description: t("tools.extractPdfImages.paramOutputFolder") },
       },
       required: ["path", "pages"],
     },
@@ -28,7 +29,7 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
       const pagesSpec = (params.pages as string)?.trim();
       const outputFolder = (params.outputFolder as string)?.trim() || "";
 
-      if (!raw || !pagesSpec) return "Error: path and pages required.";
+      if (!raw || !pagesSpec) return t("tools.extractPdfImages.error.pathAndPages");
 
       try {
         let resolvedPath = normalizePath(raw);
@@ -38,12 +39,12 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
             f.name.toLowerCase().endsWith(".pdf") && f.name.toLowerCase().includes(basename)
           );
           if (pdfFiles.length === 1) resolvedPath = pdfFiles[0].path;
-          else if (pdfFiles.length > 1) return "Multiple PDFs match. Specify exact path.";
-          else return `Error: "${raw}" does not exist.`;
+          else if (pdfFiles.length > 1) return t("tools.extractPdfImages.multiplePdfs");
+          else return t("tools.extractPdfImages.error.notFound", { path: raw });
         }
 
         const pageNums = parsePageRange(pagesSpec, 9999);
-        if (pageNums.length === 0) return `Error: invalid range: "${pagesSpec}".`;
+        if (pageNums.length === 0) return t("tools.extractPdfImages.error.invalidRange", { range: pagesSpec });
 
         const pdfDir = resolvedPath.substring(0, resolvedPath.lastIndexOf("/") + 1);
         const pdfBasename = resolvedPath.split("/").pop()?.replace(/\.pdf$/i, "") || "pdf";
@@ -63,7 +64,7 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
         const pdf = await pdfjsLib.getDocument({ data: uint8 }).promise;
 
         const validPages = pageNums.filter(n => n >= 1 && n <= pdf.numPages);
-        if (validPages.length === 0) return `Error: pages out of range (${pdf.numPages} total).`;
+        if (validPages.length === 0) return t("tools.extractPdfImages.error.outOfRange", { pages: pdf.numPages });
 
         const results: string[] = [];
         let totalExtracted = 0;
@@ -108,7 +109,7 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
             canvas.height = Math.floor(viewport.height);
             const ctx = canvas.getContext("2d");
             if (!ctx) {
-              results.push(`❌ Page ${pageNum}: could not create canvas`);
+              results.push(t("tools.extractPdfImages.error.canvas", { page: pageNum }));
               continue;
             }
             await page.render({ canvasContext: ctx, canvas, viewport } as any).promise;
@@ -119,18 +120,18 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
             const fileName = `${pdfBasename}_page_${pageNum}.png`;
             const filePath = normalizePath(`${outDir}/${fileName}`);
             await app.vault.createBinary(filePath, arrayBuffer);
-            results.push(`🖼️ ${filePath} (full page)`);
+            results.push(t("tools.extractPdfImages.fullPage", { path: filePath }));
             totalExtracted++;
           } catch (err) {
-            results.push(`⚠️ Page ${pageNum}: rendering failed`);
+            results.push(t("tools.extractPdfImages.warnRenderFailed", { page: pageNum }));
           }
         }
 
-        return `Extracted ${totalExtracted} images from ${validPages.length} pages:\n${results.join("\n")}`;
+        return t("tools.extractPdfImages.result", { count: totalExtracted, pages: validPages.length, results: results.join("\n") });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`${TAG} Failed:`, msg);
-        return `Error: ${msg}`;
+        return t("tools.extractPdfImages.error.generic", { error: msg });
       }
     },
   };

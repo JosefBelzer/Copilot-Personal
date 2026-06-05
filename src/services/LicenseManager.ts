@@ -1,4 +1,5 @@
 import { CopilotSettings } from "../settings";
+import { t } from "../i18n";
 
 async function fetchWithFallbackFn(url: string, options: RequestInit): Promise<Response> {
   if (typeof fetch !== "undefined") return fetch(url, options);
@@ -83,7 +84,7 @@ export class LicenseManager {
   async activate(key: string, serverUrl?: string): Promise<ActivateResult> {
     // Demo key — only works in debug mode
     if (key === "COPIPRO-DEMO-DEMO-DEMO") {
-      if (!LicenseManager.isDebugMode()) return { tier: "free", error: "Demo key requires debug mode (COPILOT_DEBUG=1)" };
+      if (!LicenseManager.isDebugMode()) return { tier: "free", error: t("license.demoKeyDenied") };
       this.currentLicense = { tier: "pro", key, validUntil: Date.now() + 365 * 24 * 3600 * 1000, features: this.getProFeatures() };
       return { tier: "pro" };
     }
@@ -107,7 +108,7 @@ export class LicenseManager {
 
       if (!response.ok) {
         const err = await this.graceFallbackResult();
-        return { ...err, error: `Server error (${response.status}). Verify your key in Lemon Squeezy.` };
+        return { ...err, error: t("license.serverError", { status: response.status }) };
       }
 
       const data = await response.json();
@@ -117,7 +118,7 @@ export class LicenseManager {
         const reason = data.error || data.reason || "unknown";
         return {
           tier: "free",
-          error: `License rejected: ${reason}`,
+          error: t("license.rejected", { reason }),
           cloudResponse: data,
         };
       }
@@ -134,7 +135,7 @@ export class LicenseManager {
       // No internet → grace period
       const result = await this.graceFallbackResult();
       if (result.tier === "pro") return result;
-      return { tier: "free", error: "Could not reach license server. Check your internet connection." };
+      return { tier: "free", error: t("license.offlineError") };
     }
   }
 

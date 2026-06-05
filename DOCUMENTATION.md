@@ -1,6 +1,6 @@
-# Copilot Personal — Documentation v1.4.5
+# Copilot Personal — Documentation v1.5.0
 
-> AI assistant with advanced agent capabilities for Obsidian. Multimodal chat with real streaming, semantic RAG, autonomous agent (17 tools), 11 LLM providers with native tool calling and multi-provider fallback, PDF rendering with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (clean store / obfuscated distribution), and intelligent note auto-save. 151 tests.
+> AI assistant with advanced agent capabilities for Obsidian. Multimodal chat with real streaming, semantic RAG, autonomous agent (17 tools), 11 LLM providers with native tool calling and multi-provider fallback, PDF rendering with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (clean store / obfuscated distribution), full i18n with 12 languages, and intelligent note auto-save. 151 tests.
 
 > 📖 [Spanish documentation](DOCUMENTATION_ES.md)
 
@@ -19,10 +19,11 @@
 9. [Semantic Search (RAG)](#9-semantic-search-rag)
 10. [Exporting Conversations](#10-exporting-conversations)
 11. [Obsidian Commands](#11-obsidian-commands)
-12. [Privacy & Security](#12-privacy--security)
-13. [Troubleshooting](#13-troubleshooting)
-14. [Keyboard Shortcuts](#14-keyboard-shortcuts)
-15. [Roadmap](#15-roadmap)
+12. [Language & i18n](#12-language--i18n)
+13. [Privacy & Security](#13-privacy--security)
+14. [Troubleshooting](#14-troubleshooting)
+15. [Keyboard Shortcuts](#15-keyboard-shortcuts)
+16. [Roadmap](#16-roadmap)
 
 ---
 
@@ -91,6 +92,19 @@ uvicorn main:app --host 127.0.0.1 --port 8000
 - **Web search** · **PDF with images** · **Semantic RAG**
 - **Chat export** (MD/JSON) · **Slash commands** · Priority support
 - **Multi-provider fallback** · **Per-provider API keys**
+- **💰 Copilot AI (included)** — Built-in budget provider via Mistral Nemo. No API key needed.
+
+### 💰 Copilot AI Budget Provider (Pro)
+
+Pro users get access to a managed AI provider at no extra cost. Select **💰 Copilot AI (Pro)** from the provider dropdown — no API key required, no configuration needed. Usage is tracked server-side per license.
+
+**Daily limits:** 50 queries/day. Reset at midnight UTC. Monitor usage via the `💰 X/50` badge in the chat header or the Budget AI section in Settings.
+
+> ⚠️ **Agent Mode increases consumption.** Each agent step (tool call + response) counts as one query. With the agent activated, the daily quota can deplete faster — a 3-step agent task uses 3 queries. Use Agent Mode for complex tasks, simple chat for quick questions.
+
+> ⚠️ **Cross-device quota is shared.** All devices using the same Pro license share the same daily quota.
+
+> 🌐 **Supported languages:** English, 🇪🇸 Spanish, 🇫🇷 French, 🇩🇪 German, 🇮🇹 Italian, 🇧🇷 Portuguese, 🇨🇳 Chinese, 🇯🇵 Japanese, 🇰🇷 Korean, 🇸🇦 Arabic, 🇮🇳 Hindi (11 languages). For other UI languages, the budget AI responds in English.
 
 ### Activating Pro
 1. Purchase a Pro subscription at [belzersoftware.lemonsqueezy.com](https://belzersoftware.lemonsqueezy.com/checkout/buy/85655f95-93f7-4649-954a-8bc62472f302)
@@ -329,7 +343,36 @@ Available via Ctrl+P (Command Palette):
 | Export chat as Markdown | Export conversation to .md |
 | Export chat as JSON | Export conversation to .json |
 
-## 12. Privacy & Security
+## 12. Language & i18n
+
+Copilot Personal supports **12 languages** with instant UI refresh. No restart needed.
+
+### Supported Languages
+
+| Code | Language | Flag |
+|------|----------|:---:|
+| en | English | 🇬🇧 |
+| es | Spanish | 🇪🇸 |
+| zh | Chinese | 🇨🇳 |
+| ja | Japanese | 🇯🇵 |
+| ko | Korean | 🇰🇷 |
+| de | German | 🇩🇪 |
+| fr | French | 🇫🇷 |
+| ru | Russian | 🇷🇺 |
+| pt | Portuguese | 🇧🇷 |
+| it | Italian | 🇮🇹 |
+| tr | Turkish | 🇹🇷 |
+| ar | Arabic | 🇸🇦 |
+
+### How to Change Language
+
+Settings → Copilot Personal → **Language / Idioma** (top of settings). Changes apply immediately — settings labels, chat buttons, status text, tooltips, and system messages all refresh in real time. No restart needed.
+
+### Adding New Languages
+
+Create `src/i18n/{code}.ts` and register in `src/i18n/index.ts`. English is always the fallback.
+
+## 13. Privacy & Security
 
 - **API keys:** Stored locally in `data.json`. Each provider has its own field. Never sent to plugin author's servers.
 - **Vault data:** Sent only to the LLM provider you configure (DeepSeek, OpenAI, etc.). No telemetry or analytics.
@@ -339,7 +382,7 @@ Available via Ctrl+P (Command Palette):
 - **Timing attacks:** The Worker's admin endpoint uses constant-time comparison for tokens.
 - **No telemetry, no analytics, no tracking.**
 
-## 13. Troubleshooting
+## 14. Troubleshooting
 
 | Problem | Solution |
 |---------|----------|
@@ -351,7 +394,7 @@ Available via Ctrl+P (Command Palette):
 | **Plugin not responding** | Open DevTools (Ctrl+Shift+I) → check Console for errors. Reload Obsidian. |
 | **Rate limit reached** | Free tier: 50 messages/day. Upgrade to Pro for unlimited messages. |
 
-## 14. Keyboard Shortcuts
+## 15. Keyboard Shortcuts
 
 | Shortcut | Action |
 |----------|--------|
@@ -360,16 +403,16 @@ Available via Ctrl+P (Command Palette):
 | `Ctrl+P` → Copilot | All plugin commands |
 | `Drag & Drop` | Add file context to chat (.md, .pdf, .png, .jpg) |
 
-## 15. Roadmap
+## 16. Roadmap
 
-### v1.4.4 (Current — June 2026)
-- [x] All remaining Spanish UI strings translated to English
-- [x] Agent progress indicator: `Paso` → `Step`
-- [x] Legacy `apiKey` auto-migrated to per-provider key on load
-- [x] `pdf.worker.min.mjs` removed from release (CDN fallback)
-- [x] GitHub artifact attestations via release workflow
+### v1.5.0 (Current)
+- [x] **Full i18n**: 12 languages with instant UI refresh — English, Spanish, Chinese, Japanese, Korean, German, French, Russian, Portuguese, Italian, Turkish, Arabic
+- [x] All ~600 UI strings internationalized via `t()` engine
+- [x] Language selector in Settings with live refresh of all UI components
+- [x] Spanish translations for all settings, chat, and tool interfaces
+- [x] Legacy `apiKey` migration to per-provider keys
 
-### v1.4.3
+### v1.4.5
 - [x] **Dual-build**: `npm run build:store` (clean, Obsidian review) + `npm run build` (obfuscated, distribution)
 - [x] **Cloudflare Worker deployed**: `copilot-personal-worker.copilot-personal.workers.dev` — cloud validation, Lemon Squeezy webhook, device limit
 - [x] **Per-Provider API Keys**: each provider remembers its own key (DeepSeek, OpenAI, Gemini, etc.)
@@ -435,4 +478,4 @@ Available via Ctrl+P (Command Palette):
 
 ---
 
-**Copilot Personal v1.4.5** — Made with ❤️ for the Obsidian community.
+**Copilot Personal v1.5.0** — Made with ❤️ for the Obsidian community.

@@ -4,6 +4,9 @@
  * - On 429 (rate limit), applies exponential backoff.
  * - Reports status for UI indicators.
  */
+
+import { t } from "../i18n";
+
 export class CircuitBreaker {
   private failureCount = 0;
   private lastFailureTime = 0;
@@ -43,7 +46,7 @@ export class CircuitBreaker {
       return {
         shouldRetry: true,
         waitMs: wait,
-        message: `Rate limited. Retrying in ${(wait / 1000).toFixed(0)}s...`,
+        message: t("circuit.rateLimited", { seconds: (wait / 1000).toFixed(0) }),
       };
     }
 
@@ -53,14 +56,14 @@ export class CircuitBreaker {
       return {
         shouldRetry: false,
         waitMs: 0,
-        message: `API unavailable after ${this.failureCount} failures. Circuit open for ${this.cooldownMs / 1000}s.`,
+        message: t("circuit.open", { failures: this.failureCount, cooldown: this.cooldownMs / 1000 }),
       };
     }
 
     return {
       shouldRetry: true,
       waitMs: 2000,
-      message: `API error (attempt ${this.failureCount}/3). Retrying in 2s...`,
+      message: t("circuit.retrying", { attempt: this.failureCount }),
     };
   }
 
@@ -68,12 +71,12 @@ export class CircuitBreaker {
   getStatus(): { state: "closed" | "open" | "degraded"; message: string } {
     if (this.circuitOpen) {
       const remaining = Math.ceil((this.cooldownMs - (Date.now() - this.lastFailureTime)) / 1000);
-      return { state: "open", message: `API disabled for ${remaining}s` };
+      return { state: "open", message: t("circuit.statusOpen", { remaining }) };
     }
     if (this.failureCount > 0) {
-      return { state: "degraded", message: `${this.failureCount} recent failures` };
+      return { state: "degraded", message: t("circuit.statusDegraded", { failures: this.failureCount }) };
     }
-    return { state: "closed", message: "OK" };
+    return { state: "closed", message: t("circuit.statusClosed") };
   }
 
   /** Force reset (e.g., user changed API key) */

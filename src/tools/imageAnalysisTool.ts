@@ -1,6 +1,7 @@
 import { App, requestUrl } from "obsidian";
 import { AgentTool } from "../agent/ToolRegistry";
 import { ProviderManager } from "../LLMProviders/providerManager";
+import { t } from "../i18n";
 
 const TAG = "[analyze_image]";
 
@@ -16,23 +17,23 @@ export function createImageAnalysisTool(
   return {
     name: "analyze_image",
     description:
-      "Analyzes an image from the vault and provides a detailed description. Use the image path (e.g. 'folder/diagram.png'). Supports png, jpg, jpeg, gif, webp.",
+      t("tools.analyzeImage.description"),
     parameters: {
       type: "object",
       properties: {
-        imagePath: { type: "string", description: "Path to the image file within the vault." },
+        imagePath: { type: "string", description: t("tools.analyzeImage.paramImagePath") },
       },
       required: ["imagePath"],
     },
     execute: async (params: Record<string, unknown>): Promise<string> => {
       const imagePath = params.imagePath as string;
-      if (!imagePath) return "Error: no image path provided.";
+      if (!imagePath) return t("tools.analyzeImage.error.noPath");
 
       let provider;
       try {
         provider = providerManager.getProviderFor("vision");
       } catch (err) {
-        return `Error: ${err instanceof Error ? err.message : String(err)}`;
+        return t("tools.analyzeImage.error.configError", { error: err instanceof Error ? err.message : String(err) });
       }
 
       const config = provider.config;
@@ -66,15 +67,15 @@ export function createImageAnalysisTool(
         });
 
         const data = response.json;
-        if (data.error) return `API error: ${data.error.message || JSON.stringify(data.error)}`;
-        return data.choices?.[0]?.message?.content ?? "No response received from the vision model.";
+        if (data.error) return t("tools.analyzeImage.error.apiError", { message: data.error.message || JSON.stringify(data.error) });
+        return data.choices?.[0]?.message?.content ?? t("tools.analyzeImage.noResponse");
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`${TAG} Failed:`, msg);
         if (msg.includes("ECONNREFUSED") || msg.includes("fetch failed")) {
-          return "Error: Could not connect to the vision server. Make sure your local vision model is running with a compatible model loaded.";
+          return t("tools.analyzeImage.error.connectionRefused");
         }
-        return `Error analyzing the image: ${msg}`;
+        return t("tools.analyzeImage.error.generic", { error: msg });
       }
     },
   };

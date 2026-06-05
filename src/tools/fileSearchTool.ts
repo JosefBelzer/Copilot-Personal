@@ -1,6 +1,7 @@
 import { App } from "obsidian";
 import { AgentTool } from "../agent/ToolRegistry";
 import { normalizeGerman } from "../utils/pathUtils";
+import { t } from "../i18n";
 
 /**
  * find_files — busca archivos en el vault por nombre o patrón.
@@ -10,19 +11,19 @@ export function createFileSearchTool(app: App): AgentTool {
   return {
     name: "find_files",
     description:
-      "Searches files in the vault by name pattern. Returns paths of matching files. Useful for finding images, PDFs or notes when you don't know the exact path.",
+      t("tools.findFiles.description"),
     parameters: {
       type: "object",
       properties: {
         nameQuery: {
           type: "string",
           description:
-            "Part of the file name to search for (e.g. 'MapaPolitico', 'diagram', 'photo.png'). Case-insensitive.",
+            t("tools.findFiles.paramNameQuery"),
         },
         extension: {
           type: "string",
           description:
-            "Filter by extension (e.g. 'png', 'pdf', 'md'). Optional.",
+            t("tools.findFiles.paramExtension"),
         },
       },
       required: ["nameQuery"],
@@ -32,7 +33,7 @@ export function createFileSearchTool(app: App): AgentTool {
       const nameQuery = ((params.nameQuery || params.query || "") as string).toLowerCase();
       const extension = ((params.extension || "") as string).toLowerCase();
 
-      if (!nameQuery) return "Error: empty search term.";
+      if (!nameQuery) return t("tools.findFiles.error.emptyQuery");
 
       try {
         const allFiles = app.vault.getFiles();
@@ -45,17 +46,17 @@ export function createFileSearchTool(app: App): AgentTool {
         });
 
         if (matched.length === 0) {
-          return `No files found matching "${nameQuery}"${extension ? " (." + extension + ")" : ""}.`;
+          const extSuffix = extension ? " (." + extension + ")" : "";
+          return t("tools.findFiles.noResults", { query: nameQuery, extension: extSuffix });
         }
 
         // Limit to 15 results
         const limited = matched.slice(0, 15);
-        return limited
-          .map((f, i) => `[${i + 1}] ${f.path}`)
-          .join("\n") +
-          (matched.length > 15 ? `\n... and ${matched.length - 15} more.` : "");
+        return matched.length > 15
+          ? t("tools.findFiles.results", { results: limited.map((f) => f.path).join("\n"), more: matched.length - 15 })
+          : limited.map((f) => f.path).join("\n");
       } catch (err) {
-        return `Error searching files: ${err instanceof Error ? err.message : String(err)}`;
+        return t("tools.findFiles.error.searchError", { error: err instanceof Error ? err.message : String(err) });
       }
     },
   };

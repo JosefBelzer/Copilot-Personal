@@ -1,5 +1,6 @@
 import { requestUrl } from "obsidian";
 import { CopilotSettings } from "../settings";
+import { t } from "../i18n";
 
 export interface WebSearchResult {
   title: string;
@@ -44,7 +45,7 @@ export class WebSearchClient {
   async search(query: string, maxSteps: number = 15, maxResults?: number): Promise<WebSearchResponse> {
     const url = this.settings.webSearchServerUrl;
     if (!url) {
-      throw new Error("Web search server URL not configured.");
+      throw new Error(t("webSearch.urlNotConfigured"));
     }
 
     const response = await requestUrl({
@@ -60,7 +61,7 @@ export class WebSearchClient {
     });
 
     if (response.status !== 200) {
-      throw new Error(`Search server returned ${response.status}: ${response.text}`);
+      throw new Error(t("webSearch.serverError", { status: response.status, text: response.text }));
     }
 
     return response.json as WebSearchResponse;
@@ -70,10 +71,10 @@ export class WebSearchClient {
    * Format search results as a string for LLM context.
    */
   formatResultsForLLM(results: WebSearchResult[]): string {
-    if (results.length === 0) return "No results found.";
+    if (results.length === 0) return t("webSearch.noResults");
 
     return results
-      .map((r, i) => `[${i + 1}] ${r.title}\nURL: ${r.url}\nSnippet: ${r.snippet}`)
+      .map((r, i) => t("webSearch.resultItem", { index: i + 1, title: r.title, url: r.url, snippet: r.snippet }))
       .join("\n\n");
   }
 }

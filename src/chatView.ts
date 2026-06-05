@@ -10,6 +10,9 @@ import { ApplyView } from "./components/ApplyView";
 import { ChatHistoryBrowser } from "./components/ChatHistoryBrowser";
 import { MAX_MESSAGES_BEFORE_TRIM, MESSAGES_TRIM_KEEP } from "./constants";
 import { AutoSaveManager } from "./agent/AutoSaveManager";
+import { ToolRouter } from "./agent/ToolRouter";
+import { LicenseManager } from "./services/LicenseManager";
+import { t } from "./i18n";
 
 export const CHAT_VIEW_TYPE = "copilot-personal-chat-view";
 
@@ -43,6 +46,8 @@ export class CopilotChatView extends ItemView {
   private stopBtnEl!: HTMLButtonElement;
   private privacyEl!: HTMLElement;
   private tierEl!: HTMLElement;
+  private budgetEl!: HTMLElement;
+  private _budgetAgentContext: Array<{ role: string; content: string | null; tool_calls?: any[]; tool_call_id?: string }> | null = null;
   private sessionSaveInterval: number | null = null;
   private autoSaveManager!: AutoSaveManager;
 
@@ -213,6 +218,7 @@ export class CopilotChatView extends ItemView {
     // Privacy indicator + License tier badge — created once, updated dynamically
     this.privacyEl = header.createSpan({ cls: "copilot-privacy-indicator" });
     this.tierEl = header.createSpan({ cls: "copilot-tier-badge" });
+    this.budgetEl = header.createSpan({ cls: "copilot-budget-badge" });
     this.updateHeaderBadges();
 
     // Session auto-save for crash recovery (every 30s)
@@ -298,6 +304,9 @@ export class CopilotChatView extends ItemView {
         { value: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro" },
       ],
       lmstudio: [],
+      budget: [
+        { value: "mistralai/mistral-nemo", label: t("chat.budgetModelLabel") },
+      ],
       auto: [
         { value: "deepseek-v4-flash", label: "DeepSeek V4 Flash" },
         { value: "deepseek-v4-pro", label: "DeepSeek V4 Pro" },
@@ -428,7 +437,14 @@ export class CopilotChatView extends ItemView {
         await this.handleWebSearch(userText);
       }
     } else if (this.agentMode && this.plugin.agentRunner) {
-      await this.handleAgentChat(userText);
+      // For budget provider, use AgentModeRunner with a BudgetLLMProvider wrapper
+      if (this.plugin.settings.providerType === "budget") {
+        await this.handleBudgetAgentChat(userText);
+      } else {
+        await this.handleAgentChat(userText);
+      }
+    } else if (this.plugin.settings.providerType === "budget" && this.plugin.budgetManager.isEnabled()) {
+      await this.handleBudgetChat(userText);
     } else {
       await this.handleChat(userText);
     }
@@ -660,7 +676,14 @@ export class CopilotChatView extends ItemView {
       // Fallback cascade: if agent mode fails, try simpler direct chat
       try {
         const context = await this.buildContext(userText);
-        const response = await this.plugin.providerManager.getActiveProvider().chat(context);
+        let response: string;
+        if (this.plugin.settings.providerType === "budget" && this.plugin.budgetManager.isEnabled()) {
+          const { BudgetLLMProvider } = await import("./LLMProviders/budgetLLMProvider");
+          const bp = new BudgetLLMProvider(this.plugin.budgetManager, this.plugin.settings.licenseKey || "");
+          response = await bp.chat(context);
+        } else {
+          response = await this.plugin.providerManager.getActiveProvider().chat(context);
+        }
         this.addMessage("assistant", `⚠️ Agent mode failed — fallback response:\n\n${response}`);
       } catch (fallbackErr) {
         this.addMessage("assistant", `Agent error: ${error instanceof Error ? error.message : "Unknown error"}`);
@@ -945,6 +968,28 @@ export class CopilotChatView extends ItemView {
         : "Free tier — 50 messages/day, limited features";
     }
 
+    // Budget badge (Pro only)
+    if (this.budgetEl) {
+      const bm = this.plugin.budgetManager;
+      if (bm.isEnabled() && bm.canUse()) {
+        const cached = (bm as any).cachedUsage;
+        if (cached) {
+          const pct = cached.queryPercent;
+          this.budgetEl.setText(`💰 ${cached.dailyQueries}/${cached.limitQueries}`);
+          this.budgetEl.title = `${cached.dailyQueries} of ${cached.limitQueries} queries used today · Resets in ${cached.resetsInHours}h`;
+          this.budgetEl.className = "copilot-budget-badge" +
+            (pct >= 90 ? " copilot-budget-critical" : pct >= 75 ? " copilot-budget-warn" : "");
+          this.budgetEl.style.display = "";
+        } else {
+          this.budgetEl.setText("💰 --/50");
+          this.budgetEl.className = "copilot-budget-badge";
+          this.budgetEl.style.display = "";
+        }
+      } else {
+        this.budgetEl.style.display = "none";
+      }
+    }
+
     // Model selector — refresh when provider changes
     if (this.modelSelectEl) this.refreshModelSelector();
   }
@@ -1171,7 +1216,130 @@ export class CopilotChatView extends ItemView {
 
     this.scrollToBottom();
   }
-}
+
+  /** Budget AI chat — simple chat proxied through Worker (no agent, no tools). */
+  private async handleBudgetChat(userText: string) {
+    const turns = this.settings.contextTurns || 4;
+    const messages: Array<{ role: string; content: string }> = [];
+    messages.push({ role: "system", content: "You are a helpful AI assistant. Answer concisely." });
+    for (const m of this.messages.slice(-turns * 2)) {
+      if (m.role !== "system") messages.push({ role: m.role, content: m.content.substring(0, 2000) });
+    }
+    messages.push({ role: "user", content: userText });
+    const assistantMsg = this.addMessage("assistant", "");
+    const contentEl = assistantMsg.querySelector(".copilot-message-content") as HTMLElement;
+    if (!contentEl) return;
+    try {
+      const licenseKey = this.plugin.settings.licenseKey || "";
+      const fp = LicenseManager.getFingerprint();
+      if (this.plugin.settings.streamEnabled) {
+        let fullContent = "";
+        const gen = this.plugin.budgetManager.chatStream(messages, licenseKey, fp);
+        for await (const chunk of gen) { if (chunk.done) break; fullContent += chunk.content; contentEl.empty(); await this.renderMarkdown(contentEl, fullContent); this.scrollToBottom(); }
+        this.messages[this.messages.length - 1].content = fullContent;
+      } else {
+        const result = await this.plugin.budgetManager.chat(messages, licenseKey, fp);
+        contentEl.empty(); await this.renderMarkdown(contentEl, result.content);
+        this.messages[this.messages.length - 1].content = result.content;
+      }
+    } catch (error) {
+      contentEl.empty(); contentEl.setText(error instanceof Error ? error.message : String(error));
+      this.statusEl.setText(t("chat.statusError"));
+    }
+    this.isGenerating = false; this.sendBtnEl.disabled = false; this.stopBtnEl.style.display = "none";
+    this.statusEl.setText(t("chat.statusReady")); this.inputEl.focus(); this.scrollToBottom(); this.updateHeaderBadges();
+  }
+
+  /** Budget agent chat — tool-calling loop proxied through Worker with native tool calling. */
+  private async handleBudgetAgentChat(userText: string) {
+    const licenseKey = this.plugin.settings.licenseKey || "";
+    const fp = LicenseManager.getFingerprint();
+    const maxIter = this.settings.agentMaxIterations || 5;
+    const messages: Array<{ role: string; content: string | null; tool_calls?: any[]; tool_call_id?: string }> = [];
+
+    if (this._budgetAgentContext && this._budgetAgentContext.length > 0) {
+      for (const m of this._budgetAgentContext) { if (m.role !== "system") messages.push({ ...m }); }
+    } else {
+      const toolInstructions = this.plugin.toolRegistry?.getAllTools?.()?.filter(t => t.customPromptInstructions)?.map(t => t.customPromptInstructions)?.filter(Boolean) || [];
+      if (toolInstructions.length > 0) messages.push({ role: "system", content: toolInstructions.join("\n---\n") });
+      messages.push({ role: "system", content: "You are a tool-using agent inside Obsidian. Use [[wikilinks]] to connect notes — no special tool needed. Use create_note or update_note with [[links]] in the content." });
+      for (const m of this.messages.slice(-this.settings.contextTurns * 2)) { if (m.role !== "system") messages.push({ role: m.role, content: m.content }); }
+    }
+    messages.push({ role: "user", content: userText });
+
+    const toolDefs = this.plugin.toolRegistry?.getAllTools?.() || [];
+    const toolMap = new Map(toolDefs.map((t: any) => [t.name, t]));
+    const router = new ToolRouter(null, toolMap);
+    const routed = await router.route(userText);
+    const tools = routed.tools;
+    const assistantMsg = this.addMessage("assistant", "");
+    const contentEl = assistantMsg.querySelector(".copilot-message-content") as HTMLElement;
+    if (!contentEl) return;
+    this.statusEl.setText(t("chat.statusAgentThinking"));
+    let fullContent = "", iteration = 0;
+
+    try {
+      while (iteration < maxIter) {
+        iteration++;
+        const result = await this.plugin.budgetManager.chat(
+          messages.map(m => { const item: any = { role: m.role, content: m.content || "" }; if (m.tool_calls) item.tool_calls = m.tool_calls; if (m.tool_call_id) item.tool_call_id = m.tool_call_id; return item; }),
+          licenseKey, fp, tools
+        );
+        if (result.content && !result.toolCalls) { fullContent += result.content; contentEl.empty(); await this.renderMarkdown(contentEl, fullContent); break; }
+        if (result.toolCalls) {
+          for (const tc of result.toolCalls) {
+            const toolName = tc.function?.name; const args = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {};
+            try {
+              // Skip hallucinated tools that don't exist
+              if (!this.plugin.toolRegistry?.getTool(toolName)) {
+                console.log(`[Budget Agent] Skipping unknown tool: ${toolName}`);
+                continue;
+              }
+              // Auto-find: silently resolve file paths before executing file tools
+              if (args.path && ["read_pdf", "read_note", "render_pdf_pages", "extract_pdf_images"].includes(toolName)) {
+                const fileName = args.path.replace(/#page.*|\.md$/, "").split("/").pop() || args.path;
+                const searchResult = await this.plugin.toolRegistry?.executeTool("find_files", { nameQuery: fileName }) || "";
+                if (searchResult && !searchResult.includes("No files found")) {
+                  const correctPath = searchResult.split("\n")[0].trim();
+                  if (correctPath !== args.path) args.path = correctPath;
+                }
+              }
+              let resultStr = await this.plugin.toolRegistry?.executeTool(toolName, args) || "";
+              const toolCallId = (tc as any).id || `call_${toolName}_${Date.now()}`;
+              (messages as any).push({ role: "assistant", content: null, tool_calls: [tc] });
+              (messages as any).push({ role: "tool", tool_call_id: toolCallId, content: resultStr.substring(0, 4000) });
+              const toolMsg = this.addMessage("system", `🔧 ${toolName}: ${resultStr.substring(0, 200)}`); setTimeout(() => toolMsg?.remove(), 15000);
+            } catch (err) {
+              const toolCallId = (tc as any).id || `call_${toolName}_${Date.now()}`;
+              (messages as any).push({ role: "assistant", content: null, tool_calls: [tc] });
+              (messages as any).push({ role: "tool", tool_call_id: toolCallId, content: `Error: ${err instanceof Error ? err.message : String(err)}` });
+            }
+          }
+        } else break;
+      }
+      if (iteration >= maxIter) this.addMessage("system", t("agent.maxIterationsReached"));
+    } catch (err) { contentEl.empty(); contentEl.setText(`Budget agent error: ${err instanceof Error ? err.message : String(err)}`); this.statusEl.setText(t("chat.statusError")); }
+
+    this._budgetAgentContext = messages;
+    this.messages[this.messages.length - 1].content = fullContent || "(no response)";
+    this.isGenerating = false; this.sendBtnEl.disabled = false; this.stopBtnEl.style.display = "none";
+    this.statusEl.setText(t("chat.statusReady")); this.inputEl.focus(); this.scrollToBottom(); this.updateHeaderBadges();
+  }
+
+  /** Refresh all translatable UI elements when language changes. */
+  public refreshLanguage(): void {
+    this.updateHeaderBadges();
+    const btns = this.containerEl.querySelectorAll(".copilot-header-btn");
+    if (btns[0]) { btns[0].textContent = t("chat.btnNew"); btns[0].setAttribute("title", t("chat.newChatTooltip")); }
+    if (btns[1]) { btns[1].textContent = t("chat.btnSave"); btns[1].setAttribute("title", t("chat.saveChatTooltip")); }
+    if (btns[2]) { btns[2].textContent = t("chat.btnHistory"); btns[2].setAttribute("title", t("chat.browseHistoryTooltip")); }
+    const sendBtn = this.containerEl.querySelector(".copilot-send-btn"); if (sendBtn) sendBtn.textContent = t("chat.btnSend");
+    const stopBtn = this.containerEl.querySelector(".copilot-stop-btn"); if (stopBtn) stopBtn.textContent = t("chat.btnStop");
+    const agentBtn = this.containerEl.querySelector(".copilot-agent-toggle"); if (agentBtn) { agentBtn.textContent = t("chat.btnAgent"); agentBtn.setAttribute("title", t("chat.agentToggleTooltip")); }
+    const input = this.containerEl.querySelector(".copilot-input") as HTMLTextAreaElement; if (input) input.placeholder = t("chat.sendPlaceholder");
+  }
+
+} // end CopilotChatView
 
 /**
  * Detects hallucinated completion claims in agent responses.

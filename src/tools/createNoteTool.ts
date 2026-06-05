@@ -1,6 +1,7 @@
 import { App } from "obsidian";
 import { AgentTool } from "../agent/ToolRegistry";
 import { normalizePath, ensureMd, dirname } from "../utils/pathUtils";
+import { t } from "../i18n";
 
 /**
  * create_note — permite al agente redactar y guardar notas en el vault.
@@ -10,17 +11,17 @@ export function createCreateNoteTool(app: App): AgentTool {
   return {
     name: "create_note",
     description:
-      "Creates a new note in the vault with the given title and content (Markdown format).",
+      t("tools.createNote.description"),
     parameters: {
       type: "object",
       properties: {
         title: {
           type: "string",
-          description: "Note title (without extension).",
+          description: t("tools.createNote.paramTitle"),
         },
         content: {
           type: "string",
-          description: "Note content in Markdown format.",
+          description: t("tools.createNote.paramContent"),
         },
       },
       required: ["title", "content"],
@@ -28,8 +29,8 @@ export function createCreateNoteTool(app: App): AgentTool {
     execute: async (params: Record<string, unknown>): Promise<string> => {
       const title = (params.title as string)?.trim();
       const content = params.content as string;
-      if (!title) return "Error: no title provided.";
-      if (content === undefined || content === null) return "Error: no content provided.";
+      if (!title) return t("tools.createNote.error.noTitle");
+      if (content === undefined || content === null) return t("tools.createNote.error.noContent");
 
       try {
         const fileName = normalizePath(ensureMd(title));
@@ -37,7 +38,7 @@ export function createCreateNoteTool(app: App): AgentTool {
         // Check for existing note
         const existing = app.vault.getAbstractFileByPath(fileName);
         if (existing) {
-          return `Error: a note already exists with the name "${fileName}".`;
+          return t("tools.createNote.error.alreadyExists", { name: fileName });
         }
 
         // Ensure parent directory exists
@@ -50,10 +51,11 @@ export function createCreateNoteTool(app: App): AgentTool {
         }
 
         await app.vault.create(fileName, content);
-        return `Note created successfully: "${fileName}" (${content.length} characters).`;
+        return t("tools.createNote.success", { name: fileName, length: content.length });
       } catch (err) {
         console.error("[create_note] Failed:", err);
-        return `Error creating note: ${err instanceof Error ? err.message : String(err)}`;
+        const errMsg = err instanceof Error ? err.message : String(err);
+        return t("tools.createNote.error.createError", { error: errMsg });
       }
     },
   };

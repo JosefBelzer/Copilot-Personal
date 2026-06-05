@@ -1,6 +1,6 @@
 import { LLMMessage, ChatStreamChunk } from "./types";
 
-export type ProviderType = "deepseek" | "openai" | "anthropic" | "openrouter" | "lmstudio" | "gemini" | "mistral" | "groq" | "perplexity" | "xai";
+export type ProviderType = "deepseek" | "openai" | "anthropic" | "openrouter" | "lmstudio" | "gemini" | "mistral" | "groq" | "perplexity" | "xai" | "budget";
 
 /** What each provider supports — used to show/hide settings */
 export interface ProviderCapabilities {
@@ -25,6 +25,7 @@ export const PROVIDER_CAPABILITIES: Record<ProviderType | "auto", ProviderCapabi
   groq:        { chat: true, streaming: true, embeddings: false, vision: false, toolCalling: true, thinking: false, label: "Groq" },
   perplexity:  { chat: true, streaming: true, embeddings: false, vision: false, toolCalling: true, thinking: false, label: "Perplexity" },
   xai:         { chat: true, streaming: true, embeddings: false, vision: true,  toolCalling: true, thinking: false, label: "xAI" },
+  budget:      { chat: true, streaming: true, embeddings: true, vision: true, toolCalling: true, thinking: false, label: "Copilot AI" },
 };
 
 /** Task that a provider can handle */

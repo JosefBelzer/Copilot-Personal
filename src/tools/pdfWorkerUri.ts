@@ -20,6 +20,6 @@ export const WORKER_URI = (() => {
     }
   } catch { /* not in Obsidian context */ }
 
-  // Fallback: CDN for pdfjs-dist v5.7.x
-  return "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.7.284/pdf.worker.min.mjs";
+  // Fallback: unpkg — mirrors npm registry directly, always matches installed version
+  return "https://unpkg.com/pdfjs-dist@5.7.284/build/pdf.worker.min.mjs";
 })();

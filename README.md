@@ -1,6 +1,6 @@
-# Copilot Personal v1.4.5 — Obsidian AI Agent Plugin
+# Copilot Personal v1.5.0 — Obsidian AI Agent Plugin
 
-AI assistant for Obsidian. Multimodal chat with real streaming, RAG semantic search, autonomous agent (17 tools), 11 LLM providers, multi-provider fallback, PDF processing with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (store/obfuscated). 151 tests. TypeScript strict mode.
+AI assistant for Obsidian. Multimodal chat with real streaming, RAG semantic search, autonomous agent (17 tools), 11 LLM providers, multi-provider fallback, PDF processing with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (store/obfuscated), full i18n with 12 languages. 151 tests. TypeScript strict mode.
 
 > 📖 [Spanish documentation](DOCUMENTATION_ES.md)
 
@@ -17,6 +17,8 @@ AI assistant for Obsidian. Multimodal chat with real streaming, RAG semantic sea
 | **Semantic RAG** | Vault indexing with embeddings, cosine similarity search, JSON persistence |
 | **Advanced PDF** | Text extraction, page rendering to PNG, embedded image extraction with `unpdf` |
 | **11 LLM Providers** | DeepSeek, OpenAI, Anthropic, Gemini, LM Studio, OpenRouter, Mistral, Groq, Perplexity, xAI |
+| **Real-Time UI Updates** | Header badges (Local/Cloud, Free/Pro) and model selector refresh instantly on settings change |
+| **🌐 Full i18n (12 languages)** | English, Spanish, Chinese, Japanese, Korean, German, French, Russian, Portuguese, Italian, Turkish, Arabic. Selector in Settings. Instant UI refresh on change. |
 | **Per-Provider API Keys** | Each provider stores its own key — switching from DeepSeek to Gemini won't mix keys |
 | **Multi-Provider Fallback** | Automatic capability compensation (Pro) — e.g., DeepSeek for chat + LM Studio for embeddings |
 | **Free/Pro Licensing** | Cloud-based validation via Cloudflare Worker, device binding, grace period, rate limiting |
@@ -27,6 +29,16 @@ AI assistant for Obsidian. Multimodal chat with real streaming, RAG semantic sea
 | **Model-Specific Adapters** | Optimized system prompts per model family (anti-verbose, anti-hallucination) |
 | **Context Management** | Map-Reduce compaction, L1-L5 layers, auto-trim, CURRENT TASK reminders |
 | **Real-Time UI Updates** | Header badges (Local/Cloud, Free/Pro) and model selector refresh instantly on settings change |
+| **🌐 Full i18n (12 languages)** | English, Spanish, Chinese, Japanese, Korean, German, French, Russian, Portuguese, Italian, Turkish, Arabic. Selector in Settings. Instant UI refresh on change. |
+| **💰 Budget AI (Pro)** | Included managed AI provider. 50 queries/day. No API key needed. Agent Mode supported. |
+
+---
+
+## Screenshot
+
+![Agent mode creating a summary and note from PDF](images/screenshot-agent-summary-note.png)
+
+*Agent mode with $0 budget provider reading a PDF, summarizing it, and creating a note — all in two messages.*
 
 ---
 
@@ -83,6 +95,11 @@ src/
 │   └── ApplyView.ts                 # Diff view for <!--save:-->
 └── utils/
     └── pathUtils.ts                 # Path normalization, fetch fallback, timeouts
+├── i18n/                              # 12-language translation engine
+│   ├── index.ts                       # t(), setLanguage(), translation registry
+│   ├── types.ts                       # Lang type, LANGS map, getLanguages()
+│   ├── en.ts                          # English master (~600 keys)
+│   └── es.ts                          # Spanish translations
 ```
 
 ---
@@ -137,6 +154,13 @@ uvicorn main:app --host 127.0.0.1 --port 8000
 - **Web search** · **PDF with images** · **Semantic RAG**
 - **Chat export** (MD/JSON) · **Slash commands** · Priority support
 - **Multi-provider fallback** · **Per-provider API keys**
+- **💰 Copilot AI (included)** — Built-in managed AI provider. 50 queries/day. No API key needed.
+
+### 💰 Copilot AI Budget Provider
+
+Included with Pro at no extra cost. Select **💰 Copilot AI (Pro)** from the provider dropdown. 50 queries/day, tracked server-side per license. Monitor usage via the badge in the chat header.
+
+> ⚠️ Agent Mode increases consumption — each step counts as one query. A 3-step task = 3 queries.
 
 ### Activating Pro
 1. Purchase a Pro subscription at [belzersoftware.lemonsqueezy.com](https://belzersoftware.lemonsqueezy.com/checkout/buy/85655f95-93f7-4649-954a-8bc62472f302)

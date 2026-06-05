@@ -5,6 +5,7 @@ import { CopilotSettings } from "../settings";
 import { RateLimiter } from "../rateLimiter";
 import { HybridRetriever } from "./hybridRetriever";
 import { Reranker } from "./reranker";
+import { t } from "../i18n";
 
 interface ChunkResult {
   text: string;
@@ -159,8 +160,7 @@ export class IndexOperations {
             const allEmpty = vectors.every((v) => !v || v.length === 0 || v.every((n) => n === 0));
             if (allEmpty && vectors.length > 0) {
               throw new Error(
-                "Embedding API returned empty vectors. Your model may not support embeddings. " +
-                "Load a dedicated embedding model (e.g., nomic-embed-text, all-MiniLM-L6-v2) in LM Studio and set it in Settings → Embedding Model."
+                t("notices.indexEmptyVectors")
               );
             }
 

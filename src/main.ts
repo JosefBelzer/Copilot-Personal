@@ -24,7 +24,9 @@ import { createExtractPdfImagesTool } from "./tools/extractPdfImagesTool";
 import { createListNotesTool, createFulltextSearchTool, createVaultStatsTool, createGetActiveFileTool, createGetFrontmatterTool } from "./tools/additionalTools";
 import { MemoryManager } from "./memory/MemoryManager";
 import { LicenseManager } from "./services/LicenseManager";
+import { BudgetManager } from "./services/BudgetManager";
 import { Plugin, WorkspaceLeaf, Notice, Modal, MarkdownRenderer } from "obsidian";
+import { t } from "./i18n";
 
 export default class CopilotPlugin extends Plugin {
   settings!: CopilotSettings;
@@ -38,12 +40,18 @@ export default class CopilotPlugin extends Plugin {
   agentRunner!: AgentModeRunner;
   memoryManager!: MemoryManager;
   licenseManager!: LicenseManager;
+  budgetManager!: BudgetManager;
 
   async onload() {
     await this.loadSettings();
 
     // Migrate legacy apiKey to per-provider keys for backward compatibility
     this.migrateLegacyApiKey();
+
+    // Initialize i18n with user's language preference
+    const { setLanguage } = await import("./i18n");
+    setLanguage(this.settings.language as any);
+    console.log(`[i18n] Language set to: ${this.settings.language}`);
 
     this.providerManager = new ProviderManager(this.settings);
     const llmProvider = this.providerManager.getProviderFor("embeddings");
@@ -92,6 +100,10 @@ export default class CopilotPlugin extends Plugin {
       (data) => { if (data) this.settings._messageCount = data; }
     );
 
+    // Budget manager — bundled API for Pro users (tracking server-side in Worker KV)
+    this.budgetManager = new BudgetManager();
+    this.budgetManager.setEnabled(this.licenseManager.getTier() === "pro");
+
     // Store as property so we can unregister on unload
     this.indexEventHandler = new IndexEventHandler(this.app.vault, this.indexOperations);
 
@@ -101,19 +113,19 @@ export default class CopilotPlugin extends Plugin {
 
     this.addSettingTab(new CopilotSettingTab(this.app, this));
 
-    this.addRibbonIcon("message-square", "Copilot Personal", () => {
+    this.addRibbonIcon("message-square", t("chat.title"), () => {
       this.activateView();
     });
 
     this.addCommand({
       id: "open-copilot-chat",
-      name: "Open Copilot Chat",
+      name: t("commands.openChat"),
       callback: () => this.activateView(),
     });
 
     this.addCommand({
       id: "send-selection-to-copilot",
-      name: "Send selection to Copilot",
+      name: t("commands.sendSelection"),
       editorCallback: (editor) => {
         const selection = editor.getSelection();
         if (selection) {
@@ -123,7 +135,7 @@ export default class CopilotPlugin extends Plugin {
             view.setInputText(selection);
           }
         } else {
-          new Notice("No text selected.");
+          new Notice(t("notices.noTextSelected"));
         }
       },
     });
@@ -131,36 +143,36 @@ export default class CopilotPlugin extends Plugin {
     // RAG commands
     this.addCommand({
       id: "index-vault",
-      name: "Copilot: Index vault for semantic search",
+      name: t("commands.indexVault"),
       callback: async () => {
-        new Notice("Indexing vault...");
+        new Notice(t("notices.indexingVault"));
         try {
           await this.indexOperations.indexVaultToVectorStore((current, total) => {
             if (current % 10 === 0 || current === total) {
-              new Notice(`Indexing: ${current}/${total} files`);
+              new Notice(t("notices.indexingProgress", { current, total }));
             }
           });
 
           // Verify the index has valid vectors
           const isEmpty = await this.vectorStoreManager.isIndexEmpty();
           if (isEmpty && !this.vectorStoreManager.wasLoaded()) {
-            new Notice("Index file appears corrupted or failed to load. Try clearing and re-indexing.", 8000);
+            new Notice(t("notices.indexCorrupted"), 8000);
           } else if (isEmpty) {
-            new Notice("Vault indexing complete, but no files were indexed. Check excluded folders or try again.");
+            new Notice(t("notices.indexEmpty"));
           } else {
             const chunks = this.vectorStoreManager.getChunks();
             const sampleVector = chunks[0]?.vector;
             if (!sampleVector || sampleVector.length === 0 || sampleVector.every((n) => n === 0)) {
               new Notice(
-                "Vault indexing produced EMPTY vectors. Your embedding model does not generate embeddings. Load a dedicated embedding model (nomic-embed-text, all-MiniLM-L6-v2) in LM Studio and set it in Settings → Embedding Model, then clear & re-index.",
+                t("notices.indexEmptyVectors"),
                 10000
               );
             } else {
-              new Notice(`Vault indexing complete! ${chunks.length} chunks indexed.`);
+              new Notice(t("notices.indexComplete", { chunks: chunks.length }));
             }
           }
         } catch (err) {
-          new Notice(`Indexing failed: ${err}`);
+          new Notice(t("notices.indexFailed", { error: String(err) }));
           console.error(err);
         }
       },
@@ -168,17 +180,17 @@ export default class CopilotPlugin extends Plugin {
 
     this.addCommand({
       id: "clear-index",
-      name: "Copilot: Clear semantic search index",
+      name: t("commands.clearIndex"),
       callback: async () => {
         await this.vectorStoreManager.clearIndex();
-        new Notice("Index cleared.");
+        new Notice(t("notices.indexCleared"));
       },
     });
 
     // Chat management commands
     this.addCommand({
       id: "new-chat",
-      name: "Copilot: New chat",
+      name: t("commands.newChat"),
       callback: () => {
         const view = this.getChatView();
         if (view) {
@@ -191,7 +203,7 @@ export default class CopilotPlugin extends Plugin {
 
     this.addCommand({
       id: "save-chat",
-      name: "Copilot: Save chat to file",
+      name: t("commands.saveChat"),
       callback: () => {
         const view = this.getChatView();
         if (view) {
@@ -203,14 +215,14 @@ export default class CopilotPlugin extends Plugin {
     // Quick Ask command
     this.addCommand({
       id: "quick-ask",
-      name: "Copilot: Quick Ask",
+      name: t("commands.quickAsk"),
       callback: () => this.quickAsk(),
     });
 
     // Export commands
     this.addCommand({
       id: "export-chat-md",
-      name: "Copilot: Export chat as Markdown",
+      name: t("commands.exportMd"),
       callback: () => {
         const view = this.getChatView();
         if (view) view.exportChatMarkdown();
@@ -219,7 +231,7 @@ export default class CopilotPlugin extends Plugin {
 
     this.addCommand({
       id: "export-chat-json",
-      name: "Copilot: Export chat as JSON",
+      name: t("commands.exportJson"),
       callback: () => {
         const view = this.getChatView();
         if (view) view.exportChatJSON();
@@ -260,7 +272,8 @@ export default class CopilotPlugin extends Plugin {
     await this.saveData(this.settings);
     this.providerManager.updateSettings(this.settings);
     this.webSearchClient.updateSettings(this.settings);
-    // Refresh chat view header badges immediately (privacy icon + tier badge)
+
+    // Refresh chat view header badges (privacy icon + tier badge)
     const chatView = this.getChatView();
     if (chatView) chatView.updateHeaderBadges();
   }
@@ -319,24 +332,24 @@ export default class CopilotPlugin extends Plugin {
 
   async quickAsk(): Promise<void> {
     const modal = new Modal(this.app);
-    modal.titleEl.setText("Quick Ask");
+    modal.titleEl.setText(t("quickAsk.title"));
     const inputEl = modal.contentEl.createEl("textarea", { cls: "copilot-input" });
-    inputEl.placeholder = "Ask anything...";
+    inputEl.placeholder = t("quickAsk.placeholder");
     inputEl.style.minHeight = "60px";
     inputEl.style.width = "100%";
 
-    const btnEl = modal.contentEl.createEl("button", { text: "Ask", cls: "copilot-send-btn" });
+    const btnEl = modal.contentEl.createEl("button", { text: t("quickAsk.btnAsk"), cls: "copilot-send-btn" });
     const resultEl = modal.contentEl.createEl("div", { cls: "copilot-message-content" });
 
     btnEl.addEventListener("click", async () => {
       const query = inputEl.value.trim();
       if (!query) return;
       if (!this.licenseManager.trackMessage()) {
-        new Notice("⚠️ Daily limit reached. Upgrade to Pro for unlimited messages.");
+        new Notice(t("license.dailyLimitReached"));
         return;
       }
       btnEl.disabled = true;
-      btnEl.setText("Thinking...");
+      btnEl.setText(t("quickAsk.btnThinking"));
       try {
         const response = await this.providerManager.getActiveProvider().chat([
           { role: "system", content: "Be concise and helpful." },
@@ -345,10 +358,10 @@ export default class CopilotPlugin extends Plugin {
         resultEl.empty();
         await MarkdownRenderer.render(this.app, response, resultEl, "", {} as any);
       } catch (err) {
-        resultEl.setText(`Error: ${err}`);
+        resultEl.setText(t("quickAsk.error", { error: String(err) }));
       }
       btnEl.disabled = false;
-      btnEl.setText("Ask");
+      btnEl.setText(t("quickAsk.btnAsk"));
     });
 
     modal.open();

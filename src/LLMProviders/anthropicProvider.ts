@@ -3,6 +3,7 @@ import { LLMMessage, ChatStreamChunk } from "./types";
 import { LLMProvider, ProviderConfig, ProviderType, ToolDefinition } from "./providerTypes";
 import { withTimeout, normalizeApiUrl, fetchWithFallback } from "../utils/pathUtils";
 import { CircuitBreaker } from "../services/CircuitBreaker";
+import { t } from "../i18n";
 
 const TAG = "[Anthropic]";
 
@@ -187,11 +188,11 @@ export class AnthropicProvider implements LLMProvider {
   }
 
   async embed(_texts: string[]): Promise<number[][]> {
-    throw new Error("Anthropic does not support embeddings. Configure a different provider (DeepSeek, OpenAI, or LM Studio) for embeddings in Settings.");
+    throw new Error(t("provider.anthropicNoEmbeddings"));
   }
 
   async embedSingle(_text: string): Promise<number[]> {
-    throw new Error("Anthropic does not support embeddings.");
+    throw new Error(t("provider.anthropicNoEmbeddingsShort"));
   }
 
   private splitMessages(messages: LLMMessage[]): {

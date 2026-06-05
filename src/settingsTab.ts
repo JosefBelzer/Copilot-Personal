@@ -3,6 +3,8 @@ import CopilotPlugin from "./main";
 import { LmStudioService } from "./services/lmStudioService";
 import { PROVIDER_CAPABILITIES, ProviderType } from "./LLMProviders/providerTypes";
 import { getApiKeyForProvider, setApiKeyForProvider } from "./settings";
+import { t, getLanguage, setLanguage, getLanguages } from "./i18n";
+import type { Lang } from "./i18n/types";
 
 export class CopilotSettingTab extends PluginSettingTab {
   plugin: CopilotPlugin;
@@ -25,7 +27,28 @@ export class CopilotSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "Copilot Personal - Settings" });
+    containerEl.createEl("h2", { text: t("settings.title") });
+
+    // ── Language selector ───────────────────────────────────────────────
+    const langs = getLanguages();
+    new Setting(containerEl)
+      .setName(t("settings.language"))
+      .setDesc(t("settings.languageDesc"))
+      .addDropdown((dropdown) => {
+        for (const lang of langs) {
+          dropdown.addOption(lang.code, `${lang.flag} ${lang.name}`);
+        }
+        dropdown.setValue(getLanguage());
+        dropdown.onChange(async (value) => {
+          setLanguage(value as Lang);
+          this.plugin.settings.language = value;
+          await this.plugin.saveSettings();
+          // Refresh chat view UI with new language
+          const chatView = this.plugin.getChatView();
+          if (chatView) chatView.refreshLanguage();
+          this.display(); // re-render settings with new language
+        });
+      });
 
     // Always enforce license restrictions before rendering
     this.plugin.settings = this.plugin.licenseManager.applyRestrictions(this.plugin.settings);
@@ -35,16 +58,17 @@ export class CopilotSettingTab extends PluginSettingTab {
     const caps = this.getCaps();
 
     // === API Configuration ===
-    containerEl.createEl("h3", { text: "API Configuration" });
+    containerEl.createEl("h3", { text: t("settings.apiConfiguration") });
 
     const currentProvider = this.plugin.settings.providerType === "auto"
       ? "deepseek" // fallback display
       : this.plugin.settings.providerType;
     const currentApiKey = getApiKeyForProvider(this.plugin.settings, currentProvider);
+    const providerDisplayName = currentProvider === "lmstudio" ? t("labels.lmStudio") : this.plugin.settings.providerType;
 
     new Setting(containerEl)
-      .setName("API Key")
-      .setDesc(`Your API key for ${currentProvider === "lmstudio" ? "LM Studio" : this.plugin.settings.providerType} (stored in data.json — NOT encrypted. Do NOT commit to Git.)`)
+      .setName(t("settings.apiKey"))
+      .setDesc(t("settings.apiKeyDesc", { provider: providerDisplayName }))
       .addText((text) => {
         text.inputEl.type = "password";
         text
@@ -66,19 +90,19 @@ export class CopilotSettingTab extends PluginSettingTab {
       if (result.error) {
         new Notice(`⚠️ ${result.error}`);
       } else if (result.tier === "pro" && key !== "FREE") {
-        new Notice("✅ Pro license activated successfully.");
+        new Notice(t("license.proActivated"));
       } else {
-        new Notice("🆓 Free mode activated.");
+        new Notice(t("license.freeActivated"));
       }
       this.display();
     };
 
     new Setting(containerEl)
-      .setName("License Key")
-      .setDesc("Pro license key from Lemon Squeezy. Leave empty for Free tier.")
+      .setName(t("settings.licenseKey"))
+      .setDesc(t("settings.licenseKeyDesc"))
       .addText((text) => {
         text
-          .setPlaceholder("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
+          .setPlaceholder(t("settings.licensePlaceholder"))
           .setValue(this.plugin.settings.licenseKey || "")
           .onChange(async (value) => {
             await activateLicense(value);
@@ -87,15 +111,15 @@ export class CopilotSettingTab extends PluginSettingTab {
       .addExtraButton((btn) => {
         btn
           .setIcon("trash")
-          .setTooltip("Clear license (revert to Free)")
+          .setTooltip(t("settings.licenseClearTooltip"))
           .onClick(async () => {
             await activateLicense("");
           });
       });
 
     new Setting(containerEl)
-      .setName("API URL")
-      .setDesc("Base URL for the API endpoint")
+      .setName(t("settings.apiUrl"))
+      .setDesc(t("settings.apiUrlDesc"))
       .addText((text) =>
         text
           .setPlaceholder("https://api.deepseek.com")
@@ -107,23 +131,31 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Provider")
-      .setDesc("Select the LLM provider")
+      .setName(t("settings.provider"))
+      .setDesc(t("settings.providerDesc"))
       .addDropdown((dropdown) =>
         dropdown
-          .addOption("auto", "Auto-detect (from URL)")
-          .addOption("deepseek", "DeepSeek")
-          .addOption("openai", "OpenAI")
-          .addOption("anthropic", "Anthropic")
-          .addOption("openrouter", "OpenRouter")
-          .addOption("lmstudio", "LM Studio")
-          .addOption("gemini", "Google Gemini")
-          .addOption("mistral", "Mistral")
-          .addOption("groq", "Groq")
-          .addOption("perplexity", "Perplexity")
-          .addOption("xai", "xAI Grok")
+          .addOption("budget", t("provider.name.budget"))
+          .addOption("auto", t("provider.name.auto"))
+          .addOption("deepseek", t("provider.name.deepseek"))
+          .addOption("openai", t("provider.name.openai"))
+          .addOption("anthropic", t("provider.name.anthropic"))
+          .addOption("openrouter", t("provider.name.openrouter"))
+          .addOption("lmstudio", t("provider.name.lmstudio"))
+          .addOption("gemini", t("provider.name.gemini"))
+          .addOption("mistral", t("provider.name.mistral"))
+          .addOption("groq", t("provider.name.groq"))
+          .addOption("perplexity", t("provider.name.perplexity"))
+          .addOption("xai", t("provider.name.xai"))
           .setValue(this.plugin.settings.providerType)
           .onChange(async (value) => {
+            // Block Free users from selecting the budget provider
+            if (value === "budget" && !isPro) {
+              new Notice(t("settings.budgetProRequired"));
+              dropdown.setValue(this.plugin.settings.providerType); // revert
+              return;
+            }
+
             this.plugin.settings.providerType = value as ProviderType;
 
             // Auto-update API URL for known providers
@@ -164,6 +196,7 @@ export class CopilotSettingTab extends PluginSettingTab {
               groq: "llama-4-scout",
               perplexity: "sonar-pro",
               xai: "grok-3",
+              budget: "mistralai/mistral-nemo",
             };
             if (providerModels[value]) {
               this.plugin.settings.chatModel = providerModels[value];
@@ -177,10 +210,10 @@ export class CopilotSettingTab extends PluginSettingTab {
 
     // === LM Studio Model Detection ===
     const lmSection = containerEl.createEl("div");
-    lmSection.createEl("h4", { text: "LM Studio - Detect Models" });
+    lmSection.createEl("h4", { text: t("settings.lmDetectTitle") });
 
     const lmStatusEl = lmSection.createEl("div", {
-      text: "Click 'Detect' to fetch available models from LM Studio.",
+      text: t("settings.lmStatusDefault"),
       cls: "copilot-setting-hint",
     });
     lmStatusEl.style.fontSize = "12px";
@@ -188,11 +221,11 @@ export class CopilotSettingTab extends PluginSettingTab {
     lmStatusEl.style.marginBottom = "8px";
 
     new Setting(lmSection)
-      .setName("Detect models")
-      .setDesc("Query LM Studio's /v1/models endpoint to discover loaded models")
+      .setName(t("settings.detectModels"))
+      .setDesc(t("settings.detectModelsDesc"))
       .addButton((btn) =>
         btn
-          .setButtonText("Detect")
+          .setButtonText(t("settings.lmDetectButton"))
           .onClick(async () => {
             try {
               // Use dedicated LM Studio URL, NOT the main apiUrl (which could be DeepSeek/etc.)
@@ -200,11 +233,11 @@ export class CopilotSettingTab extends PluginSettingTab {
               // Send lmStudioApiKey (or none) — do NOT send the main apiKey
               const apiKey = this.plugin.settings.lmStudioApiKey || undefined;
 
-              lmStatusEl.setText("Querying LM Studio...");
+              lmStatusEl.setText(t("settings.lmStatusQuerying"));
               const models = await LmStudioService.fetchModels(url, apiKey);
 
               if (models.length === 0) {
-                lmStatusEl.setText("No models found. Load a model in LM Studio first.");
+                lmStatusEl.setText(t("settings.lmStatusNoModels"));
                 return;
               }
 
@@ -231,22 +264,19 @@ export class CopilotSettingTab extends PluginSettingTab {
               await this.plugin.saveSettings();
 
               lmStatusEl.setText(
-                `Found ${models.length} model(s): ${models.join(", ")}`
+                t("settings.lmStatusFound", { count: models.length, models: models.join(", ") })
               );
-              new Notice(`Found ${models.length} model(s) in LM Studio. First model (${models[0]}) set as default.`);
+              new Notice(t("settings.lmStatusFoundNotice", { count: models.length, model: models[0] }));
 
               // Re-render to update the model text fields
               this.display();
             } catch (err) {
               lmStatusEl.setText(
-                `Error: ${err instanceof Error ? err.message : "Unknown error"}. Make sure LM Studio is running.`
+                t("settings.lmStatusError", { error: err instanceof Error ? err.message : "Unknown error" })
               );
             }
           })
       );
-
-    // === Model Configuration ===
-    containerEl.createEl("h3", { text: "Model Configuration" });
 
     const models = this.plugin.settings.detectedModels ?? [];
     const hasDetected = models.length > 0;
@@ -262,31 +292,26 @@ export class CopilotSettingTab extends PluginSettingTab {
       const setting = new Setting(containerEl)
         .setName(label)
         .setDesc(desc);
-
       if (hasDetected) {
         setting.addDropdown((dropdown) => {
           models.forEach((m) => dropdown.addOption(m, m));
           dropdown.setValue(currentValue ?? models[0]);
-          dropdown.onChange(async (value) => {
-            await onSet(value);
-            // Keep the value even if it doesn't match the dropdown list exactly
-          });
+          dropdown.onChange(async (value) => { await onSet(value); });
         });
       } else {
         setting.addText((text) =>
-          text
-            .setPlaceholder(placeholder)
-            .setValue(currentValue)
-            .onChange(async (value) => {
-              await onSet(value);
-            })
+          text.setPlaceholder(placeholder).setValue(currentValue).onChange(async (value) => { await onSet(value); })
         );
       }
     };
 
+    // === Model Configuration ===
+    if ((this.plugin.settings.providerType as string) !== "budget") {
+      containerEl.createEl("h3", { text: t("settings.modelConfig") });
+
     addModelSetting(
-      "Chat Model",
-      "Model to use for chat completions",
+      t("settings.chatModel"),
+      t("settings.chatModelDesc"),
       "deepseek-v4-flash",
       this.plugin.settings.chatModel,
       async (v) => {
@@ -296,8 +321,8 @@ export class CopilotSettingTab extends PluginSettingTab {
     );
 
     addModelSetting(
-      "Embedding Model",
-      `Model for embeddings${this.getCaps().embeddings ? "" : " (⚠️ NOT supported by this provider)"}`,
+      t("settings.embeddingModel"),
+      t("settings.embeddingModelDesc", { unsupported: this.getCaps().embeddings ? "" : t("settings.embeddingModelUnsupported") }),
       "deepseek-embedding",
       this.plugin.settings.embeddingModel,
       async (v) => {
@@ -311,8 +336,8 @@ export class CopilotSettingTab extends PluginSettingTab {
     }
 
     addModelSetting(
-      "Vision Model",
-      "Model to use for vision/image tasks",
+      t("settings.visionModel"),
+      t("settings.visionModelDesc"),
       "deepseek-vision",
       this.plugin.settings.visionModel,
       async (v) => {
@@ -321,9 +346,11 @@ export class CopilotSettingTab extends PluginSettingTab {
       }
     );
 
+    } // end model config (hidden for budget provider)
+
     new Setting(containerEl)
-      .setName("Temperature")
-      .setDesc("Controls randomness (0.0 = deterministic, 2.0 = very random)")
+      .setName(t("settings.temperature"))
+      .setDesc(t("settings.temperatureDesc"))
       .addText((text) =>
         text
           .setPlaceholder("0.7")
@@ -338,8 +365,8 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Max Tokens")
-      .setDesc("Maximum tokens in the response")
+      .setName(t("settings.maxTokens"))
+      .setDesc(t("settings.maxTokensDesc"))
       .addText((text) =>
         text
           .setPlaceholder("4096")
@@ -354,8 +381,8 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Top P")
-      .setDesc("Nucleus sampling (0.0-1.0). Lower = more focused")
+      .setName(t("settings.topP"))
+      .setDesc(t("settings.topPDesc"))
       .addText((text) =>
         text
           .setPlaceholder("0.95")
@@ -370,8 +397,8 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Top K")
-      .setDesc("Limits token selection to top K (0 = disabled)")
+      .setName(t("settings.topK"))
+      .setDesc(t("settings.topKDesc"))
       .addText((text) =>
         text
           .setPlaceholder("20")
@@ -386,8 +413,8 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Presence Penalty")
-      .setDesc("Penalizes repeated tokens (0-2). Higher = less repetition")
+      .setName(t("settings.presencePenalty"))
+      .setDesc(t("settings.presencePenaltyDesc"))
       .addText((text) =>
         text
           .setPlaceholder("1.5")
@@ -402,8 +429,8 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Enable thinking mode")
-      .setDesc("Use DeepSeek V4 thinking/reasoning (incompatible with temperature/top_p/presence_penalty)")
+      .setName(t("settings.enableThinking"))
+      .setDesc(t("settings.enableThinkingDesc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.enableThinking && (this.getCaps().thinking))
@@ -415,12 +442,12 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Reasoning effort")
-      .setDesc("Only applies when thinking mode is enabled (DeepSeek V4)")
+      .setName(t("settings.reasoningEffort"))
+      .setDesc(t("settings.reasoningEffortDesc"))
       .addDropdown((dropdown) =>
         dropdown
-          .addOption("high", "High")
-          .addOption("max", "Max")
+          .addOption("high", t("settings.reasoningHigh"))
+          .addOption("max", t("settings.reasoningMax"))
           .setValue(this.plugin.settings.reasoningEffort)
           .onChange(async (value) => {
             this.plugin.settings.reasoningEffort = value as "high" | "max";
@@ -429,11 +456,11 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     // === Chat Options ===
-    containerEl.createEl("h3", { text: "Chat Options" });
+    containerEl.createEl("h3", { text: t("settings.chatOptions") });
 
     new Setting(containerEl)
-      .setName("Stream responses")
-      .setDesc("Show response token by token")
+      .setName(t("settings.streamResponses"))
+      .setDesc(t("settings.streamResponsesDesc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.streamEnabled)
@@ -444,8 +471,8 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Context turns")
-      .setDesc("Number of previous turns to include in context")
+      .setName(t("settings.contextTurns"))
+      .setDesc(t("settings.contextTurnsDesc"))
       .addText((text) =>
         text
           .setPlaceholder("5")
@@ -460,11 +487,11 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     // === Semantic Search ===
-    containerEl.createEl("h3", { text: `Semantic Search (RAG)${isPro ? "" : " (🔒 Pro)"}` });
+    containerEl.createEl("h3", { text: `${t("settings.sectionSemanticSearch")}${isPro ? "" : " (🔒 Pro)"}` });
 
     new Setting(containerEl)
-      .setName("Enable semantic search")
-      .setDesc(isPro ? "Index your vault for semantic search in chat" : "🔒 Semantic search requires a Pro license")
+      .setName(t("settings.semanticSearch"))
+      .setDesc(isPro ? t("settings.semanticSearchDesc") : t("settings.semanticSearchProLocked"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.enableSemanticSearch && isPro)
@@ -476,8 +503,8 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Max source chunks")
-      .setDesc("Number of chunks to retrieve per query")
+      .setName(t("settings.maxSourceChunks"))
+      .setDesc(t("settings.maxSourceChunksDesc"))
       .addText((text) =>
         text
           .setPlaceholder("5")
@@ -492,8 +519,8 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Chunk size (tokens)")
-      .setDesc("Approximate token count per chunk")
+      .setName(t("settings.chunkSize"))
+      .setDesc(t("settings.chunkSizeDesc"))
       .addText((text) =>
         text
           .setPlaceholder("500")
@@ -508,11 +535,11 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     // === Web Search ===
-    containerEl.createEl("h3", { text: `Web Search (browser-use)${isPro ? "" : " (🔒 Pro)"}` });
+    containerEl.createEl("h3", { text: `${t("settings.sectionWebSearch")}${isPro ? "" : " (🔒 Pro)"}` });
 
     new Setting(containerEl)
-      .setName("Enable web search")
-      .setDesc(isPro ? "Allow web search via browser-use microservice" : "🔒 Web search requires a Pro license")
+      .setName(t("settings.webSearch"))
+      .setDesc(isPro ? t("settings.webSearchDesc") : t("settings.webSearchProLocked"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.webSearchEnabled && isPro)
@@ -524,8 +551,8 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Web search server URL")
-      .setDesc("URL of the browser-use Python microservice")
+      .setName(t("settings.webSearchServerUrl"))
+      .setDesc(t("settings.webSearchServerUrlDesc"))
       .addText((text) =>
         text
           .setPlaceholder("http://localhost:8000/search")
@@ -537,8 +564,8 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Max search results")
-      .setDesc("How many web results to return")
+      .setName(t("settings.webSearchMaxResults"))
+      .setDesc(t("settings.webSearchMaxResultsDesc"))
       .addText((text) =>
         text
           .setPlaceholder("3")
@@ -553,8 +580,8 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Web search token")
-      .setDesc("Authentication token shared with the Python search server (must match server's COPILOT_WEB_TOKEN)")
+      .setName(t("settings.webSearchToken"))
+      .setDesc(t("settings.webSearchTokenDesc"))
       .addText((text) => {
         text.inputEl.type = "password";
         text
@@ -567,14 +594,14 @@ export class CopilotSettingTab extends PluginSettingTab {
       });
 
     // === Vision ===
-    containerEl.createEl("h3", { text: `Vision / Images${caps.vision ? (isPro ? "" : " (🔒 Pro)") : " (⚠️ not supported)"}` });
+    containerEl.createEl("h3", { text: `${t("settings.sectionVision")}${caps.vision ? (isPro ? "" : " (🔒 Pro)") : " (⚠️ not supported)"}` });
 
     new Setting(containerEl)
-      .setName("Enable vision")
+      .setName(t("settings.vision"))
       .setDesc(
         caps.vision
-          ? (isPro ? "Use vision model for images" : "🔒 Vision requires a Pro license")
-          : "Not available for this provider"
+          ? (isPro ? t("settings.visionDesc") : t("settings.visionProLocked"))
+          : t("settings.visionNotSupported")
       )
       .addToggle((toggle) => {
         toggle
@@ -587,8 +614,8 @@ export class CopilotSettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName("Enable image drop")
-      .setDesc("Allow drag & drop of images into chat")
+      .setName(t("settings.imageDrop"))
+      .setDesc(t("settings.imageDropDesc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.enableImageDrop)
@@ -599,11 +626,11 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     // === Chat History ===
-    containerEl.createEl("h3", { text: "Chat History" });
+    containerEl.createEl("h3", { text: t("settings.chatHistory") });
 
     new Setting(containerEl)
-      .setName("Save chat history")
-      .setDesc("Save conversations as markdown files in the vault")
+      .setName(t("settings.saveChatHistory"))
+      .setDesc(t("settings.saveChatHistoryDesc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.saveChatHistory)
@@ -614,8 +641,8 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Chat history folder")
-      .setDesc("Folder to store chat history files")
+      .setName(t("settings.chatHistoryFolder"))
+      .setDesc(t("settings.chatHistoryFolderDesc"))
       .addText((text) =>
         text
           .setPlaceholder("copilot-chats")
@@ -627,11 +654,11 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     // === Memory ===
-    containerEl.createEl("h3", { text: "Memory" });
+    containerEl.createEl("h3", { text: t("settings.memory") });
 
     new Setting(containerEl)
-      .setName("Enable memory")
-      .setDesc("Remember key facts between chat sessions")
+      .setName(t("settings.enableMemory"))
+      .setDesc(t("settings.enableMemoryDesc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.memoryEnabled)
@@ -642,8 +669,8 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Memory folder")
-      .setDesc("Folder to store memory files")
+      .setName(t("settings.memoryFolder"))
+      .setDesc(t("settings.memoryFolderDesc"))
       .addText((text) =>
         text
           .setPlaceholder("copilot/memory")
@@ -655,8 +682,8 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Max memories")
-      .setDesc("Number of recent memories to load on new chat")
+      .setName(t("settings.maxMemories"))
+      .setDesc(t("settings.maxMemoriesDesc"))
       .addText((text) =>
         text
           .setPlaceholder("3")
@@ -671,14 +698,14 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     // === Agent Mode ===
-    containerEl.createEl("h3", { text: `Agent Mode${caps.toolCalling ? (isPro ? "" : " (🔒 Pro)") : " (⚠️ not supported)"}` });
+    containerEl.createEl("h3", { text: `${t("settings.sectionAgentMode")}${caps.toolCalling ? (isPro ? "" : " (🔒 Pro)") : " (⚠️ not supported)"}` });
 
     new Setting(containerEl)
-      .setName("Enable agent mode")
+      .setName(t("settings.agentMode"))
       .setDesc(
         caps.toolCalling
-          ? (isPro ? "Let the AI use tools and perform multiple actions autonomously" : "🔒 Agent mode requires a Pro license")
-          : "Tool calling not available for this provider"
+          ? (isPro ? t("settings.agentModeDesc") : t("settings.agentModeProLocked"))
+          : t("settings.agentModeToolCallingNA")
       )
       .addToggle((toggle) =>
         toggle
@@ -691,8 +718,8 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Max agent iterations")
-      .setDesc("Maximum number of tool calls per agent run")
+      .setName(t("settings.maxAgentIterations"))
+      .setDesc(t("settings.maxAgentIterationsDesc"))
       .addText((text) =>
         text
           .setPlaceholder("5")
@@ -707,11 +734,11 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     // === LM Studio (Vision) ===
-    containerEl.createEl("h3", { text: "LM Studio (Image Analysis)" });
+    containerEl.createEl("h3", { text: t("settings.lmVisionTitle") });
 
     new Setting(containerEl)
-      .setName("LM Studio URL")
-      .setDesc("URL of your LM Studio server")
+      .setName(t("settings.lmStudioUrl"))
+      .setDesc(t("settings.lmStudioUrlDesc"))
       .addText((text) =>
         text
           .setPlaceholder("http://localhost:1234/v1")
@@ -723,8 +750,8 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     const lmModelSetting = new Setting(containerEl)
-      .setName("LM Studio Model")
-      .setDesc("Model name for vision/image tasks");
+      .setName(t("settings.lmStudioModel"))
+      .setDesc(t("settings.lmStudioModelDesc"));
 
     if (hasDetected) {
       lmModelSetting.addDropdown((dropdown) => {
@@ -748,8 +775,8 @@ export class CopilotSettingTab extends PluginSettingTab {
     }
 
     new Setting(containerEl)
-      .setName("LM Studio API Key")
-      .setDesc("API key (leave empty if not required)")
+      .setName(t("settings.lmStudioApiKey"))
+      .setDesc(t("settings.lmStudioApiKeyDesc"))
       .addText((text) =>
         text
           .setPlaceholder("not-needed")
@@ -768,18 +795,18 @@ export class CopilotSettingTab extends PluginSettingTab {
     if (!activeCaps.vision) missing.push({ key: "vision", label: "Vision", settingKey: "fallbackVisionProvider", modelKey: "fallbackModelVision", modelPlaceholder: "qwen2.5-vl-27b-instruct" });
 
     if (missing.length > 0) {
-      containerEl.createEl("h3", { text: `🔄 Multi-Provider Fallback${isPro ? "" : " (Pro)"}` });
+      containerEl.createEl("h3", { text: `${t("settings.multiProviderFallback")}${isPro ? "" : " (Pro)"}` });
 
       if (!isPro) {
-        containerEl.createEl("div", { text: "🔒 Multi-provider fallback requires a Pro license. With Pro, you can use a second provider for capabilities your primary provider lacks.", cls: "copilot-setting-hint" }).style.cssText = "font-size:12px;color:var(--text-muted);margin-bottom:12px;";
+        containerEl.createEl("div", { text: t("settings.multiProviderProNotice"), cls: "copilot-setting-hint" }).style.cssText = "font-size:12px;color:var(--text-muted);margin-bottom:12px;";
       }
 
       for (const cap of missing) {
-        containerEl.createEl("h4", { text: `⚠️ ${this.plugin.settings.providerType} does not support ${cap.label}` });
+        containerEl.createEl("h4", { text: `⚠️ ${t("settings.providerNoSupport", { provider: this.plugin.settings.providerType, cap: cap.label })}` });
 
         new Setting(containerEl)
-          .setName(`Fallback for ${cap.label}`)
-          .setDesc(isPro ? `Select a provider that DOES support ${cap.label}` : "🔒 Requires Pro license")
+          .setName(t("settings.fallbackFor", { cap: cap.label }))
+          .setDesc(isPro ? t("settings.fallbackSelect", { cap: cap.label }) : t("settings.fallbackProLocked"))
           .addDropdown((dropdown) => {
             const allTypes: ProviderType[] = ["deepseek", "openai", "anthropic", "openrouter", "lmstudio", "gemini", "mistral", "groq", "perplexity", "xai"];
             for (const pt of allTypes) {
@@ -789,16 +816,65 @@ export class CopilotSettingTab extends PluginSettingTab {
             dropdown.setValue((this.plugin.settings as any)[cap.settingKey] || "");
             if (!isPro) dropdown.selectEl.disabled = true;
             dropdown.onChange(async (v) => { (this.plugin.settings as any)[cap.settingKey] = v; await this.plugin.saveSettings(); });
-          });
+      });
 
-        new Setting(containerEl)
-          .setName(`Model ${cap.label} (fallback)`)
-          .setDesc(`Model name for ${cap.label} in fallback provider`)
+    // ── Budget AI (Pro only) ────────────────────────────────────────────
+    if (isPro) {
+      const budget = this.plugin.budgetManager;
+      const licenseKey = this.plugin.settings.licenseKey || "";
+
+      containerEl.createEl("h3", { text: "💰 " + t("settings.budgetTitle") });
+
+      // Usage bar — fetched from Worker (server-side tracking)
+      const barContainer = containerEl.createDiv("copilot-budget-bar");
+      const bar = barContainer.createDiv("copilot-budget-bar-fill");
+      bar.style.width = "0%";
+
+      const stats = containerEl.createDiv("copilot-budget-stats");
+      stats.createEl("span", { text: "📊 Loading..." });
+      stats.createEl("span", { text: "💬 Loading..." });
+      stats.createEl("span", { text: "💵 Loading..." });
+      stats.createEl("span", { text: "⏰ Loading..." });
+
+      // Fetch async from Worker
+      budget.fetchUsage(licenseKey).then(usage => {
+        const maxPct = Math.max(usage.tokenPercent, usage.queryPercent);
+        bar.style.width = maxPct + "%";
+        bar.className = "copilot-budget-bar-fill" +
+          (maxPct > 90 ? " copilot-budget-critical" : maxPct > 75 ? " copilot-budget-warn" : "");
+        stats.empty();
+        stats.createEl("span", { text: `📊 ${usage.dailyTokens.toLocaleString()} / ${usage.limitTokens.toLocaleString()} tokens` });
+        stats.createEl("span", { text: `💬 ${usage.dailyQueries} / ${usage.limitQueries} queries` });
+        stats.createEl("span", { text: `💵 ~$${usage.dailyCost.toFixed(3)} / $${usage.dailyCostLimit}` });
+        stats.createEl("span", { text: `⏰ Resets in ${usage.resetsInHours}h` });
+      }).catch(() => {
+        stats.empty();
+        stats.createEl("span", { text: "⚠️ Could not load budget usage" });
+      });
+
+      // Enable/disable toggle
+      new Setting(containerEl)
+        .setName(t("settings.budgetEnable"))
+        .setDesc(t("settings.budgetEnableDesc"))
+        .addToggle((toggle) =>
+          toggle
+            .setValue(budget.isEnabled())
+            .onChange(async (value) => {
+              budget.setEnabled(value);
+              await this.plugin.saveSettings();
+              this.display();
+            })
+        );
+    }
+
+    new Setting(containerEl)
+          .setName(t("settings.fallbackModelName", { cap: cap.label }))
+          .setDesc(t("settings.fallbackModelDesc", { cap: cap.label }))
           .addText((text) => {
             text.setPlaceholder(cap.modelPlaceholder).setValue((this.plugin.settings as any)[cap.modelKey] || "").onChange(async (v) => { (this.plugin.settings as any)[cap.modelKey] = v; await this.plugin.saveSettings(); });
             if (!isPro) text.inputEl.disabled = true;
           });
       }
-    }
   }
+}
 }

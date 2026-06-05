@@ -1,6 +1,7 @@
 import { App } from "obsidian";
 import { AgentTool } from "../agent/ToolRegistry";
 import { normalizePath, ensureMd, basenameNoExt, normalizeGerman } from "../utils/pathUtils";
+import { t } from "../i18n";
 
 /**
  * read_note — lee el contenido completo de una nota del vault.
@@ -11,20 +12,20 @@ export function createReadNoteTool(app: App): AgentTool {
   return {
     name: "read_note",
     description:
-      "Reads the full content of a note from the vault. Accepts note name with or without .md extension and with or without path. E.g. '01_02_Qualitaet_als_Erfolgsfaktor', 'Folder/MyNote.md'. Ideal for consulting previously saved notes.",
+      t("tools.readNote.description"),
     parameters: {
       type: "object",
       properties: {
         path: {
           type: "string",
-          description: "Note name or path (with or without .md, with or without folder). E.g. '01_02_Qualitaet_als_Erfolgsfaktor' or '10_Mundo/ReinosDeAcanthia.md'.",
+          description: t("tools.readNote.paramPath"),
         },
       },
       required: ["path"],
     },
     execute: async (params: Record<string, unknown>): Promise<string> => {
       const raw = (params.path as string)?.trim();
-      if (!raw) return "Error: no path provided.";
+      if (!raw) return t("tools.readNote.error.noPath");
 
       // Path traversal protection: reject directory escapes
       const normalized = normalizePath(raw);
@@ -35,7 +36,7 @@ export function createReadNoteTool(app: App): AgentTool {
         raw.startsWith("/") || raw.startsWith("\\") ||       // absolute path
         /%[2eE]{2}/i.test(raw)                              // encoded .. (%2e%2e, %2E%2E, etc.)
       ) {
-        return "Error: invalid path.";
+        return t("tools.readNote.error.invalidPath");
       }
 
       try {
@@ -57,13 +58,13 @@ export function createReadNoteTool(app: App): AgentTool {
         );
         if (autoFind.length === 1) {
           const content = await app.vault.read(autoFind[0]);
-          return `[Auto-found: ${autoFind[0].path}]\n\n${content}`;
+          return `${t("tools.readNote.autoFound", { path: autoFind[0].path })}\n\n${content}`;
         }
 
         // If multiple matches, list them
         if (autoFind.length > 1) {
           const paths = autoFind.map(f => `  - ${f.path}`).join("\n");
-          return `Found ${autoFind.length} notes with name "${basenameNoExt(normalized)}". Specify the full path:\n${paths}`;
+          return t("tools.readNote.foundMultiple", { count: autoFind.length, name: basenameNoExt(normalized), paths });
         }
 
         // Partial match fallback
@@ -72,13 +73,14 @@ export function createReadNoteTool(app: App): AgentTool {
         ).slice(0, 10);
         if (partial.length > 0) {
           const paths = partial.map(f => `  - ${f.path}`).join("\n");
-          return `Exact match not found for "${basenameNoExt(normalized)}". Similar notes:\n${paths}`;
+          return t("tools.readNote.exactMatchNotFound", { name: basenameNoExt(normalized), paths });
         }
 
-        return `Error: the note "${normalized}" does not exist in the vault.`;
+        return t("tools.readNote.error.notFound", { path: normalized });
       } catch (err) {
         console.error("[read_note] Failed:", err);
-        return `Error reading "${raw}": ${err instanceof Error ? err.message : String(err)}`;
+        const errMsg = err instanceof Error ? err.message : String(err);
+        return t("tools.readNote.error.readError", { path: raw, error: errMsg });
       }
     },
   };

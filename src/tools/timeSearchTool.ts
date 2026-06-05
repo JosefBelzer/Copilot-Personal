@@ -1,5 +1,6 @@
 import { App } from "obsidian";
 import { AgentTool } from "../agent/ToolRegistry";
+import { t } from "../i18n";
 
 /**
  * search_vault_by_timeframe — busca notas del vault modificadas entre dos fechas.
@@ -8,17 +9,17 @@ export function createTimeSearchTool(app: App): AgentTool {
   return {
     name: "search_vault_by_timeframe",
     description:
-      "Searches vault notes modified between two dates in ISO 8601 format (YYYY-MM-DDTHH:mm:ss). Useful to see what the user did in a time period.",
+      t("tools.searchVaultByTimeframe.description"),
     parameters: {
       type: "object",
       properties: {
         start_date: {
           type: "string",
-          description: "Start date in ISO 8601 format, e.g. 2026-05-01T00:00:00",
+          description: t("tools.searchVaultByTimeframe.paramStartDate"),
         },
         end_date: {
           type: "string",
-          description: "End date in ISO 8601 format, e.g. 2026-05-10T23:59:59",
+          description: t("tools.searchVaultByTimeframe.paramEndDate"),
         },
       },
       required: ["start_date", "end_date"],
@@ -28,7 +29,7 @@ export function createTimeSearchTool(app: App): AgentTool {
       const endDate = new Date(params.end_date as string);
 
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        return "Error: invalid dates. Use ISO 8601 format (YYYY-MM-DDTHH:mm:ss).";
+        return t("tools.searchVaultByTimeframe.error.invalidDates");
       }
 
       const files = app.vault.getMarkdownFiles();
@@ -49,13 +50,13 @@ export function createTimeSearchTool(app: App): AgentTool {
       }
 
       if (matched.length === 0) {
-        return `No notes found modified between ${params.start_date} and ${params.end_date}.`;
+        return t("tools.searchVaultByTimeframe.noResults", { start: params.start_date as string, end: params.end_date as string });
       }
 
       return matched
         .map(
           (m, i) =>
-            `[${i + 1}] ${m.title} (${m.path})\nModified: ${new Date(m.mtime).toISOString()}\nContent: ${m.snippet}...`
+            t("tools.searchVaultByTimeframe.result", { index: i + 1, title: m.title, path: m.path, mtime: new Date(m.mtime).toISOString(), snippet: m.snippet })
         )
         .join("\n\n");
     },

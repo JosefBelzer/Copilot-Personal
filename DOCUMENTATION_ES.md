@@ -1,4 +1,4 @@
-# Copilot Personal — Documentación v1.4.5
+# Copilot Personal — Documentación v1.5.0
 
 > Asistente de IA con capacidades agentivas avanzadas para Obsidian. Chat multimodal con streaming real, RAG semántico, agente autónomo (17 herramientas), 11 proveedores LLM con tool calling nativo y fallback multi-proveedor, renderizado de PDFs con `unpdf`, sistema de licencias Free/Pro con validación cloud + grace period, CircuitBreaker en todos los providers, dual-build (store limpio / distribution ofuscado), y auto-guardado inteligente de notas. 151 tests.
 
@@ -93,6 +93,15 @@ uvicorn main:app --host 127.0.0.1 --port 8000
 - **Web search** · **PDF con imágenes** · **RAG semántico**
 - **Export chat** (MD/JSON) · **Slash commands** · Soporte prioritario
 - **Multi-provider fallback** · **API keys por proveedor**
+- **💰 Copilot AI (incluido)** — Proveedor de IA gestionado integrado. 50 consultas/día. Sin API key. Modo agente soportado.
+
+### 💰 Copilot AI — Proveedor de Presupuesto (Pro)
+
+Incluido con Pro sin costo extra. Selecciona **💰 Copilot AI (Pro)** en el dropdown de provider. 50 consultas/día, control de uso por servidor (Cloudflare Worker) y compartido entre dispositivos.
+
+> ⚠️ **El modo agente aumenta el consumo.** Cada paso del agente cuenta como una consulta. Una tarea de 3 pasos = 3 consultas. Usa el agente para tareas complejas y chat simple para preguntas rápidas.
+
+> 🌐 **Idiomas soportados:** Inglés, Español, Francés, Alemán, Italiano, Portugués, Chino, Japonés, Coreano, Árabe, Hindi (11 idiomas). Para otros idiomas de la UI, el asistente responde en inglés.
 
 ### Activar Pro
 1. Compra una suscripción Pro en [belzersoftware.lemonsqueezy.com](https://belzersoftware.lemonsqueezy.com/checkout/buy/85655f95-93f7-4649-954a-8bc62472f302)
@@ -312,12 +321,13 @@ Grundlagen_des_Qualitätsmanagements.pdf, página 27
 ## 14. Atajos de teclado
 ## 15. Roadmap
 
-### v1.4.4 (Actual — Junio 2026)
-- [x] Todos los strings de UI restantes traducidos al inglés
-- [x] Indicador de progreso del agente: `Paso` → `Step`
-- [x] Migración automática de `apiKey` legacy a clave por proveedor
-- [x] `pdf.worker.min.mjs` eliminado del release (usa CDN)
-- [x] GitHub artifact attestations vía workflow
+### v1.5.0 (Actual)
+- [x] **i18n completo**: 12 idiomas con cambio instantáneo — selector en Settings
+- [x] ~600 strings de UI internacionalizados con motor `t()`
+- [x] Traducción completa al español de settings, chat y herramientas
+- [x] Migración de `apiKey` legacy a claves por proveedor
+
+### v1.4.4
 
 ### v1.4.3
 - [x] **Dual-build**: `npm run build:store` (limpio, Obsidian review) + `npm run build` (ofuscado, distribución)
@@ -390,4 +400,4 @@ Grundlagen_des_Qualitätsmanagements.pdf, página 27
 
 ---
 
-**Copilot Personal v1.4.5** — Hecho con ❤️ para la comunidad Obsidian.
+**Copilot Personal v1.5.0** — Hecho con ❤️ para la comunidad Obsidian.
