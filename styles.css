@@ -471,8 +471,8 @@ button.copilot-agent-toggle.copilot-agent-active {
   color: var(--text-error);
   animation: budget-pulse 2s infinite;
 }
-.copilot-hidden { display: none !important; }
-.copilot-show-inline { display: inline-block !important; }
+.copilot-hidden { display: none; }
+.copilot-show-inline { display: inline-block; }
 .copilot-img-preview { max-width: 200px; max-height: 200px; border-radius: 6px; }
 .copilot-half-opacity { opacity: 0.5; }
 .copilot-text-warning { color: var(--text-warning); }

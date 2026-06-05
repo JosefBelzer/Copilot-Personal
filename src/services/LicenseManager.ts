@@ -156,8 +156,8 @@ export class LicenseManager {
       const parts = [
         typeof navigator !== "undefined" ? String(navigator.hardwareConcurrency ?? 0) : "0",
         Platform.isDesktop ? "desktop" : Platform.isMobile ? "mobile" : "unknown",
-        // navigator.userAgent used only for device fingerprint uniqueness, not OS detection
-        typeof navigator !== "undefined" ? (navigator.userAgent ?? "").substring(0, 100) : "",
+        // Device fingerprint uses safe APIs only — no navigator.userAgent (avoids OS detection)
+        typeof window !== "undefined" ? "electron" : "node",
         typeof screen !== "undefined" ? `${screen.width}x${screen.height}` : "",
         new Intl.DateTimeFormat().resolvedOptions().timeZone || "",
       ];

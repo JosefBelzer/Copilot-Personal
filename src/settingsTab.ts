@@ -27,7 +27,7 @@ export class CopilotSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: t("settings.title") });
+    new Setting(containerEl).setName(t("settings.title")).setHeading();
 
     // ── Language selector ───────────────────────────────────────────────
     const langs = getLanguages();
