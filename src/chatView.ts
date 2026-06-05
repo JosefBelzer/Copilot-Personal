@@ -668,7 +668,7 @@ export class CopilotChatView extends ItemView {
         if (expectedNotes >= 2 && writeCount < expectedNotes && /(todas|todos|all|complet|listo|done|finished)/i.test(displayResponse)) {
           const missing = expectedNotes - writeCount;
           const warn = this.addMessage("system", `⚠️ Model claims completion but only ${writeCount} of ${expectedNotes} notes were saved. ${missing} missing.`);
-          warn.style.color = "var(--text-warning)";
+          warn.classList.add("copilot-text-warning");
         }
       }
     } catch (error) {
@@ -979,14 +979,14 @@ export class CopilotChatView extends ItemView {
           this.budgetEl.title = `${cached.dailyQueries} of ${cached.limitQueries} queries used today · Resets in ${cached.resetsInHours}h`;
           this.budgetEl.className = "copilot-budget-badge" +
             (pct >= 90 ? " copilot-budget-critical" : pct >= 75 ? " copilot-budget-warn" : "");
-          this.budgetEl.style.display = "";
+          this.budgetEl.classList.remove("copilot-hidden");
         } else {
           this.budgetEl.setText("💰 --/50");
           this.budgetEl.className = "copilot-budget-badge";
-          this.budgetEl.style.display = "";
+          this.budgetEl.classList.remove("copilot-hidden");
         }
       } else {
-        this.budgetEl.style.display = "none";
+        this.budgetEl.classList.add("copilot-hidden");
       }
     }
 
@@ -1110,7 +1110,7 @@ export class CopilotChatView extends ItemView {
     this.messages.push({ role, content });
 
     const msgEl = this.chatHistoryEl.createDiv(`copilot-message copilot-message-${role}`);
-    msgEl.style.animation = "copilot-fade-in 0.3s ease-out";
+    msgEl.classList.add("copilot-fade-in-anim");
 
     const roleRow = msgEl.createDiv("copilot-message-role-row");
 
@@ -1244,7 +1244,7 @@ export class CopilotChatView extends ItemView {
       contentEl.empty(); contentEl.setText(error instanceof Error ? error.message : String(error));
       this.statusEl.setText(t("chat.statusError"));
     }
-    this.isGenerating = false; this.sendBtnEl.disabled = false; this.stopBtnEl.style.display = "none";
+    this.isGenerating = false; this.sendBtnEl.disabled = false; this.stopBtnEl.classList.add("copilot-hidden");
     this.statusEl.setText(t("chat.statusReady")); this.inputEl.focus(); this.scrollToBottom(); this.updateHeaderBadges();
   }
 
@@ -1320,7 +1320,7 @@ export class CopilotChatView extends ItemView {
 
     this._budgetAgentContext = messages;
     this.messages[this.messages.length - 1].content = fullContent || "(no response)";
-    this.isGenerating = false; this.sendBtnEl.disabled = false; this.stopBtnEl.style.display = "none";
+    this.isGenerating = false; this.sendBtnEl.disabled = false; this.stopBtnEl.classList.add("copilot-hidden");
     this.statusEl.setText(t("chat.statusReady")); this.inputEl.focus(); this.scrollToBottom(); this.updateHeaderBadges();
   }
 

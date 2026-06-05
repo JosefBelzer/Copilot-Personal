@@ -1,3 +1,4 @@
+import { Platform } from "obsidian";
 import { CopilotSettings } from "../settings";
 import { t } from "../i18n";
 
@@ -154,7 +155,8 @@ export class LicenseManager {
     try {
       const parts = [
         typeof navigator !== "undefined" ? String(navigator.hardwareConcurrency ?? 0) : "0",
-        typeof navigator !== "undefined" ? (navigator.platform ?? "unknown") : "unknown",
+        Platform.isDesktop ? "desktop" : Platform.isMobile ? "mobile" : "unknown",
+        // navigator.userAgent used only for device fingerprint uniqueness, not OS detection
         typeof navigator !== "undefined" ? (navigator.userAgent ?? "").substring(0, 100) : "",
         typeof screen !== "undefined" ? `${screen.width}x${screen.height}` : "",
         new Intl.DateTimeFormat().resolvedOptions().timeZone || "",

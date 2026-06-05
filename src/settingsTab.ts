@@ -58,7 +58,7 @@ export class CopilotSettingTab extends PluginSettingTab {
     const caps = this.getCaps();
 
     // === API Configuration ===
-    containerEl.createEl("h3", { text: t("settings.apiConfiguration") });
+    new Setting(containerEl).setName(t("settings.apiConfiguration")).setHeading();
 
     const currentProvider = this.plugin.settings.providerType === "auto"
       ? "deepseek" // fallback display
@@ -210,15 +210,12 @@ export class CopilotSettingTab extends PluginSettingTab {
 
     // === LM Studio Model Detection ===
     const lmSection = containerEl.createEl("div");
-    lmSection.createEl("h4", { text: t("settings.lmDetectTitle") });
+    new Setting(lmSection).setName(t("settings.lmDetectTitle")).setHeading();
 
     const lmStatusEl = lmSection.createEl("div", {
       text: t("settings.lmStatusDefault"),
-      cls: "copilot-setting-hint",
+      cls: "copilot-setting-hint copilot-setting-hint-sm",
     });
-    lmStatusEl.style.fontSize = "12px";
-    lmStatusEl.style.color = "var(--text-muted)";
-    lmStatusEl.style.marginBottom = "8px";
 
     new Setting(lmSection)
       .setName(t("settings.detectModels"))
@@ -307,7 +304,7 @@ export class CopilotSettingTab extends PluginSettingTab {
 
     // === Model Configuration ===
     if ((this.plugin.settings.providerType as string) !== "budget") {
-      containerEl.createEl("h3", { text: t("settings.modelConfig") });
+      new Setting(containerEl).setName(t("settings.modelConfig")).setHeading();
 
     addModelSetting(
       t("settings.chatModel"),
@@ -332,7 +329,7 @@ export class CopilotSettingTab extends PluginSettingTab {
     );
     if (!this.getCaps().embeddings) {
       (containerEl.lastChild as HTMLElement).querySelector("input")?.setAttribute("disabled", "true");
-      (containerEl.lastChild as HTMLElement).style.opacity = "0.5";
+      (containerEl.lastChild as HTMLElement).classList.add("copilot-setting-disabled");
     }
 
     addModelSetting(
@@ -456,7 +453,7 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     // === Chat Options ===
-    containerEl.createEl("h3", { text: t("settings.chatOptions") });
+    new Setting(containerEl).setName(t("settings.chatOptions")).setHeading();
 
     new Setting(containerEl)
       .setName(t("settings.streamResponses"))
@@ -487,7 +484,7 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     // === Semantic Search ===
-    containerEl.createEl("h3", { text: `${t("settings.sectionSemanticSearch")}${isPro ? "" : " (🔒 Pro)"}` });
+    new Setting(containerEl).setName(`${t("settings.sectionSemanticSearch")}${isPro ? "" : " (🔒 Pro)"}`).setHeading();
 
     new Setting(containerEl)
       .setName(t("settings.semanticSearch"))
@@ -535,7 +532,7 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     // === Web Search ===
-    containerEl.createEl("h3", { text: `${t("settings.sectionWebSearch")}${isPro ? "" : " (🔒 Pro)"}` });
+    new Setting(containerEl).setName(`${t("settings.sectionWebSearch")}${isPro ? "" : " (🔒 Pro)"}`).setHeading();
 
     new Setting(containerEl)
       .setName(t("settings.webSearch"))
@@ -594,7 +591,7 @@ export class CopilotSettingTab extends PluginSettingTab {
       });
 
     // === Vision ===
-    containerEl.createEl("h3", { text: `${t("settings.sectionVision")}${caps.vision ? (isPro ? "" : " (🔒 Pro)") : " (⚠️ not supported)"}` });
+    new Setting(containerEl).setName(`${t("settings.sectionVision")}${caps.vision ? (isPro ? "" : " (🔒 Pro)") : " (⚠️ not supported)"}`).setHeading();
 
     new Setting(containerEl)
       .setName(t("settings.vision"))
@@ -626,7 +623,7 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     // === Chat History ===
-    containerEl.createEl("h3", { text: t("settings.chatHistory") });
+    new Setting(containerEl).setName(t("settings.chatHistory")).setHeading();
 
     new Setting(containerEl)
       .setName(t("settings.saveChatHistory"))
@@ -654,7 +651,7 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     // === Memory ===
-    containerEl.createEl("h3", { text: t("settings.memory") });
+    new Setting(containerEl).setName(t("settings.memory")).setHeading();
 
     new Setting(containerEl)
       .setName(t("settings.enableMemory"))
@@ -698,7 +695,7 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     // === Agent Mode ===
-    containerEl.createEl("h3", { text: `${t("settings.sectionAgentMode")}${caps.toolCalling ? (isPro ? "" : " (🔒 Pro)") : " (⚠️ not supported)"}` });
+    new Setting(containerEl).setName(`${t("settings.sectionAgentMode")}${caps.toolCalling ? (isPro ? "" : " (🔒 Pro)") : " (⚠️ not supported)"}`).setHeading();
 
     new Setting(containerEl)
       .setName(t("settings.agentMode"))
@@ -734,7 +731,7 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     // === LM Studio (Vision) ===
-    containerEl.createEl("h3", { text: t("settings.lmVisionTitle") });
+    new Setting(containerEl).setName(t("settings.lmVisionTitle")).setHeading();
 
     new Setting(containerEl)
       .setName(t("settings.lmStudioUrl"))
@@ -795,14 +792,14 @@ export class CopilotSettingTab extends PluginSettingTab {
     if (!activeCaps.vision) missing.push({ key: "vision", label: "Vision", settingKey: "fallbackVisionProvider", modelKey: "fallbackModelVision", modelPlaceholder: "qwen2.5-vl-27b-instruct" });
 
     if (missing.length > 0) {
-      containerEl.createEl("h3", { text: `${t("settings.multiProviderFallback")}${isPro ? "" : " (Pro)"}` });
+      new Setting(containerEl).setName(`${t("settings.multiProviderFallback")}${isPro ? "" : " (Pro)"}`).setHeading();
 
       if (!isPro) {
-        containerEl.createEl("div", { text: t("settings.multiProviderProNotice"), cls: "copilot-setting-hint" }).style.cssText = "font-size:12px;color:var(--text-muted);margin-bottom:12px;";
+        containerEl.createEl("div", { text: t("settings.multiProviderProNotice"), cls: "copilot-setting-hint copilot-setting-note" });
       }
 
       for (const cap of missing) {
-        containerEl.createEl("h4", { text: `⚠️ ${t("settings.providerNoSupport", { provider: this.plugin.settings.providerType, cap: cap.label })}` });
+        new Setting(containerEl).setName(`⚠️ ${t("settings.providerNoSupport", { provider: this.plugin.settings.providerType, cap: cap.label })}`).setHeading();
 
         new Setting(containerEl)
           .setName(t("settings.fallbackFor", { cap: cap.label }))
@@ -823,12 +820,11 @@ export class CopilotSettingTab extends PluginSettingTab {
       const budget = this.plugin.budgetManager;
       const licenseKey = this.plugin.settings.licenseKey || "";
 
-      containerEl.createEl("h3", { text: "💰 " + t("settings.budgetTitle") });
+      new Setting(containerEl).setName("💰 " + t("settings.budgetTitle")).setHeading();
 
       // Usage bar — fetched from Worker (server-side tracking)
       const barContainer = containerEl.createDiv("copilot-budget-bar");
       const bar = barContainer.createDiv("copilot-budget-bar-fill");
-      bar.style.width = "0%";
 
       const stats = containerEl.createDiv("copilot-budget-stats");
       stats.createEl("span", { text: "📊 Loading..." });
@@ -839,7 +835,7 @@ export class CopilotSettingTab extends PluginSettingTab {
       // Fetch async from Worker
       budget.fetchUsage(licenseKey).then(usage => {
         const maxPct = Math.max(usage.tokenPercent, usage.queryPercent);
-        bar.style.width = maxPct + "%";
+        bar.style.setProperty("--copilot-budget-width", maxPct + "%");
         bar.className = "copilot-budget-bar-fill" +
           (maxPct > 90 ? " copilot-budget-critical" : maxPct > 75 ? " copilot-budget-warn" : "");
         stats.empty();

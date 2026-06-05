@@ -335,10 +335,8 @@ export default class CopilotPlugin extends Plugin {
   async quickAsk(): Promise<void> {
     const modal = new Modal(this.app);
     modal.titleEl.setText(t("quickAsk.title"));
-    const inputEl = modal.contentEl.createEl("textarea", { cls: "copilot-input" });
+    const inputEl = modal.contentEl.createEl("textarea", { cls: "copilot-input copilot-input-tall copilot-input-full" });
     inputEl.placeholder = t("quickAsk.placeholder");
-    inputEl.style.minHeight = "60px";
-    inputEl.style.width = "100%";
 
     const btnEl = modal.contentEl.createEl("button", { text: t("quickAsk.btnAsk"), cls: "copilot-send-btn" });
     const resultEl = modal.contentEl.createEl("div", { cls: "copilot-message-content" });
