@@ -26,7 +26,7 @@ export class PlanTracker {
     this.steps = [];
     const lines = rawPlan.split("\n").filter(l => l.trim());
     for (const line of lines) {
-      const match = line.match(/^(\d+)[\.\)]\s*(.+)/);
+      const match = line.match(/^(\d+)[.)]\s*(.+)/);
       if (match) {
         this.steps.push({
           id: parseInt(match[1]),

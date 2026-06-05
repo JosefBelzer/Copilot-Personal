@@ -509,7 +509,7 @@ export class CopilotChatView extends ItemView {
         toolStepCount++;
         // Update or create progress indicator
         if (!progressEl) {
-          progressEl = document.createElement("div");
+          progressEl = (window.activeDocument ?? document).createElement("div");
           progressEl.className = "copilot-agent-progress";
           this.chatHistoryEl.appendChild(progressEl);
         }
@@ -685,7 +685,7 @@ export class CopilotChatView extends ItemView {
           response = await this.plugin.providerManager.getActiveProvider().chat(context);
         }
         this.addMessage("assistant", `⚠️ Agent mode failed — fallback response:\n\n${response}`);
-      } catch (fallbackErr) {
+      } catch (_fallbackErr) {
         this.addMessage("assistant", `Agent error: ${error instanceof Error ? error.message : "Unknown error"}`);
       }
       this.statusEl.setText("Agent error");
@@ -935,7 +935,7 @@ export class CopilotChatView extends ItemView {
           content.substring(content.length - 1000);
       }
 
-      context.push({ role: msg.role as "user" | "assistant", content });
+      context.push({ role: msg.role, content });
     }
 
     return context;
@@ -1029,7 +1029,7 @@ export class CopilotChatView extends ItemView {
       if (wasMidConversation) {
         this.messages = state.messages;
         for (const m of this.messages) {
-          this.addMessage(m.role as "user" | "assistant" | "system", m.content);
+          this.addMessage(m.role, m.content);
         }
         this.addMessage("system", "📝 Previous session restored (crash recovery).");
       }
@@ -1306,7 +1306,7 @@ export class CopilotChatView extends ItemView {
               const toolCallId = (tc as any).id || `call_${toolName}_${Date.now()}`;
               (messages as any).push({ role: "assistant", content: null, tool_calls: [tc] });
               (messages as any).push({ role: "tool", tool_call_id: toolCallId, content: resultStr.substring(0, 4000) });
-              const toolMsg = this.addMessage("system", `🔧 ${toolName}: ${resultStr.substring(0, 200)}`); setTimeout(() => toolMsg?.remove(), 15000);
+              const toolMsg = this.addMessage("system", `🔧 ${toolName}: ${resultStr.substring(0, 200)}`); window.setTimeout(() => toolMsg?.remove(), 15000);
             } catch (err) {
               const toolCallId = (tc as any).id || `call_${toolName}_${Date.now()}`;
               (messages as any).push({ role: "assistant", content: null, tool_calls: [tc] });
@@ -1346,8 +1346,6 @@ export class CopilotChatView extends ItemView {
  */
 function looksLikeCompletionClaim(text: string): boolean {
   if (!text) return false;
-  const lower = text.toLowerCase();
-
   // Spanish patterns
   if (/\b(ha\s+sido\s+(actualizada|creada|modificada|guardada|escrita|completada|generada|renombrada))\b/i.test(text)) return true;
   if (/\b(la\s+nota\s+(ha\s+sido|fue|est[aá])\s+(actualizada|creada|modificada|guardada))\b/i.test(text)) return true;

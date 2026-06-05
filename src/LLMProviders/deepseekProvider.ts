@@ -1,4 +1,4 @@
-import { ProviderConfig, ProviderType } from "./providerTypes";
+import { ProviderConfig } from "./providerTypes";
 import { BaseOpenAIProvider } from "./baseOpenAIProvider";
 
 /**

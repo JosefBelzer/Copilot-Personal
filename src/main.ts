@@ -95,7 +95,7 @@ export default class CopilotPlugin extends Plugin {
       () => {
         this.settings._messageCount = this.licenseManager.getPersistableState();
         this.saveSettings(); // fire-and-forget — Obsidian's saveData is fast
-        return this.settings._messageCount!;
+        return this.settings._messageCount as { count: number; day: string };
       },
       (data) => { if (data) this.settings._messageCount = data; }
     );
@@ -239,11 +239,11 @@ export default class CopilotPlugin extends Plugin {
     });
   }
 
-  async onunload() {
+  onunload(): void {
     // Clean up event listeners to prevent leaks on reload
     this.indexEventHandler?.unregister();
-    // Save index before unloading
-    await this.vectorStoreManager.saveIndex();
+    // Save index before unloading — fire and forget to match Obsidian's void return type
+    this.vectorStoreManager.saveIndex();
     // Detaching leaves on unload resets the leaf to its default location,
     // which is not recommended. Let Obsidian manage the workspace.
     // await this.app.workspace.detachLeavesOfType(CHAT_VIEW_TYPE);

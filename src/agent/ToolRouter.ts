@@ -100,7 +100,7 @@ export class ToolRouter {
 
         const jsonMatch = response.match(/\[[\s\S]*\]/);
         if (jsonMatch) {
-          const categories = JSON.parse(jsonMatch![0]) as ToolCategory[];
+          const categories: ToolCategory[] = JSON.parse(jsonMatch![0]);
           if (categories.length > 0) {
             return this.buildRouted(categories);
           }

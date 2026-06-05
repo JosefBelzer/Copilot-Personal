@@ -1,7 +1,7 @@
 import { requestUrl } from "obsidian";
 import { LLMMessage, ChatStreamChunk } from "./types";
 import { LLMProvider, ProviderConfig, ProviderType, ToolDefinition } from "./providerTypes";
-import { normalizeApiUrl, fetchWithFallback, withTimeout } from "../utils/pathUtils";
+import { fetchWithFallback } from "../utils/pathUtils";
 import { CircuitBreaker } from "../services/CircuitBreaker";
 
 const TAG = "[Gemini]";

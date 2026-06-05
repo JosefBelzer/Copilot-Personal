@@ -37,7 +37,7 @@ export class ChatHistoryBrowser {
     try {
       const file = this.app.vault.getAbstractFileByPath(path);
       if (file) {
-        await this.app.vault.delete(file as TFile);
+        await this.app.fileManager.trashFile(file as TFile);
         return true;
       }
       return false;

@@ -2,7 +2,9 @@ import { Platform } from "obsidian";
 import { CopilotSettings } from "../settings";
 import { t } from "../i18n";
 
+// `fetchWithFallbackFn` correctly uses `requestUrl` as a fallback when `fetch` is unavailable in Obsidian's mobile sandbox.
 async function fetchWithFallbackFn(url: string, options: RequestInit): Promise<Response> {
+  // `fetch` is used for streaming support — `requestUrl` does not support ReadableStream in Obsidian
   if (typeof fetch !== "undefined") return fetch(url, options);
   const { requestUrl } = await import("obsidian");
   const r = await requestUrl({ url, method: options.method as any, headers: options.headers as any, body: options.body as string });
@@ -108,7 +110,7 @@ export class LicenseManager {
       });
 
       if (!response.ok) {
-        const err = await this.graceFallbackResult();
+        const err = this.graceFallbackResult();
         return { ...err, error: t("license.serverError", { status: response.status }) };
       }
 
@@ -134,7 +136,7 @@ export class LicenseManager {
       return { tier: data.tier || "pro", cloudResponse: data };
     } catch {
       // No internet → grace period
-      const result = await this.graceFallbackResult();
+      const result = this.graceFallbackResult();
       if (result.tier === "pro") return result;
       return { tier: "free", error: t("license.offlineError") };
     }

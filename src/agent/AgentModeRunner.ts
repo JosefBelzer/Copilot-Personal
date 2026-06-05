@@ -513,7 +513,7 @@ export class AgentModeRunner {
 
     // Bullet or numbered list items
     const listItems = (query.match(/^[\s]*[-*•]\s+.+$/gm)?.length ?? 0) ||
-                      (query.match(/^[\s]*\d+[\.\)]\s+.+$/gm)?.length ?? 0);
+                      (query.match(/^[\s]*\d+[.)]\s+.+$/gm)?.length ?? 0);
     if (listItems >= 2) return listItems;
 
     // Comma-separated items (but not in natural sentences)
@@ -768,8 +768,6 @@ function looksLikePlanning(text: string): boolean {
   if (/<!--save:/.test(text)) return false;
   if (/^\s*\{/.test(text) && text.length < 1000) return false;
 
-  const lower = text.toLowerCase();
-
   // Planning-verb detection with explicit verb lists
   const spanishVerbs = "leer|extraer|buscar|actualizar|crear|modificar|revisar|comparar|verificar|analizar|comprobar|corregir|cambiar|arreglar|eliminar|reemplazar|escribir|guardar";
   const englishVerbs = "read|extract|search|find|update|create|modify|check|verify|compare|analyze|look|fetch|get|pull|fix|change|correct|replace|write|save|delete";
@@ -790,7 +788,7 @@ function looksLikePlanning(text: string): boolean {
   const hasContent =
     /\|.+\|/.test(text) ||
     (text.match(/^[-*]\s*.{30,}/gm)?.length ?? 0) >= 2 ||
-    (text.match(/^\d+[\.\)]\s*.{20,}/gm)?.length ?? 0) >= 2;
+    (text.match(/^\d+[.)]\s*.{20,}/gm)?.length ?? 0) >= 2;
 
   return !hasContent;
 }

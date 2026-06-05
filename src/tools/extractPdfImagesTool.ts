@@ -80,12 +80,12 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
           for (const img of images) {
             if (!img.data || img.data.length === 0) continue;
             const ext = detectFormat(new Uint8Array(img.data));
-            const pageNum = (img as any).pageNumber || (img as any).page || 0;
-            const imgId = (img as any).id || totalExtracted;
+        const pageNum = img.pageNumber || img.page || 0;
+        const imgId = img.id || totalExtracted;
             const cleanName = `fig_${pageNum}_${String(imgId).substring(0, 20)}`;
             const fileName = `${pdfBasename}_${cleanName}.${ext}`;
             const filePath = normalizePath(`${outDir}/${fileName}`);
-            await app.vault.createBinary(filePath, (img.data as Uint8Array).buffer.slice(0) as ArrayBuffer);
+            await app.vault.createBinary(filePath, img.data.buffer);
             results.push(`✅ ${filePath}`);
             totalExtracted++;
             if (pageNum) pagesWithImages.add(pageNum);
@@ -104,7 +104,7 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
           try {
             const page = await pdf.getPage(pageNum);
             const viewport = page.getViewport({ scale: 2.0 });
-            const canvas = document.createElement("canvas");
+            const canvas = (window.activeDocument ?? document).createElement("canvas");
             canvas.width = Math.floor(viewport.width);
             canvas.height = Math.floor(viewport.height);
             const ctx = canvas.getContext("2d");
@@ -122,7 +122,7 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
             await app.vault.createBinary(filePath, arrayBuffer);
             results.push(t("tools.extractPdfImages.fullPage", { path: filePath }));
             totalExtracted++;
-          } catch (err) {
+          } catch (_err) {
             results.push(t("tools.extractPdfImages.warnRenderFailed", { page: pageNum }));
           }
         }

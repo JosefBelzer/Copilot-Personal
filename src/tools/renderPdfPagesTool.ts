@@ -116,7 +116,7 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
             const viewport = page.getViewport({ scale });
 
             // Create an offscreen canvas (Electron/Obsidian has full DOM)
-            const canvas = document.createElement("canvas");
+            const canvas = (window.activeDocument ?? document).createElement("canvas");
             console.log(`[renderPdfPages] Canvas created for page ${pageNum}: ${canvas.width}x${canvas.height}`);
             canvas.width = Math.floor(viewport.width);
             canvas.height = Math.floor(viewport.height);

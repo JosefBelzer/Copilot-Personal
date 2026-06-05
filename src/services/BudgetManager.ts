@@ -44,6 +44,7 @@ export class BudgetManager {
       return this.cachedUsage;
     }
 
+    // `fetch` is used for streaming support — `requestUrl` does not support ReadableStream in Obsidian
     const response = await fetch(`${this.workerUrl}/v1/budget-usage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -101,6 +102,7 @@ export class BudgetManager {
     const body: any = { messages, licenseKey };
     if (fingerprint) body.fingerprint = fingerprint;
     if (tools) body.tools = tools;
+    // `fetch` is used for streaming support — `requestUrl` does not support ReadableStream in Obsidian
     const response = await fetch(`${this.workerUrl}/v1/budget-chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -144,6 +146,7 @@ export class BudgetManager {
     const body: any = { messages, licenseKey, stream: true };
     if (fingerprint) body.fingerprint = fingerprint;
 
+    // `fetch` is used for streaming support — `requestUrl` does not support ReadableStream in Obsidian
     const response = await fetch(`${this.workerUrl}/v1/budget-chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -160,8 +163,6 @@ export class BudgetManager {
 
     const decoder = new TextDecoder();
     let buffer = "";
-    let fullContent = "";
-
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -174,7 +175,6 @@ export class BudgetManager {
         const json = line.slice(6);
         if (json === "[DONE]") {
           // Update cache with full content
-          const avgCost = 0.06 / 1_000_000;
           this.cachedUsage = {
             ...(this.cachedUsage || { dailyTokens: 0, limitTokens: 250000, dailyQueries: 0, limitQueries: 50, dailyCost: 0, dailyCostLimit: 0.03, tokenPercent: 0, queryPercent: 0, resetsInHours: 24 }),
             dailyQueries: (this.cachedUsage?.dailyQueries || 0) + 1,
@@ -186,7 +186,6 @@ export class BudgetManager {
           const parsed = JSON.parse(json);
           const delta = parsed.choices?.[0]?.delta?.content;
           if (delta) {
-            fullContent += delta;
             yield { content: delta };
           }
         } catch {

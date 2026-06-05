@@ -1,4 +1,4 @@
-import { App, TFile } from "obsidian";
+import { App } from "obsidian";
 
 /**
  * ApplyView — simple diff-like view for AI-generated note edits.

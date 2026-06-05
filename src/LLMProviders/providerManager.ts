@@ -1,5 +1,5 @@
 import { CopilotSettings, getApiKeyForProvider } from "../settings";
-import { LLMProvider, ProviderConfig, ProviderType, PROVIDER_CAPABILITIES, providerSupports, ProviderTask } from "./providerTypes";
+import { LLMProvider, ProviderConfig, ProviderType, providerSupports, ProviderTask } from "./providerTypes";
 import { DeepSeekProvider } from "./deepseekProvider";
 import { OpenAIProvider } from "./openaiProvider";
 import { GeminiProvider } from "./geminiProvider";
