@@ -147,61 +147,43 @@ export class BudgetManager {
 
   /**
    * Stream budget API through Worker proxy.
+   * Note: requestUrl does not support SSE streaming; full response is parsed at once.
    */
   async *chatStream(
     messages: Array<{ role: string; content: string }>,
     licenseKey: string,
     fingerprint?: string,
   ): AsyncGenerator<{ content: string; done?: boolean }> {
-    const body: Record<string, unknown> = { messages, licenseKey, stream: true };
+    const body: Record<string, unknown> = { messages, licenseKey };
     if (fingerprint) body["fingerprint"] = fingerprint;
 
-    // `fetch` is used for streaming support — `requestUrl` does not support ReadableStream in Obsidian
-    const response = await fetch(`${this.workerUrl}/v1/budget-chat`, {
+    const resp = await requestUrl({
+      url: `${this.workerUrl}/v1/budget-chat`,
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({ error: "Unknown error" })) as { error?: string };
-      throw new Error(err.error || `Budget API error (${response.status})`);
+    if (resp.status < 200 || resp.status >= 300) {
+      const err = (() => { try { return JSON.parse(resp.text); } catch { return { error: "Unknown error" }; } })() as { error?: string };
+      throw new Error(err.error || `Budget API error (${resp.status})`);
     }
 
-    const reader = response.body?.getReader();
-    if (!reader) throw new Error("No response body");
-
-    const decoder = new TextDecoder();
-    let buffer = "";
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-
-      for (const line of lines) {
-        if (!line.trim() || !line.startsWith("data: ")) continue;
-        const json = line.slice(6);
-        if (json === "[DONE]") {
-          // Update cache with full content
-          this.cachedUsage = {
-            ...(this.cachedUsage || { dailyTokens: 0, limitTokens: 250000, dailyQueries: 0, limitQueries: 50, dailyCost: 0, dailyCostLimit: 0.03, tokenPercent: 0, queryPercent: 0, resetsInHours: 24 }),
-            dailyQueries: (this.cachedUsage?.dailyQueries || 0) + 1,
-          };
-          this.lastFetch = Date.now();
-          return;
-        }
-        try {
-          const parsed = JSON.parse(json) as { choices?: Array<{ delta?: { content?: string } }> };
-          const delta = parsed.choices?.[0]?.delta?.content;
-          if (delta) {
-            yield { content: delta };
-          }
-        } catch {
-          // skip malformed chunks
-        }
+    const data = JSON.parse(resp.text) as BudgetChatResponse;
+    if (data.content) {
+      if (data.budget) {
+        const cost = data.budget.dailyTokens * (0.06 / 1_000_000);
+        this.cachedUsage = {
+          dailyTokens: data.budget.dailyTokens, limitTokens: data.budget.limitTokens,
+          dailyQueries: data.budget.dailyQueries, limitQueries: data.budget.limitQueries,
+          dailyCost: Math.round(cost * 10000) / 10000, dailyCostLimit: 0.03,
+          tokenPercent: Math.round((data.budget.dailyTokens / data.budget.limitTokens) * 100),
+          queryPercent: Math.round((data.budget.dailyQueries / data.budget.limitQueries) * 100),
+          resetsInHours: 24,
+        };
+        this.lastFetch = Date.now();
       }
+      yield { content: data.content };
     }
   }
 

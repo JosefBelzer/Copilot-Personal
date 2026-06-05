@@ -39,27 +39,18 @@ export function basenameNoExt(path: string): string {
  * Strips trailing slashes, removes /v1 suffix, and re-appends /v1.
  */
 /**
- * Fetch with fallback to Obsidian's requestUrl when the global fetch
- * is unavailable (e.g., Obsidian mobile). On desktop/Electron, uses
- * native fetch() for real SSE streaming. On mobile, falls back to
- * requestUrl() which loads the full response.
+ * Uses Obsidian's requestUrl for all environments (desktop and mobile).
  */
 export function fetchWithFallback(url: string, options: RequestInit): Promise<Response> {
-  // Primary path: use fetch() for streaming support. Falls back to requestUrl when unavailable.
-  if (typeof fetch !== "undefined") {
-    return fetch(url, options);
-  }
-  // Fallback: use Obsidian's requestUrl (no streaming but works everywhere)
-  return import("obsidian").then(({ requestUrl }) => {
-    const method = options.method ?? "POST";
-    const headers = options.headers as Record<string, string> | undefined;
-    const body = options.body as string | undefined;
-    return requestUrl({ url, method, headers, body })
-      .then(r => {
-        const respHeaders = new Headers(r.headers);
-        return new Response(r.text, { status: r.status, headers: respHeaders });
-      });
-  });
+  const method = options.method ?? "POST";
+  const headers = options.headers as Record<string, string> | undefined;
+  const body = options.body as string | undefined;
+  return import("obsidian").then(({ requestUrl }) =>
+    requestUrl({ url, method, headers, body }).then(r => {
+      const respHeaders = new Headers(r.headers);
+      return new Response(r.text, { status: r.status, headers: respHeaders });
+    })
+  );
 }
 
 /**

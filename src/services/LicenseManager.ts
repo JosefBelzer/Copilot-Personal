@@ -2,10 +2,8 @@ import { Platform } from "obsidian";
 import { CopilotSettings } from "../settings";
 import { t } from "../i18n";
 
-// `fetchWithFallbackFn` correctly uses `requestUrl` as a fallback when `fetch` is unavailable in Obsidian's mobile sandbox.
+// Uses Obsidian's requestUrl for all environments (desktop and mobile).
 async function fetchWithFallbackFn(url: string, options: RequestInit): Promise<Response> {
-  // Primary path: use fetch() for streaming support. Falls back to requestUrl when unavailable.
-  if (typeof fetch !== "undefined") return fetch(url, options);
   const { requestUrl } = await import("obsidian");
   const r = await requestUrl({ url, method: options.method, headers: options.headers as Record<string, string>, body: options.body as string });
   return new Response(r.text, { status: r.status, headers: new Headers(r.headers) });
