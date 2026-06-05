@@ -1042,7 +1042,7 @@ export class CopilotChatView extends ItemView {
     try {
       const raw = sessionStorage.getItem("copilot-session-backup");
       if (!raw) return;
-      const state: SessionState = JSON.parse(raw);
+      const state = JSON.parse(raw) as SessionState;
       if (!state.messages?.length) return;
       const age = Date.now() - state.timestamp;
       if (age > 3600000) { sessionStorage.removeItem("copilot-session-backup"); return; } // >1h old

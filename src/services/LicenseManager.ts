@@ -123,7 +123,7 @@ export class LicenseManager {
         return { ...err, error: t("license.serverError", { status: response.status }) };
       }
 
-      const data: LicenseValidationResponse = await response.json();
+      const data = await response.json() as LicenseValidationResponse;
 
       if (!data.valid) {
         this.currentLicense = { tier: "free", key: "FREE", validUntil: 0, features: this.getFreeFeatures() };

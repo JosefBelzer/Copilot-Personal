@@ -255,7 +255,7 @@ export default class CopilotPlugin extends Plugin {
   }
 
   async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData()) as CopilotSettings;
   }
 
   /** Migrate legacy single apiKey to the current provider's per-provider key */

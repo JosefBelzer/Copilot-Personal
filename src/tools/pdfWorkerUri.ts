@@ -20,7 +20,7 @@ interface ObsidianAppGlobal {
 export const WORKER_URI = (() => {
   // Try local worker file (copied to plugin root during build)
   try {
-    const plugin = (globalThis as ObsidianAppGlobal).app?.plugins?.getPlugin?.("copilot-personal");
+    const plugin = (window as Record<string, any>).app?.plugins?.getPlugin?.("copilot-personal");
     if (plugin?.manifest?.dir) {
       return `${plugin.manifest.dir}/pdf.worker.min.mjs`;
     }

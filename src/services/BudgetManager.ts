@@ -1,4 +1,4 @@
-/**
+﻿/**
  * BudgetManager — Pro-only budget API provider proxied through Cloudflare Worker.
  *
  * Architecture:
@@ -130,7 +130,7 @@ export class BudgetManager {
     });
 
     if (!response.ok) {
-      const err: WorkerErrorResponse = await response.json().catch(() => ({ error: "Unknown error" }));
+      const err = await response.json().catch(() => ({ error: "Unknown error" }));
       throw new Error(err.error || `Budget API error (${response.status})`);
     }
 
@@ -174,7 +174,7 @@ export class BudgetManager {
     });
 
     if (!response.ok) {
-      const err: WorkerErrorResponse = await response.json().catch(() => ({ error: "Unknown error" }));
+      const err = await response.json().catch(() => ({ error: "Unknown error" }));
       throw new Error(err.error || `Budget API error (${response.status})`);
     }
 
@@ -203,7 +203,7 @@ export class BudgetManager {
           return;
         }
         try {
-          const parsed: BudgetWorkerResponse = JSON.parse(json);
+          const parsed = JSON.parse(json);
           const delta = parsed.choices?.[0]?.delta?.content;
           if (delta) {
             yield { content: delta };

@@ -2,8 +2,7 @@ import { TFile, Vault, EventRef } from "obsidian";
 import { IndexOperations } from "./indexOperations";
 
 interface VaultEventCallback {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (...args: any[]): unknown;
+  (...args: unknown[]): unknown;
 }
 
 /**
@@ -27,28 +26,30 @@ export class IndexEventHandler {
     const v = this.vault as unknown as {
       on(name: string, cb: VaultEventCallback): EventRef;
     };
+    const bind = (cb: (file: TFile) => Promise<void>): VaultEventCallback => 
+      (file) => (file instanceof TFile ? cb(file) : undefined);
     this.eventRefs.push(
-      v.on("create", async (file: TFile) => {
+      v.on("create", bind(async (file: TFile) => {
         if (!this.enabled || !(file instanceof TFile)) return;
         if (file.extension !== "md") return;
         await this.indexOps.indexFile(file);
-      })
+      }))
     );
 
     this.eventRefs.push(
-      v.on("modify", async (file: TFile) => {
+      v.on("modify", bind(async (file: TFile) => {
         if (!this.enabled || !(file instanceof TFile)) return;
         if (file.extension !== "md") return;
         await this.indexOps.indexFile(file);
-      })
+      }))
     );
 
     this.eventRefs.push(
-      v.on("delete", async (file: TFile) => {
+      v.on("delete", bind(async (file: TFile) => {
         if (!this.enabled || !(file instanceof TFile)) return;
         if (file.extension !== "md") return;
         await this.indexOps.removeFile(file.path);
-      })
+      }))
     );
   }
 
