@@ -73,7 +73,7 @@ export function createVaultStatsTool(app: App): AgentTool {
       for (const f of files) {
         const dir = f.path.includes("/") ? f.path.substring(0, f.path.lastIndexOf("/")) : "/";
         folders.add(dir);
-        totalSize += (f as any).stat?.size ?? 0;
+        totalSize += f.stat?.size ?? 0;
       }
       const notes = files.length;
       const size = `${(totalSize / 1024).toFixed(0)} KB`;
@@ -116,7 +116,7 @@ export function createGetFrontmatterTool(app: App): AgentTool {
       const file = app.vault.getAbstractFileByPath(path);
       if (!file) return t("tools.getFrontmatter.error.notFound", { path });
       try {
-        const content = await app.vault.read(file as any);
+        const content = await app.vault.read(file as import("obsidian").TFile);
         const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
         if (!fmMatch) return t("tools.getFrontmatter.noFrontmatter");
         return fmMatch[1];

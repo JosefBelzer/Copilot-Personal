@@ -5,6 +5,13 @@ import { t } from "../i18n";
 
 const TAG = "[extract_pdf_images]";
 
+interface UnpdfImage {
+  data: Uint8Array;
+  pageNumber?: number;
+  page?: number;
+  id?: string;
+}
+
 /**
  * extract_pdf_images — extracts embedded images from PDF pages.
  * Uses unpdf (npm install unpdf) for reliable raster image extraction.
@@ -75,17 +82,22 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
         try {
           const unpdf = await import("unpdf");
           unpdfAvailable = true;
-          const images = await unpdf.extractImages(await unpdf.getDocumentProxy(uint8), { pageNumbers: validPages } as any) as any[];
+          const docProxy = await unpdf.getDocumentProxy(uint8);
+          const extractImagesFn = unpdf.extractImages as unknown as (
+            doc: unknown,
+            options: { pageNumbers?: number[] }
+          ) => Promise<UnpdfImage[]>;
+          const images = await extractImagesFn(docProxy, { pageNumbers: validPages });
 
           for (const img of images) {
             if (!img.data || img.data.length === 0) continue;
-            const ext = detectFormat(new Uint8Array(img.data));
-        const pageNum = img.pageNumber || img.page || 0;
-        const imgId = img.id || totalExtracted;
+            const ext = detectFormat(img.data);
+            const pageNum = img.pageNumber ?? img.page ?? 0;
+            const imgId = img.id ?? String(totalExtracted);
             const cleanName = `fig_${pageNum}_${String(imgId).substring(0, 20)}`;
             const fileName = `${pdfBasename}_${cleanName}.${ext}`;
             const filePath = normalizePath(`${outDir}/${fileName}`);
-            await app.vault.createBinary(filePath, img.data.buffer);
+            await app.vault.createBinary(filePath, img.data.buffer as ArrayBuffer);
             results.push(`✅ ${filePath}`);
             totalExtracted++;
             if (pageNum) pagesWithImages.add(pageNum);
@@ -112,7 +124,11 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
               results.push(t("tools.extractPdfImages.error.canvas", { page: pageNum }));
               continue;
             }
-            await page.render({ canvasContext: ctx, canvas, viewport } as any).promise;
+            await page.render({
+              canvasContext: ctx,
+              canvas,
+              viewport,
+            } as unknown as Parameters<typeof page.render>[0]).promise;
             const blob = await new Promise<Blob>((resolve, reject) => {
               canvas.toBlob((b) => b ? resolve(b) : reject(new Error("toBlob failed")), "image/png");
             });
@@ -122,7 +138,7 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
             await app.vault.createBinary(filePath, arrayBuffer);
             results.push(t("tools.extractPdfImages.fullPage", { path: filePath }));
             totalExtracted++;
-          } catch (_err) {
+          } catch {
             results.push(t("tools.extractPdfImages.warnRenderFailed", { page: pageNum }));
           }
         }

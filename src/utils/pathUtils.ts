@@ -49,10 +49,16 @@ export function fetchWithFallback(url: string, options: RequestInit): Promise<Re
     return fetch(url, options);
   }
   // Fallback: use Obsidian's requestUrl (no streaming but works everywhere)
-  return import("obsidian").then(({ requestUrl }) =>
-    requestUrl({ url, method: (options.method as any) || "POST", headers: options.headers as any, body: options.body as string })
-      .then(r => new Response(r.text, { status: r.status, headers: new Headers(r.headers as any) }))
-  );
+  return import("obsidian").then(({ requestUrl }) => {
+    const method = (options.method ?? "POST") as string;
+    const headers = options.headers as Record<string, string> | undefined;
+    const body = options.body as string | undefined;
+    return requestUrl({ url, method, headers, body })
+      .then(r => {
+        const respHeaders = new Headers(r.headers as Record<string, string>);
+        return new Response(r.text, { status: r.status, headers: respHeaders });
+      });
+  });
 }
 
 /**

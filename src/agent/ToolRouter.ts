@@ -72,9 +72,9 @@ Request: `;
 
 export class ToolRouter {
   private provider: LLMProvider | null;
-  private allTools: Map<string, AgentTool>;
+  private allTools: ReadonlyMap<string, AgentTool>;
 
-  constructor(provider: LLMProvider | null, allTools: Map<string, AgentTool>) {
+  constructor(provider: LLMProvider | null, allTools: ReadonlyMap<string, AgentTool>) {
     this.provider = provider;
     this.allTools = allTools;
   }
@@ -100,7 +100,7 @@ export class ToolRouter {
 
         const jsonMatch = response.match(/\[[\s\S]*\]/);
         if (jsonMatch) {
-          const categories: ToolCategory[] = JSON.parse(jsonMatch![0]);
+          const categories: ToolCategory[] = JSON.parse(jsonMatch[0]);
           if (categories.length > 0) {
             return this.buildRouted(categories);
           }

@@ -3,6 +3,16 @@ import { AgentTool } from "../agent/ToolRegistry";
 import { WORKER_URI } from "./pdfWorkerUri";
 import { t } from "../i18n";
 
+interface PDFTextItem {
+  str?: string;
+  transform: number[];
+}
+
+interface PdfjsModule {
+  GlobalWorkerOptions: { workerSrc: string };
+  getDocument: (params: { data: Uint8Array }) => { promise: Promise<unknown> };
+}
+
 export function createReadPdfTool(app: App): AgentTool {
   return {
     name: "read_pdf",
@@ -58,8 +68,11 @@ export function createReadPdfTool(app: App): AgentTool {
         const uint8 = new Uint8Array(arrayBuffer);
 
         const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
-        if (!pdfjsLib.GlobalWorkerOptions) (pdfjsLib as any).GlobalWorkerOptions = {};
-        pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_URI;
+        if (!pdfjsLib.GlobalWorkerOptions) {
+          (pdfjsLib as unknown as PdfjsModule).GlobalWorkerOptions = { workerSrc: WORKER_URI };
+        } else {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_URI;
+        }
 
         const pdf = await pdfjsLib.getDocument({ data: uint8 }).promise;
 
@@ -89,7 +102,7 @@ export function createReadPdfTool(app: App): AgentTool {
           const page = await pdf.getPage(i);
           const tc = await page.getTextContent();
           const { width: pw, height: ph } = page.getViewport({ scale: 1 });
-          const txt = extractPageText(tc.items, pw, ph);
+          const txt = extractPageText(tc.items as PDFTextItem[], pw, ph);
           if (txt) allPages.push({ num: i, text: txt });
         }
         if (allPages.length === 0) return t("tools.readPdf.noText");
@@ -155,7 +168,7 @@ export function createReadPdfTool(app: App): AgentTool {
  * - Filters out isolated page numbers at the bottom
  * - Outputs in reading order: within each column, top-to-bottom; columns left-to-right
  */
-function extractPageText(items: any[], pageW: number, pageH: number): string {
+function extractPageText(items: PDFTextItem[], pageW: number, pageH: number): string {
   if (!items || items.length === 0) return "";
 
   const minY = pageH * 0.08;   // top 8% = header zone

@@ -1,10 +1,18 @@
-import { App, PluginSettingTab, Setting, Notice } from "obsidian";
+﻿import { App, PluginSettingTab, Setting, Notice } from "obsidian";
 import CopilotPlugin from "./main";
 import { LmStudioService } from "./services/lmStudioService";
 import { PROVIDER_CAPABILITIES, ProviderType } from "./LLMProviders/providerTypes";
 import { getApiKeyForProvider, setApiKeyForProvider } from "./settings";
 import { t, getLanguage, setLanguage, getLanguages } from "./i18n";
 import type { Lang } from "./i18n/types";
+
+interface FeatureCap {
+  key: string;
+  label: string;
+  settingKey: string;
+  modelKey: string;
+  modelPlaceholder: string;
+}
 
 export class CopilotSettingTab extends PluginSettingTab {
   plugin: CopilotPlugin;
@@ -790,7 +798,7 @@ export class CopilotSettingTab extends PluginSettingTab {
 
     // === Multi-Provider Fallback (Pro feature) ===
     const activeCaps = this.getCaps();
-    const missing: Array<{ key: string; label: string; settingKey: string; modelKey: string; modelPlaceholder: string }> = [];
+    const missing: FeatureCap[] = [];
 
     if (!activeCaps.embeddings) missing.push({ key: "embeddings", label: "Embeddings", settingKey: "fallbackEmbeddingProvider", modelKey: "fallbackModelEmbedding", modelPlaceholder: "nomic-embed-text" });
     if (!activeCaps.vision) missing.push({ key: "vision", label: "Vision", settingKey: "fallbackVisionProvider", modelKey: "fallbackModelVision", modelPlaceholder: "qwen2.5-vl-27b-instruct" });
@@ -803,6 +811,7 @@ export class CopilotSettingTab extends PluginSettingTab {
       }
 
       for (const cap of missing) {
+        const settingsRecord = this.plugin.settings as unknown as Record<string, string>;
         new Setting(containerEl).setName(`⚠️ ${t("settings.providerNoSupport", { provider: this.plugin.settings.providerType, cap: cap.label })}`).setHeading();
 
         new Setting(containerEl)
@@ -814,10 +823,18 @@ export class CopilotSettingTab extends PluginSettingTab {
               const pc = PROVIDER_CAPABILITIES[pt];
               if (pc[cap.key as "embeddings" | "vision"]) dropdown.addOption(pt, pc.label);
             }
-            dropdown.setValue((this.plugin.settings as any)[cap.settingKey] || "");
+            dropdown.setValue(settingsRecord[cap.settingKey] || "");
             if (!isPro) dropdown.selectEl.disabled = true;
-            dropdown.onChange(async (v) => { (this.plugin.settings as any)[cap.settingKey] = v; await this.plugin.saveSettings(); });
+            dropdown.onChange(async (v) => { settingsRecord[cap.settingKey] = v; await this.plugin.saveSettings(); });
       });
+
+    new Setting(containerEl)
+          .setName(t("settings.fallbackModelName", { cap: cap.label }))
+          .setDesc(t("settings.fallbackModelDesc", { cap: cap.label }))
+          .addText((text) => {
+            text.setPlaceholder(cap.modelPlaceholder).setValue(settingsRecord[cap.modelKey] || "").onChange(async (v) => { settingsRecord[cap.modelKey] = v; await this.plugin.saveSettings(); });
+            if (!isPro) text.inputEl.disabled = true;
+          });
 
     // ── Budget AI (Pro only) ────────────────────────────────────────────
     if (isPro) {
@@ -872,7 +889,7 @@ export class CopilotSettingTab extends PluginSettingTab {
           .setName(t("settings.fallbackModelName", { cap: cap.label }))
           .setDesc(t("settings.fallbackModelDesc", { cap: cap.label }))
           .addText((text) => {
-            text.setPlaceholder(cap.modelPlaceholder).setValue((this.plugin.settings as any)[cap.modelKey] || "").onChange(async (v) => { (this.plugin.settings as any)[cap.modelKey] = v; await this.plugin.saveSettings(); });
+            text.setPlaceholder(cap.modelPlaceholder).setValue(settingsRecord[cap.modelKey] || "").onChange(async (v) => { settingsRecord[cap.modelKey] = v; this.plugin.settings = Object.assign(this.plugin.settings, settingsRecord); await this.plugin.saveSettings(); });
             if (!isPro) text.inputEl.disabled = true;
           });
       }

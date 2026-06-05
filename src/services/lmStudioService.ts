@@ -36,7 +36,7 @@ export class LmStudioService {
       throw new Error(`LM Studio returned ${response.status}: ${response.text}`);
     }
 
-    const data: LmStudioModelsResponse = response.json;
+    const data = response.json as LmStudioModelsResponse;
     const models = (data.data ?? [])
       .map((m) => m.id)
       .filter((id) => id && typeof id === "string")

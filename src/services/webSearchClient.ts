@@ -35,7 +35,7 @@ export class WebSearchClient {
   }
 
   static resetInstance(): void {
-    WebSearchClient.instance = undefined as any;
+    WebSearchClient.instance = undefined as unknown as WebSearchClient;
   }
 
   updateSettings(settings: CopilotSettings) {

@@ -28,7 +28,9 @@ export class PDFParser implements FileParser {
       // @ts-ignore
       const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
       const { WORKER_URI } = await import("./pdfWorkerUri");
-      if (!pdfjsLib.GlobalWorkerOptions) (pdfjsLib as any).GlobalWorkerOptions = {};
+      if (!pdfjsLib.GlobalWorkerOptions) {
+        (pdfjsLib as unknown as { GlobalWorkerOptions: { workerSrc: string } }).GlobalWorkerOptions = { workerSrc: "" };
+      }
       pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_URI;
       const uint8Array = new Uint8Array(content);
       const pdf = await pdfjsLib.getDocument({ data: uint8Array }).promise;
@@ -37,7 +39,7 @@ export class PDFParser implements FileParser {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
         const pageText = textContent.items
-          .map((item: any) => item.str ?? "")
+          .map((item) => (item as { str?: string }).str ?? "")
           .join(" ");
         pages.push(pageText);
       }

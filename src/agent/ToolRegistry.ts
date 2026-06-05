@@ -24,7 +24,11 @@ export class ToolRegistry {
   }
 
   static resetInstance(): void {
-    ToolRegistry.instance = undefined as any;
+    (ToolRegistry.instance as unknown) = undefined;
+  }
+
+  getToolsMap(): ReadonlyMap<string, AgentTool> {
+    return this.tools;
   }
 
   register(tool: AgentTool) {

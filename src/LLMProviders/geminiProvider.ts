@@ -116,7 +116,7 @@ export class GeminiProvider implements LLMProvider {
         body: JSON.stringify(body),
       });
 
-      const data: GeminiResponse = response.json;
+      const data = response.json as GeminiResponse;
       if (data.error) {
         throw new Error(`API error: ${data.error.message || JSON.stringify(data.error)}`);
       }
@@ -210,7 +210,7 @@ export class GeminiProvider implements LLMProvider {
           const data = line.slice(6).trim();
           if (data === "[DONE]") { yield { content: "", done: true }; return; }
           try {
-            const parsed: GeminiStreamChunk = JSON.parse(data);
+            const parsed = JSON.parse(data) as GeminiStreamChunk;
             const parts = parsed.candidates?.[0]?.content?.parts || [];
             for (const part of parts) {
               if (part.functionCall) {
@@ -251,7 +251,7 @@ export class GeminiProvider implements LLMProvider {
         body: JSON.stringify({ requests }),
       });
 
-      const data: GeminiEmbeddingResponse = response.json;
+      const data = response.json as GeminiEmbeddingResponse;
       if (data.error) {
         throw new Error(`Embedding API error: ${data.error.message || JSON.stringify(data.error)}`);
       }

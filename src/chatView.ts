@@ -17,16 +17,30 @@ import { t } from "./i18n";
 
 export const CHAT_VIEW_TYPE = "copilot-personal-chat-view";
 
+interface BudgetAgentToolCall {
+  id?: string;
+  type?: string;
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
+
 interface BudgetAgentMessage {
   role: string;
   content: string | null;
-  tool_calls?: Array<{ id?: string; type?: string; function: { name: string; arguments: string } }>;
+  tool_calls?: BudgetAgentToolCall[];
   tool_call_id?: string;
 }
 
 interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
+}
+
+interface SessionState {
+  messages: Array<{ role: ChatMessage["role"]; content: string }>;
+  timestamp: number;
 }
 
 export class CopilotChatView extends ItemView {
@@ -243,7 +257,7 @@ export class CopilotChatView extends ItemView {
     container.addEventListener("drop", (e: Event) => {
       e.preventDefault();
       if (e instanceof DragEvent) {
-        this.handleFileDrop(e);
+        void this.handleFileDrop(e);
       }
     });
 
@@ -695,7 +709,7 @@ export class CopilotChatView extends ItemView {
           response = await this.plugin.providerManager.getActiveProvider().chat(context);
         }
         this.addMessage("assistant", `⚠️ Agent mode failed — fallback response:\n\n${response}`);
-      } catch (_fallbackErr) {
+      } catch {
         this.addMessage("assistant", `Agent error: ${error instanceof Error ? error.message : "Unknown error"}`);
       }
       this.statusEl.setText("Agent error");
@@ -712,21 +726,21 @@ export class CopilotChatView extends ItemView {
   private fixWikiLinks(text: string): string {
     return text
       // [Note Name](app://obsidian.md/Note%20Name) → [[Note Name]]
-      .replace(/\[([^\]]+)\]\(app:\/\/obsidian\.md\/([^)]+)\)/g, (_, label, path) => {
+      .replace(/\[([^\]]+)\]\(app:\/\/obsidian\.md\/([^)]+)\)/g, (_: string, label: string, path: string) => {
         const decoded = decodeURIComponent(path).replace(/_/g, " ");
         return `[[${decoded}]]`;
       })
       // [Note Name](app://obsidian.md/index.md?file=Note%20Name...) → [[Note Name]]
-      .replace(/\[([^\]]+)\]\(app:\/\/obsidian\.md\/index\.md\?file=([^)&]+)/g, (_, label, file) => {
+      .replace(/\[([^\]]+)\]\(app:\/\/obsidian\.md\/index\.md\?file=([^)&]+)/g, (_: string, label: string, file: string) => {
         const decoded = decodeURIComponent(file).replace(/_/g, " ");
         return `[[${decoded}]]`;
       })
       // [Note Name](Note%20Name.md) → [[Note Name]]
-      .replace(/\[([^\]]+)\]\(([^)]+\.md)\)/g, (_, label, path) => {
+      .replace(/\[([^\]]+)\]\(([^)]+\.md)\)/g, (_: string, _label: string, path: string) => {
         return `[[${path.replace(/\.md$/, "").replace(/%20/g, " ")}]]`;
       })
       // Catch-all: [anything](not-a-url) → [[not-a-url]] if it looks like a note name
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, url) => {
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_: string, label: string, url: string) => {
         // Keep web URLs as-is (http://, https://, www., mailto:)
         if (/^(https?:\/\/|www\.|mailto:|ftp:\/\/|#)/i.test(url)) return `[${label}](${url})`;
         // Convert internal links to wiki-links
@@ -1028,7 +1042,7 @@ export class CopilotChatView extends ItemView {
     try {
       const raw = sessionStorage.getItem("copilot-session-backup");
       if (!raw) return;
-      const state = JSON.parse(raw);
+      const state: SessionState = JSON.parse(raw);
       if (!state.messages?.length) return;
       const age = Date.now() - state.timestamp;
       if (age > 3600000) { sessionStorage.removeItem("copilot-session-backup"); return; } // >1h old
@@ -1301,7 +1315,8 @@ export class CopilotChatView extends ItemView {
         if (result.content && !result.toolCalls) { fullContent += result.content; contentEl.empty(); await this.renderMarkdown(contentEl, fullContent); break; }
         if (result.toolCalls) {
           for (const tc of result.toolCalls) {
-            const toolName = tc.function.name; const args = tc.function.arguments ? JSON.parse(tc.function.arguments) : {};
+            const toolName: string = tc.function.name;
+            const args: Record<string, string> = tc.function.arguments ? JSON.parse(tc.function.arguments) as Record<string, string> : {};
             try {
               // Skip hallucinated tools that don't exist
               if (!this.plugin.toolRegistry?.getTool(toolName)) {

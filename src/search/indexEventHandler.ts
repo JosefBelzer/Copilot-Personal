@@ -1,6 +1,11 @@
 import { TFile, Vault, EventRef } from "obsidian";
 import { IndexOperations } from "./indexOperations";
 
+interface VaultEventCallback {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (...args: any[]): unknown;
+}
+
 /**
  * IndexEventHandler — reindexa automáticamente archivos modificados, creados o eliminados.
  * Los event listeners se registran en el constructor y se limpian con unregister()
@@ -19,7 +24,9 @@ export class IndexEventHandler {
   }
 
   private registerEvents(): void {
-    const v = this.vault as unknown as { on(name: string, cb: (...args: any[]) => any): EventRef };
+    const v = this.vault as unknown as {
+      on(name: string, cb: VaultEventCallback): EventRef;
+    };
     this.eventRefs.push(
       v.on("create", async (file: TFile) => {
         if (!this.enabled || !(file instanceof TFile)) return;

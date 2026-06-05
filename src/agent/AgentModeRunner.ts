@@ -91,6 +91,13 @@ interface ApiMessage {
   name?: string;
 }
 
+interface ParsedToolCallJson {
+  tool_call?: {
+    name?: string;
+    arguments?: Record<string, unknown>;
+  };
+}
+
 export class AgentModeRunner {
   private listeners: AgentEventListener[] = [];
   private provider: LLMProvider;
@@ -160,7 +167,7 @@ export class AgentModeRunner {
       : "";
 
     // Route tools based on query classification (LLM-driven, not regex)
-    const router = new ToolRouter(this.provider, (toolRegistry as any).tools);
+    const router = new ToolRouter(this.provider, toolRegistry.getToolsMap());
     const routed = await router.route(this.currentTaskQuery);
     const routedToolDefs = routed.tools;
 
@@ -324,7 +331,7 @@ export class AgentModeRunner {
 
         let args: Record<string, unknown> = {};
         try {
-          args = JSON.parse(tc.function?.arguments || "{}");
+          args = JSON.parse(tc.function?.arguments || "{}") as Record<string, unknown>;
         } catch (err) {
           console.error("[AgentModeRunner] Failed to parse tool arguments, skipping:", tc.function?.arguments, err);
           continue;
@@ -593,7 +600,7 @@ export class AgentModeRunner {
     const nativeMatch = clean.match(/^\{"tool_calls":\s*(\[[\s\S]*\])\}$/);
     if (nativeMatch) {
       try {
-        const toolCalls = JSON.parse(nativeMatch[1]);
+        const toolCalls = JSON.parse(nativeMatch[1]) as ApiToolCall[];
         return { content: null, toolCalls };
       } catch { /* fall through */ }
     }
@@ -617,7 +624,7 @@ export class AgentModeRunner {
     const xmlMatch = clean.match(/<tool_call>\s*\{?\s*"name"\s*:\s*"([^"]+)"\s*,\s*"arguments"\s*:\s*(\{[^}]+\})\s*\}?\s*<\/tool_call>/);
     if (xmlMatch) {
       try {
-        const args = JSON.parse(xmlMatch[2]);
+        const args = JSON.parse(xmlMatch[2]) as Record<string, unknown>;
         return {
           content: null,
           toolCalls: [{
@@ -650,22 +657,20 @@ export class AgentModeRunner {
       const jsonStr = extracted ?? text.slice(startIdx);
 
       // Try to parse directly
-      let parsed: any = null;
+      let parsed: ParsedToolCallJson | null = null;
       try {
-        parsed = JSON.parse(jsonStr);
+        parsed = JSON.parse(jsonStr) as ParsedToolCallJson;
       } catch {
-        // Try balancing
         const balanced = this.tryBalanceJson(jsonStr);
         if (balanced) {
-          try { parsed = JSON.parse(balanced); } catch { /* balanced parse also failed */ }
+          try { parsed = JSON.parse(balanced) as ParsedToolCallJson; } catch { /* balanced parse also failed */ }
         }
-        // Last resort: try regex extraction of name + arguments
         if (!parsed) {
           const nameMatch = jsonStr.match(/"name"\s*:\s*"([^"]+)"/);
           const argsMatch = jsonStr.match(/"arguments"\s*:\s*(\{[^}]*\})/);
           if (nameMatch && argsMatch) {
             try {
-              const args = JSON.parse(argsMatch[1]);
+              const args = JSON.parse(argsMatch[1]) as Record<string, unknown>;
               parsed = { tool_call: { name: nameMatch[1], arguments: args } };
             } catch { /* regex extraction parse failed */ }
           }

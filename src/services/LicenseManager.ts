@@ -7,8 +7,8 @@ async function fetchWithFallbackFn(url: string, options: RequestInit): Promise<R
   // `fetch` is used for streaming support — `requestUrl` does not support ReadableStream in Obsidian
   if (typeof fetch !== "undefined") return fetch(url, options);
   const { requestUrl } = await import("obsidian");
-  const r = await requestUrl({ url, method: options.method as any, headers: options.headers as any, body: options.body as string });
-  return new Response(r.text, { status: r.status, headers: new Headers(r.headers as any) });
+  const r = await requestUrl({ url, method: options.method, headers: options.headers as Record<string, string>, body: options.body as string });
+  return new Response(r.text, { status: r.status, headers: new Headers(r.headers) });
 }
 
 export type LicenseTier = "free" | "pro";
@@ -16,7 +16,7 @@ export type LicenseTier = "free" | "pro";
 export interface ActivateResult {
   tier: LicenseTier;
   error?: string;       // user-facing message when key is rejected
-  cloudResponse?: any;  // raw response for debugging
+  cloudResponse?: LicenseValidationResponse;  // raw response for debugging
 }
 
 export interface LicenseInfo {
@@ -24,6 +24,15 @@ export interface LicenseInfo {
   key: string;
   validUntil: number;
   features: string[];
+}
+
+interface LicenseValidationResponse {
+  valid?: boolean;
+  tier?: string;
+  error?: string;
+  reason?: string;
+  expiresAt?: number;
+  features?: string[];
 }
 
 /**
@@ -114,7 +123,7 @@ export class LicenseManager {
         return { ...err, error: t("license.serverError", { status: response.status }) };
       }
 
-      const data = await response.json();
+      const data: LicenseValidationResponse = await response.json();
 
       if (!data.valid) {
         this.currentLicense = { tier: "free", key: "FREE", validUntil: 0, features: this.getFreeFeatures() };
@@ -127,13 +136,13 @@ export class LicenseManager {
       }
 
       this.currentLicense = {
-        tier: data.tier || "pro",
+        tier: (data.tier as LicenseTier) || "pro",
         key,
         validUntil: (data.expiresAt || 0) * 1000,
         features: data.features || this.getProFeatures(),
       };
       this.boundFingerprint = currentFp;
-      return { tier: data.tier || "pro", cloudResponse: data };
+      return { tier: (data.tier as LicenseTier) || "pro", cloudResponse: data };
     } catch {
       // No internet → grace period
       const result = this.graceFallbackResult();

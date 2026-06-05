@@ -27,6 +27,7 @@ import { LicenseManager } from "./services/LicenseManager";
 import { BudgetManager } from "./services/BudgetManager";
 import { Plugin, WorkspaceLeaf, Notice, Modal, MarkdownRenderer, Component } from "obsidian";
 import { t } from "./i18n";
+import type { Lang } from "./i18n/types";
 
 export default class CopilotPlugin extends Plugin {
   settings!: CopilotSettings;
@@ -50,7 +51,7 @@ export default class CopilotPlugin extends Plugin {
 
     // Initialize i18n with user's language preference
     const { setLanguage } = await import("./i18n");
-    setLanguage(this.settings.language as any);
+    setLanguage(this.settings.language as Lang);
     console.log(`[i18n] Language set to: ${this.settings.language}`);
 
     this.providerManager = new ProviderManager(this.settings);
@@ -243,7 +244,7 @@ export default class CopilotPlugin extends Plugin {
     // Clean up event listeners to prevent leaks on reload
     this.indexEventHandler?.unregister();
     // Save index before unloading — fire and forget to match Obsidian's void return type
-    this.vectorStoreManager.saveIndex();
+    void this.vectorStoreManager.saveIndex();
     // Detaching leaves on unload resets the leaf to its default location,
     // which is not recommended. Let Obsidian manage the workspace.
     // await this.app.workspace.detachLeavesOfType(CHAT_VIEW_TYPE);
@@ -358,7 +359,8 @@ export default class CopilotPlugin extends Plugin {
             { role: "user", content: query },
           ]);
           resultEl.empty();
-          await MarkdownRenderer.render(this.app, response, resultEl, "", new Component());
+          const component = new Component();
+          await MarkdownRenderer.render(this.app, response, resultEl, "", component);
         } catch (err) {
           resultEl.setText(t("quickAsk.error", { error: String(err) }));
         }

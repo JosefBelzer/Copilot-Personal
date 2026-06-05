@@ -128,7 +128,11 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
             }
 
             // pdfjs v5+ requires 'canvas' + 'canvasContext' + 'viewport'
-            const renderParams: any = { canvasContext: ctx, canvas, viewport };
+            const renderParams = {
+              canvasContext: ctx,
+              canvas,
+              viewport,
+            } as unknown as Parameters<typeof page.render>[0];
             try {
               await page.render(renderParams).promise;
             } catch (renderErr) {

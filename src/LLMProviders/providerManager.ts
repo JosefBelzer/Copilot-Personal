@@ -85,7 +85,7 @@ export class ProviderManager {
       : null;
 
     if (fallbackKey) {
-      const fallbackType = this.settings[fallbackKey as "fallbackEmbeddingProvider" | "fallbackVisionProvider"];
+      const fallbackType = this.settings[fallbackKey];
       if (fallbackType) {
         const provider = this.providers.get(fallbackType as ProviderType);
         if (provider && providerSupports(fallbackType as ProviderType, task)) {

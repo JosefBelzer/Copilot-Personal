@@ -24,6 +24,9 @@ export interface BudgetUsage {
   resetsInHours: number;
 }
 
+interface WorkerErrorResponse { error?: string; valid?: boolean }
+interface BudgetWorkerResponse { content?: string; choices?: Array<{ delta?: { content?: string } }>; error?: string }
+
 export interface BudgetChatResponse {
   content: string;
   usage?: { total_tokens: number };
@@ -72,7 +75,7 @@ export class BudgetManager {
       throw new Error(`Budget usage fetch failed (${response.status})`);
     }
 
-    const data: BudgetUsageResponse = await response.json();
+    const data = await response.json() as BudgetUsageResponse;
     const avgCost = 0.06 / 1_000_000;
     const cost = data.dailyTokens * avgCost;
 
@@ -127,11 +130,11 @@ export class BudgetManager {
     });
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({ error: "Unknown error" }));
+      const err: WorkerErrorResponse = await response.json().catch(() => ({ error: "Unknown error" }));
       throw new Error(err.error || `Budget API error (${response.status})`);
     }
 
-    const data: BudgetChatResponse = await response.json();
+    const data = await response.json() as BudgetChatResponse;
     // Update cache from Worker response
     if (data.budget) {
       const avgCost = 0.06 / 1_000_000;
@@ -171,7 +174,7 @@ export class BudgetManager {
     });
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({ error: "Unknown error" }));
+      const err: WorkerErrorResponse = await response.json().catch(() => ({ error: "Unknown error" }));
       throw new Error(err.error || `Budget API error (${response.status})`);
     }
 
@@ -200,7 +203,7 @@ export class BudgetManager {
           return;
         }
         try {
-          const parsed = JSON.parse(json);
+          const parsed: BudgetWorkerResponse = JSON.parse(json);
           const delta = parsed.choices?.[0]?.delta?.content;
           if (delta) {
             yield { content: delta };

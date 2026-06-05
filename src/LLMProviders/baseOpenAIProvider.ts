@@ -91,7 +91,7 @@ export class BaseOpenAIProvider implements LLMProvider {
         60000,
         `${this.tag} chat`
       );
-      const data: OpenAIResponse = response.json;
+      const data = response.json as OpenAIResponse;
       if (data.error) {
         throw new Error(`API error: ${data.error.message || JSON.stringify(data.error)}`);
       }
@@ -164,7 +164,7 @@ export class BaseOpenAIProvider implements LLMProvider {
           const data = line.slice(6).trim();
           if (data === "[DONE]") { yield { content: "", done: true }; return; }
           try {
-            const parsed: OpenAIStreamChunk = JSON.parse(data);
+            const parsed = JSON.parse(data) as OpenAIStreamChunk;
             if (parsed.error) {
               console.error(`${this.tag} Stream error:`, parsed.error);
               continue;
@@ -206,7 +206,7 @@ export class BaseOpenAIProvider implements LLMProvider {
         30000,
         `${this.tag} embed`
       );
-      const data: OpenAIEmbeddingResponse = response.json;
+      const data = response.json as OpenAIEmbeddingResponse;
       if (data.error) {
         throw new Error(`Embedding API error: ${data.error.message || JSON.stringify(data.error)}`);
       }

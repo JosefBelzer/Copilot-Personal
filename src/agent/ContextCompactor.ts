@@ -131,13 +131,13 @@ export class ContextCompactor {
     ];
 
     // Temporarily cap max tokens for fast summarization
-    const config = (this.provider as any).config;
-    const savedTokens = config?.maxTokens;
-    if (config) config.maxTokens = CONTEXT_SUMMARIZE_MAX_TOKENS;
+    const config = this.provider.config;
+    const savedTokens = config.maxTokens;
+    config.maxTokens = CONTEXT_SUMMARIZE_MAX_TOKENS;
 
     const summary = await this.provider.chat(messages);
 
-    if (config) config.maxTokens = savedTokens;
+    config.maxTokens = savedTokens;
     return summary.trim();
   }
 

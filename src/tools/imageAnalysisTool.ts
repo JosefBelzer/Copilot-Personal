@@ -66,7 +66,10 @@ export function createImageAnalysisTool(
           body: JSON.stringify(body),
         });
 
-        const data = response.json;
+        const data = response.json as {
+          error?: { message: string };
+          choices?: Array<{ message?: { content?: string } }>;
+        };
         if (data.error) return t("tools.analyzeImage.error.apiError", { message: data.error.message || JSON.stringify(data.error) });
         return data.choices?.[0]?.message?.content ?? t("tools.analyzeImage.noResponse");
       } catch (err) {

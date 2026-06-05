@@ -40,7 +40,7 @@ export class VectorStoreManager {
   }
 
   static resetInstance(): void {
-    VectorStoreManager.instance = undefined as any;
+    (VectorStoreManager.instance as unknown) = undefined;
   }
 
   configure(llmProvider: LLMProvider, settings: CopilotSettings, vaultPath: string, adapter?: DataAdapter) {
@@ -68,7 +68,7 @@ export class VectorStoreManager {
         return;
       }
       const raw = await this.adapter.read(this.dataPath);
-      const data: IndexData = JSON.parse(raw);
+      const data = JSON.parse(raw) as IndexData;
       this.chunks = data.chunks ?? [];
       this.loadSucceeded = true;
     } catch (err) {

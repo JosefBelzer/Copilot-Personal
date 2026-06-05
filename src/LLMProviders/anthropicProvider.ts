@@ -83,7 +83,7 @@ export class AnthropicProvider implements LLMProvider {
         body: JSON.stringify(body),
       });
 
-      const data: AnthropicResponse = response.json;
+      const data = response.json as AnthropicResponse;
       if (data.error) {
         throw new Error(`API error: ${data.error.message || JSON.stringify(data.error)}`);
       }
@@ -182,7 +182,7 @@ export class AnthropicProvider implements LLMProvider {
           if (!line.startsWith("data: ")) continue;
           const data = line.slice(6).trim();
           try {
-            const parsed: AnthropicStreamChunk = JSON.parse(data);
+            const parsed = JSON.parse(data) as AnthropicStreamChunk;
             if (parsed.type === "message_stop") {
               yield { content: "", done: true };
               return;

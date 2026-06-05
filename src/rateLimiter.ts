@@ -1,12 +1,15 @@
 /**
  * Simple rate limiter for API calls (embeddings, etc.)
  */
+
+interface QueueItem<T> {
+  fn: () => Promise<T>;
+  resolve: (value: T) => void;
+  reject: (reason: unknown) => void;
+}
+
 export class RateLimiter {
-  private queue: Array<{
-    fn: () => Promise<any>;
-    resolve: (value: any) => void;
-    reject: (reason: any) => void;
-  }> = [];
+  private queue: Array<QueueItem<unknown>> = [];
   private processing = false;
   private requestsPerMinute: number;
   private delayBetweenRequests: number;
@@ -18,7 +21,11 @@ export class RateLimiter {
 
   async enqueue<T>(fn: () => Promise<T>): Promise<T> {
     return new Promise((resolve, reject) => {
-      this.queue.push({ fn, resolve, reject });
+      this.queue.push({
+        fn,
+        resolve: resolve as (value: unknown) => void,
+        reject,
+      });
       void this.processQueue();
     });
   }
@@ -28,7 +35,8 @@ export class RateLimiter {
     this.processing = true;
 
     while (this.queue.length > 0) {
-      const item = this.queue.shift()!;
+      const item = this.queue.shift();
+      if (!item) continue;
       try {
         const result = await item.fn();
         item.resolve(result);
