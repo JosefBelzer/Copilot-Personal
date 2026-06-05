@@ -54,7 +54,7 @@ export class CopilotSettingTab extends PluginSettingTab {
           // Refresh chat view UI with new language
           const chatView = this.plugin.getChatView();
           if (chatView) chatView.refreshLanguage();
-          // @ts-ignore -- display() deprecated since Obsidian 1.13.0, moving to getSettingDefinitions in v2.0
+          /* display() is deprecated since Obsidian 1.13.0 — will migrate to getSettingDefinitions() in v2.0 */
           this.display(); // re-render settings with new language
         });
       });
@@ -103,7 +103,7 @@ export class CopilotSettingTab extends PluginSettingTab {
       } else {
         new Notice(t("license.freeActivated"));
       }
-          // @ts-ignore -- display() deprecated since Obsidian 1.13.0, moving to getSettingDefinitions in v2.0
+          /* display() is deprecated since Obsidian 1.13.0 — will migrate to getSettingDefinitions() in v2.0 */
       this.display();
     };
 
@@ -214,7 +214,7 @@ export class CopilotSettingTab extends PluginSettingTab {
 
             await this.plugin.saveSettings();
             // Re-render to show updated URL in the text field above
-            // @ts-ignore -- display() deprecated since Obsidian 1.13.0, moving to getSettingDefinitions in v2.0
+            /* display() is deprecated since Obsidian 1.13.0 — will migrate to getSettingDefinitions() in v2.0 */
             this.display();
           })
       );
@@ -277,7 +277,7 @@ export class CopilotSettingTab extends PluginSettingTab {
               new Notice(t("settings.lmStatusFoundNotice", { count: models.length, model: models[0] }));
 
               // Re-render to update the model text fields
-              // @ts-ignore -- display() deprecated since Obsidian 1.13.0, moving to getSettingDefinitions in v2.0
+              /* display() is deprecated since Obsidian 1.13.0 — will migrate to getSettingDefinitions() in v2.0 */
               this.display();
             } catch (err) {
               lmStatusEl.setText(
@@ -879,7 +879,7 @@ export class CopilotSettingTab extends PluginSettingTab {
             .onChange(async (value) => {
               budget.setEnabled(value);
               await this.plugin.saveSettings();
-              // @ts-ignore -- display() deprecated since Obsidian 1.13.0, moving to getSettingDefinitions in v2.0
+              /* display() is deprecated since Obsidian 1.13.0 — will migrate to getSettingDefinitions() in v2.0 */
               this.display();
             })
         );

@@ -4,7 +4,7 @@ import { t } from "../i18n";
 
 // `fetchWithFallbackFn` correctly uses `requestUrl` as a fallback when `fetch` is unavailable in Obsidian's mobile sandbox.
 async function fetchWithFallbackFn(url: string, options: RequestInit): Promise<Response> {
-  // `fetch` is used for streaming support — `requestUrl` does not support ReadableStream in Obsidian
+  // Primary path: use fetch() for streaming support. Falls back to requestUrl when unavailable.
   if (typeof fetch !== "undefined") return fetch(url, options);
   const { requestUrl } = await import("obsidian");
   const r = await requestUrl({ url, method: options.method, headers: options.headers as Record<string, string>, body: options.body as string });

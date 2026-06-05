@@ -45,6 +45,7 @@ export function basenameNoExt(path: string): string {
  * requestUrl() which loads the full response.
  */
 export function fetchWithFallback(url: string, options: RequestInit): Promise<Response> {
+  // Primary path: use fetch() for streaming support. Falls back to requestUrl when unavailable.
   if (typeof fetch !== "undefined") {
     return fetch(url, options);
   }

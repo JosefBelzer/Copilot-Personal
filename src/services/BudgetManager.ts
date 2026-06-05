@@ -24,9 +24,6 @@ export interface BudgetUsage {
   resetsInHours: number;
 }
 
-interface WorkerErrorResponse { error?: string; valid?: boolean }
-interface BudgetWorkerResponse { content?: string; choices?: Array<{ delta?: { content?: string } }>; error?: string }
-
 export interface BudgetChatResponse {
   content: string;
   usage?: { total_tokens: number };
@@ -42,6 +39,8 @@ export interface BudgetUsageResponse {
   limitQueries: number;
   resetsAt?: string;
 }
+
+import { requestUrl } from "obsidian";
 
 export class BudgetManager {
   private enabled = false;
@@ -64,18 +63,14 @@ export class BudgetManager {
       return this.cachedUsage;
     }
 
-    // `fetch` is used for streaming support — `requestUrl` does not support ReadableStream in Obsidian
-    const response = await fetch(`${this.workerUrl}/v1/budget-usage`, {
+    const resp = await requestUrl({
+      url: `${this.workerUrl}/v1/budget-usage`,
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ licenseKey }),
     });
 
-    if (!response.ok) {
-      throw new Error(`Budget usage fetch failed (${response.status})`);
-    }
-
-    const data = await response.json() as BudgetUsageResponse;
+    const data = JSON.parse(resp.text) as BudgetUsageResponse;
     const avgCost = 0.06 / 1_000_000;
     const cost = data.dailyTokens * avgCost;
 
@@ -122,19 +117,14 @@ export class BudgetManager {
     const body: Record<string, unknown> = { messages, licenseKey };
     if (fingerprint) body["fingerprint"] = fingerprint;
     if (tools) body["tools"] = tools;
-    // `fetch` is used for streaming support — `requestUrl` does not support ReadableStream in Obsidian
-    const response = await fetch(`${this.workerUrl}/v1/budget-chat`, {
+    const resp = await requestUrl({
+      url: `${this.workerUrl}/v1/budget-chat`,
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({ error: "Unknown error" }));
-      throw new Error(err.error || `Budget API error (${response.status})`);
-    }
-
-    const data = await response.json() as BudgetChatResponse;
+    const data = JSON.parse(resp.text) as BudgetChatResponse;
     // Update cache from Worker response
     if (data.budget) {
       const avgCost = 0.06 / 1_000_000;
@@ -174,7 +164,7 @@ export class BudgetManager {
     });
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({ error: "Unknown error" }));
+      const err = await response.json().catch(() => ({ error: "Unknown error" })) as { error?: string };
       throw new Error(err.error || `Budget API error (${response.status})`);
     }
 
@@ -203,7 +193,7 @@ export class BudgetManager {
           return;
         }
         try {
-          const parsed = JSON.parse(json);
+          const parsed = JSON.parse(json) as { choices?: Array<{ delta?: { content?: string } }> };
           const delta = parsed.choices?.[0]?.delta?.content;
           if (delta) {
             yield { content: delta };

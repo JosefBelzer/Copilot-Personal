@@ -1,6 +1,6 @@
-{
+﻿{
   "name": "copilot-personal",
-  "version": "1.5.6",
+  "version": "1.5.7",
   "description": "Personal AI copilot for Obsidian",
   "main": "main.js",
   "scripts": {
