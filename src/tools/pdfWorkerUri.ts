@@ -9,12 +9,18 @@
  * the GitHub Actions CI can resolve the module during `tsc --noEmit`.
  */
 
+interface ObsidianAppGlobal {
+  app?: {
+    plugins?: {
+      getPlugin?: (id: string) => { manifest?: { dir?: string } } | undefined;
+    };
+  };
+}
+
 export const WORKER_URI = (() => {
   // Try local worker file (copied to plugin root during build)
-  // In Obsidian runtime, plugin dir is available
   try {
-    // @ts-ignore — app is globally available in Obsidian
-    const plugin = (typeof app !== "undefined" ? app : null)?.plugins?.getPlugin?.("copilot-personal");
+    const plugin = (globalThis as ObsidianAppGlobal).app?.plugins?.getPlugin?.("copilot-personal");
     if (plugin?.manifest?.dir) {
       return `${plugin.manifest.dir}/pdf.worker.min.mjs`;
     }

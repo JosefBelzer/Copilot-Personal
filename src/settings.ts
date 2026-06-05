@@ -178,7 +178,8 @@ export function getApiKeyForProvider(settings: CopilotSettings, provider: string
  * Updates the per-provider key field.
  */
 export function setApiKeyForProvider(settings: CopilotSettings, provider: string, key: string): void {
-  const keyMap: Record<string, keyof CopilotSettings> = {
+  type ApiKeyField = "deepseekApiKey" | "openaiApiKey" | "anthropicApiKey" | "openrouterApiKey" | "geminiApiKey" | "mistralApiKey" | "groqApiKey" | "perplexityApiKey" | "xaiApiKey" | "lmStudioApiKey";
+  const keyMap: Record<string, ApiKeyField> = {
     deepseek: "deepseekApiKey",
     openai: "openaiApiKey",
     anthropic: "anthropicApiKey",
@@ -192,6 +193,6 @@ export function setApiKeyForProvider(settings: CopilotSettings, provider: string
   };
 
   if (provider in keyMap) {
-    (settings as any)[keyMap[provider]] = key;
+    settings[keyMap[provider]] = key;
   }
 }

@@ -36,8 +36,8 @@ export class ChatHistoryBrowser {
   async deleteChat(path: string): Promise<boolean> {
     try {
       const file = this.app.vault.getAbstractFileByPath(path);
-      if (file) {
-        await this.app.fileManager.trashFile(file as TFile);
+      if (file && file instanceof TFile) {
+        await this.app.fileManager.trashFile(file);
         return true;
       }
       return false;
@@ -49,9 +49,9 @@ export class ChatHistoryBrowser {
   async renameChat(path: string, newName: string): Promise<boolean> {
     try {
       const file = this.app.vault.getAbstractFileByPath(path);
-      if (file) {
+      if (file && file instanceof TFile) {
         const newPath = `${this.folder}/${newName}.md`;
-        await this.app.vault.rename(file as TFile, newPath);
+        await this.app.vault.rename(file, newPath);
         return true;
       }
       return false;

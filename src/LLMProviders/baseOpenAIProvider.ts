@@ -4,13 +4,50 @@ import { LLMProvider, ProviderConfig, ProviderType, ToolDefinition } from "./pro
 import { withTimeout, normalizeApiUrl, fetchWithFallback } from "../utils/pathUtils";
 import { CircuitBreaker } from "../services/CircuitBreaker";
 
+interface OpenAIChoice {
+  index: number;
+  message: {
+    role: string;
+    content: string;
+    tool_calls?: Array<{
+      id: string;
+      type: string;
+      function: { name: string; arguments: string };
+    }>;
+  };
+  finish_reason: string;
+}
+
+interface OpenAIResponse {
+  choices?: OpenAIChoice[];
+  error?: { message: string };
+  usage?: { total_tokens: number; prompt_tokens: number; completion_tokens: number };
+}
+
+interface OpenAIStreamChunk {
+  error?: { message: string };
+  choices?: Array<{
+    delta?: {
+      content?: string;
+      tool_calls?: Array<{
+        function?: { name?: string; arguments?: string };
+      }>;
+    };
+  }>;
+}
+
+interface OpenAIEmbeddingResponse {
+  error?: { message: string };
+  data?: Array<{ embedding: number[] }>;
+}
+
 /**
  * Base class for OpenAI-compatible providers (DeepSeek, OpenAI, Groq, Mistral, etc.)
  * DeepSeekProvider and OpenAIProvider are now thin wrappers around this.
  * Eliminates ~350 lines of duplicated code.
  */
 export class BaseOpenAIProvider implements LLMProvider {
-  readonly providerType: ProviderType;
+  providerType: ProviderType;
   config: ProviderConfig;
   protected tag: string;
   circuitBreaker: CircuitBreaker;
@@ -54,13 +91,13 @@ export class BaseOpenAIProvider implements LLMProvider {
         60000,
         `${this.tag} chat`
       );
-      const data = response.json;
+      const data: OpenAIResponse = response.json;
       if (data.error) {
         throw new Error(`API error: ${data.error.message || JSON.stringify(data.error)}`);
       }
       const choice = data.choices?.[0];
       this.circuitBreaker.onSuccess();
-      if (choice?.message?.tool_calls?.length) {
+      if (choice?.message?.tool_calls && choice.message.tool_calls.length > 0) {
         return JSON.stringify({ tool_calls: choice.message.tool_calls });
       }
       return choice?.message?.content ?? "";
@@ -127,14 +164,14 @@ export class BaseOpenAIProvider implements LLMProvider {
           const data = line.slice(6).trim();
           if (data === "[DONE]") { yield { content: "", done: true }; return; }
           try {
-            const parsed = JSON.parse(data);
+            const parsed: OpenAIStreamChunk = JSON.parse(data);
             if (parsed.error) {
               console.error(`${this.tag} Stream error:`, parsed.error);
               continue;
             }
             const delta = parsed.choices?.[0]?.delta;
             // Tool call delta (streaming tool calls)
-            if (delta?.tool_calls?.length) {
+            if (delta?.tool_calls) {
               for (const tc of delta.tool_calls) {
                 if (tc.function?.name) {
                   yield { content: `🔧 Calling ${tc.function.name}...`, done: false };
@@ -169,7 +206,7 @@ export class BaseOpenAIProvider implements LLMProvider {
         30000,
         `${this.tag} embed`
       );
-      const data = response.json;
+      const data: OpenAIEmbeddingResponse = response.json;
       if (data.error) {
         throw new Error(`Embedding API error: ${data.error.message || JSON.stringify(data.error)}`);
       }

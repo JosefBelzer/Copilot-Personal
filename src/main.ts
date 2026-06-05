@@ -25,7 +25,7 @@ import { createListNotesTool, createFulltextSearchTool, createVaultStatsTool, cr
 import { MemoryManager } from "./memory/MemoryManager";
 import { LicenseManager } from "./services/LicenseManager";
 import { BudgetManager } from "./services/BudgetManager";
-import { Plugin, WorkspaceLeaf, Notice, Modal, MarkdownRenderer } from "obsidian";
+import { Plugin, WorkspaceLeaf, Notice, Modal, MarkdownRenderer, Component } from "obsidian";
 import { t } from "./i18n";
 
 export default class CopilotPlugin extends Plugin {
@@ -57,7 +57,7 @@ export default class CopilotPlugin extends Plugin {
     const llmProvider = this.providerManager.getProviderFor("embeddings");
 
     // Initialize semantic search
-    const vaultPath = (this.app.vault.adapter as any).getBasePath?.() ?? "";
+    const vaultPath = (this.app.vault.adapter as { getBasePath?(): string }).getBasePath?.() ?? "";
     this.vectorStoreManager = VectorStoreManager.getInstance();
     this.vectorStoreManager.configure(llmProvider, this.settings, vaultPath, this.app.vault.adapter);
     await this.vectorStoreManager.loadIndex();
@@ -94,8 +94,8 @@ export default class CopilotPlugin extends Plugin {
     this.licenseManager.setPersistence(
       () => {
         this.settings._messageCount = this.licenseManager.getPersistableState();
-        this.saveSettings(); // fire-and-forget — Obsidian's saveData is fast
-        return this.settings._messageCount as { count: number; day: string };
+        void this.saveSettings(); // fire-and-forget — Obsidian's saveData is fast
+        return this.settings._messageCount;
       },
       (data) => { if (data) this.settings._messageCount = data; }
     );
@@ -114,7 +114,7 @@ export default class CopilotPlugin extends Plugin {
     this.addSettingTab(new CopilotSettingTab(this.app, this));
 
     this.addRibbonIcon("message-square", t("chat.title"), () => {
-      this.activateView();
+      void this.activateView();
     });
 
     this.addCommand({
@@ -129,7 +129,7 @@ export default class CopilotPlugin extends Plugin {
       editorCallback: (editor) => {
         const selection = editor.getSelection();
         if (selection) {
-          this.activateView();
+          void this.activateView();
           const view = this.getChatView();
           if (view) {
             view.setInputText(selection);
@@ -196,7 +196,7 @@ export default class CopilotPlugin extends Plugin {
         if (view) {
           view.clearChat();
         } else {
-          this.activateView();
+          void this.activateView();
         }
       },
     });
@@ -207,7 +207,7 @@ export default class CopilotPlugin extends Plugin {
       callback: () => {
         const view = this.getChatView();
         if (view) {
-          view.saveChatToFile();
+          void view.saveChatToFile();
         }
       },
     });
@@ -225,7 +225,7 @@ export default class CopilotPlugin extends Plugin {
       name: t("commands.exportMd"),
       callback: () => {
         const view = this.getChatView();
-        if (view) view.exportChatMarkdown();
+        if (view) void view.exportChatMarkdown();
       },
     });
 
@@ -234,7 +234,7 @@ export default class CopilotPlugin extends Plugin {
       name: t("commands.exportJson"),
       callback: () => {
         const view = this.getChatView();
-        if (view) view.exportChatJSON();
+        if (view) void view.exportChatJSON();
       },
     });
   }
@@ -261,11 +261,12 @@ export default class CopilotPlugin extends Plugin {
   private migrateLegacyApiKey(): void {
     if (!this.settings.apiKey) return;
     const provider = this.settings.providerType === "auto" ? "deepseek" : this.settings.providerType;
-    const keyField = `${provider}ApiKey` as keyof CopilotSettings;
+    type ApiKeyField = "deepseekApiKey" | "openaiApiKey" | "anthropicApiKey" | "openrouterApiKey" | "geminiApiKey" | "mistralApiKey" | "groqApiKey" | "perplexityApiKey" | "xaiApiKey" | "lmStudioApiKey";
+    const keyField = `${provider}ApiKey` as ApiKeyField;
     if (!this.settings[keyField]) {
-      (this.settings as any)[keyField] = this.settings.apiKey;
+      this.settings[keyField] = this.settings.apiKey;
       // Also save after migration
-      this.saveData(this.settings);
+      void this.saveData(this.settings);
       console.log(`[Migrate] Legacy apiKey copied to ${keyField}`);
     }
   }
@@ -320,7 +321,7 @@ export default class CopilotPlugin extends Plugin {
     }
 
     if (leaf) {
-      workspace.revealLeaf(leaf);
+      void workspace.revealLeaf(leaf);
     }
   }
 
@@ -341,27 +342,29 @@ export default class CopilotPlugin extends Plugin {
     const btnEl = modal.contentEl.createEl("button", { text: t("quickAsk.btnAsk"), cls: "copilot-send-btn" });
     const resultEl = modal.contentEl.createEl("div", { cls: "copilot-message-content" });
 
-    btnEl.addEventListener("click", async () => {
-      const query = inputEl.value.trim();
-      if (!query) return;
-      if (!this.licenseManager.trackMessage()) {
-        new Notice(t("license.dailyLimitReached"));
-        return;
-      }
-      btnEl.disabled = true;
-      btnEl.setText(t("quickAsk.btnThinking"));
-      try {
-        const response = await this.providerManager.getActiveProvider().chat([
-          { role: "system", content: "Be concise and helpful." },
-          { role: "user", content: query },
-        ]);
-        resultEl.empty();
-        await MarkdownRenderer.render(this.app, response, resultEl, "", {} as any);
-      } catch (err) {
-        resultEl.setText(t("quickAsk.error", { error: String(err) }));
-      }
-      btnEl.disabled = false;
-      btnEl.setText(t("quickAsk.btnAsk"));
+    btnEl.addEventListener("click", () => {
+      void (async () => {
+        const query = inputEl.value.trim();
+        if (!query) return;
+        if (!this.licenseManager.trackMessage()) {
+          new Notice(t("license.dailyLimitReached"));
+          return;
+        }
+        btnEl.disabled = true;
+        btnEl.setText(t("quickAsk.btnThinking"));
+        try {
+          const response = await this.providerManager.getActiveProvider().chat([
+            { role: "system", content: "Be concise and helpful." },
+            { role: "user", content: query },
+          ]);
+          resultEl.empty();
+          await MarkdownRenderer.render(this.app, response, resultEl, "", new Component());
+        } catch (err) {
+          resultEl.setText(t("quickAsk.error", { error: String(err) }));
+        }
+        btnEl.disabled = false;
+        btnEl.setText(t("quickAsk.btnAsk"));
+      })();
     });
 
     modal.open();

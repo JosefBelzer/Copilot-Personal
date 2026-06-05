@@ -30,11 +30,12 @@ export class Reranker {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query, documents: results.map(r => r.text) }),
       });
-      const data = response.json;
-      if (data.scores && Array.isArray(data.scores)) {
+      const data = response.json as { scores?: number[] };
+      const scores = data.scores;
+      if (scores && Array.isArray(scores)) {
         return results.map((r, i) => ({
           ...r,
-          score: data.scores[i] ?? r.score,
+          score: scores[i] ?? r.score,
         })).sort((a, b) => b.score - a.score);
       }
     } catch (err) {

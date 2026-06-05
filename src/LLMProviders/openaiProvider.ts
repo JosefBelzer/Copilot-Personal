@@ -13,7 +13,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
   /** Re-initialize with new config and type (used by ProviderManager for runtime switching) */
   init(config: ProviderConfig, typeOverride?: ProviderType) {
     this.config = config;
-    (this as any).providerType = typeOverride ?? this.providerType;
+    this.providerType = typeOverride ?? this.providerType;
     this.tag = `[${typeOverride ?? this.providerType}]`;
   }
 }

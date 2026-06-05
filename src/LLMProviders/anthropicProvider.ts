@@ -5,6 +5,25 @@ import { withTimeout, normalizeApiUrl, fetchWithFallback } from "../utils/pathUt
 import { CircuitBreaker } from "../services/CircuitBreaker";
 import { t } from "../i18n";
 
+interface AnthropicContentBlock {
+  type: string;
+  text?: string;
+  name?: string;
+  id?: string;
+  input?: Record<string, unknown>;
+}
+
+interface AnthropicResponse {
+  error?: { message: string };
+  content?: AnthropicContentBlock[];
+}
+
+interface AnthropicStreamChunk {
+  type?: string;
+  delta?: { text?: string };
+  content_block?: { type?: string; name?: string };
+}
+
 const TAG = "[Anthropic]";
 
 /**
@@ -64,15 +83,15 @@ export class AnthropicProvider implements LLMProvider {
         body: JSON.stringify(body),
       });
 
-      const data = response.json;
+      const data: AnthropicResponse = response.json;
       if (data.error) {
         throw new Error(`API error: ${data.error.message || JSON.stringify(data.error)}`);
       }
 
       // Handle Anthropic tool_use response
-      const toolUses = data.content?.filter((c: any) => c.type === "tool_use") || [];
+      const toolUses = data.content?.filter((c: AnthropicContentBlock) => c.type === "tool_use") || [];
       if (toolUses.length > 0) {
-        const toolCalls = toolUses.map((tu: any) => ({
+        const toolCalls = toolUses.map((tu: AnthropicContentBlock) => ({
           id: tu.id || `call_${tu.name}`,
           type: "function" as const,
           function: {
@@ -163,7 +182,7 @@ export class AnthropicProvider implements LLMProvider {
           if (!line.startsWith("data: ")) continue;
           const data = line.slice(6).trim();
           try {
-            const parsed = JSON.parse(data);
+            const parsed: AnthropicStreamChunk = JSON.parse(data);
             if (parsed.type === "message_stop") {
               yield { content: "", done: true };
               return;

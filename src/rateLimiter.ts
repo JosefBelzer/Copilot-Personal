@@ -19,7 +19,7 @@ export class RateLimiter {
   async enqueue<T>(fn: () => Promise<T>): Promise<T> {
     return new Promise((resolve, reject) => {
       this.queue.push({ fn, resolve, reject });
-      this.processQueue();
+      void this.processQueue();
     });
   }
 

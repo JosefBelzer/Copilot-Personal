@@ -4,6 +4,34 @@ import { LLMProvider, ProviderConfig, ProviderType, ToolDefinition } from "./pro
 import { fetchWithFallback } from "../utils/pathUtils";
 import { CircuitBreaker } from "../services/CircuitBreaker";
 
+interface GeminiPart {
+  text?: string;
+  functionCall?: {
+    name: string;
+    args?: Record<string, unknown>;
+  };
+}
+
+interface GeminiCandidate {
+  content?: {
+    parts?: GeminiPart[];
+  };
+}
+
+interface GeminiResponse {
+  error?: { message: string };
+  candidates?: GeminiCandidate[];
+}
+
+interface GeminiStreamChunk {
+  candidates?: GeminiCandidate[];
+}
+
+interface GeminiEmbeddingResponse {
+  error?: { message: string };
+  embeddings?: Array<{ values?: number[] }>;
+}
+
 const TAG = "[Gemini]";
 
 /**
@@ -88,28 +116,28 @@ export class GeminiProvider implements LLMProvider {
         body: JSON.stringify(body),
       });
 
-      const data = response.json;
+      const data: GeminiResponse = response.json;
       if (data.error) {
         throw new Error(`API error: ${data.error.message || JSON.stringify(data.error)}`);
       }
 
       // Handle functionCall response
       const parts = data.candidates?.[0]?.content?.parts || [];
-      const functionCalls = parts.filter((p: any) => p.functionCall);
+      const functionCalls = parts.filter((p: GeminiPart) => p.functionCall);
       if (functionCalls.length > 0) {
-        const toolCalls = functionCalls.map((p: any) => ({
-          id: `call_${p.functionCall.name}`,
+        const toolCalls = functionCalls.map((p: GeminiPart) => ({
+          id: `call_${p.functionCall?.name}`,
           type: "function",
           function: {
-            name: p.functionCall.name,
-            arguments: JSON.stringify(p.functionCall.args || {}),
+            name: p.functionCall?.name,
+            arguments: JSON.stringify(p.functionCall?.args || {}),
           },
         }));
         return JSON.stringify({ tool_calls: toolCalls });
       }
 
       this.circuitBreaker.onSuccess();
-      return parts.map((p: any) => p.text || "").join("");
+      return parts.map((p: GeminiPart) => p.text || "").join("");
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       this.circuitBreaker.onFailure(msg);
@@ -182,7 +210,7 @@ export class GeminiProvider implements LLMProvider {
           const data = line.slice(6).trim();
           if (data === "[DONE]") { yield { content: "", done: true }; return; }
           try {
-            const parsed = JSON.parse(data);
+            const parsed: GeminiStreamChunk = JSON.parse(data);
             const parts = parsed.candidates?.[0]?.content?.parts || [];
             for (const part of parts) {
               if (part.functionCall) {
@@ -223,11 +251,11 @@ export class GeminiProvider implements LLMProvider {
         body: JSON.stringify({ requests }),
       });
 
-      const data = response.json;
+      const data: GeminiEmbeddingResponse = response.json;
       if (data.error) {
         throw new Error(`Embedding API error: ${data.error.message || JSON.stringify(data.error)}`);
       }
-      return (data.embeddings || []).map((e: any) => e.values ?? []);
+      return (data.embeddings || []).map((e: { values?: number[] }) => e.values ?? []);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`${TAG} embed() failed:`, msg);

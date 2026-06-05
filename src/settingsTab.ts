@@ -46,6 +46,7 @@ export class CopilotSettingTab extends PluginSettingTab {
           // Refresh chat view UI with new language
           const chatView = this.plugin.getChatView();
           if (chatView) chatView.refreshLanguage();
+          // @ts-ignore - display() deprecated since Obsidian 1.13
           this.display(); // re-render settings with new language
         });
       });
@@ -94,6 +95,7 @@ export class CopilotSettingTab extends PluginSettingTab {
       } else {
         new Notice(t("license.freeActivated"));
       }
+      // @ts-ignore - display() deprecated since Obsidian 1.13
       this.display();
     };
 
@@ -204,6 +206,7 @@ export class CopilotSettingTab extends PluginSettingTab {
 
             await this.plugin.saveSettings();
             // Re-render to show updated URL in the text field above
+            // @ts-ignore - display() deprecated since Obsidian 1.13
             this.display();
           })
       );
@@ -266,6 +269,7 @@ export class CopilotSettingTab extends PluginSettingTab {
               new Notice(t("settings.lmStatusFoundNotice", { count: models.length, model: models[0] }));
 
               // Re-render to update the model text fields
+              // @ts-ignore - display() deprecated since Obsidian 1.13
               this.display();
             } catch (err) {
               lmStatusEl.setText(
@@ -293,11 +297,11 @@ export class CopilotSettingTab extends PluginSettingTab {
         setting.addDropdown((dropdown) => {
           models.forEach((m) => dropdown.addOption(m, m));
           dropdown.setValue(currentValue ?? models[0]);
-          dropdown.onChange(async (value) => { await onSet(value); });
+          dropdown.onChange((value) => { void onSet(value); });
         });
       } else {
         setting.addText((text) =>
-          text.setPlaceholder(placeholder).setValue(currentValue).onChange(async (value) => { await onSet(value); })
+          text.setPlaceholder(placeholder).setValue(currentValue).onChange((value) => { void onSet(value); })
         );
       }
     };
@@ -754,9 +758,9 @@ export class CopilotSettingTab extends PluginSettingTab {
       lmModelSetting.addDropdown((dropdown) => {
         models.forEach((m) => dropdown.addOption(m, m));
         dropdown.setValue(this.plugin.settings.lmStudioModel ?? models[0]);
-        dropdown.onChange(async (value) => {
+        dropdown.onChange((value) => {
           this.plugin.settings.lmStudioModel = value;
-          await this.plugin.saveSettings();
+          void this.plugin.saveSettings();
         });
       });
     } else {
@@ -858,6 +862,7 @@ export class CopilotSettingTab extends PluginSettingTab {
             .onChange(async (value) => {
               budget.setEnabled(value);
               await this.plugin.saveSettings();
+              // @ts-ignore - display() deprecated since Obsidian 1.13
               this.display();
             })
         );

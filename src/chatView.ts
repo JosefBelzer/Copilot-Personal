@@ -11,10 +11,18 @@ import { ChatHistoryBrowser } from "./components/ChatHistoryBrowser";
 import { MAX_MESSAGES_BEFORE_TRIM, MESSAGES_TRIM_KEEP } from "./constants";
 import { AutoSaveManager } from "./agent/AutoSaveManager";
 import { ToolRouter } from "./agent/ToolRouter";
+import type { AgentTool } from "./agent/ToolRegistry";
 import { LicenseManager } from "./services/LicenseManager";
 import { t } from "./i18n";
 
 export const CHAT_VIEW_TYPE = "copilot-personal-chat-view";
+
+interface BudgetAgentMessage {
+  role: string;
+  content: string | null;
+  tool_calls?: Array<{ id?: string; type?: string; function: { name: string; arguments: string } }>;
+  tool_call_id?: string;
+}
 
 interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -47,7 +55,7 @@ export class CopilotChatView extends ItemView {
   private privacyEl!: HTMLElement;
   private tierEl!: HTMLElement;
   private budgetEl!: HTMLElement;
-  private _budgetAgentContext: Array<{ role: string; content: string | null; tool_calls?: any[]; tool_call_id?: string }> | null = null;
+  private _budgetAgentContext: BudgetAgentMessage[] | null = null;
   private sessionSaveInterval: number | null = null;
   private autoSaveManager!: AutoSaveManager;
 
@@ -133,17 +141,17 @@ export class CopilotChatView extends ItemView {
 
     const saveBtn = headerRight.createEl("button", { text: "Save", cls: "copilot-header-btn" });
     saveBtn.title = "Save chat to file";
-    saveBtn.addEventListener("click", () => this.saveChatToFile());
+    saveBtn.addEventListener("click", () => { void this.saveChatToFile(); });
 
     const historyBtn = headerRight.createEl("button", { text: "History", cls: "copilot-header-btn" });
     historyBtn.title = "Browse saved chats";
-    historyBtn.addEventListener("click", () => this.showChatHistory());
+    historyBtn.addEventListener("click", () => { void this.showChatHistory(); });
 
     this.modelSelectEl = header.createEl("select", "copilot-model-select");
     this.refreshModelSelector();
     this.modelSelectEl.addEventListener("change", () => {
       this.plugin.settings.chatModel = this.modelSelectEl.value;
-      this.plugin.saveSettings();
+      void this.plugin.saveSettings();
     });
 
     // Refresh model selector when tab gets focus
@@ -171,12 +179,12 @@ export class CopilotChatView extends ItemView {
         if (expanded !== text) {
           this.inputEl.value = expanded;
         }
-        this.sendMessage();
+        void this.sendMessage();
       }
     });
 
     this.sendBtnEl = inputArea.createEl("button", { text: "Send", cls: "copilot-send-btn" });
-    this.sendBtnEl.addEventListener("click", () => this.sendMessage());
+    this.sendBtnEl.addEventListener("click", () => { void this.sendMessage(); });
 
     this.stopBtnEl = inputArea.createEl("button", { text: "Stop", cls: "copilot-stop-btn" });
     this.stopBtnEl.classList.add("copilot-hidden");
@@ -193,7 +201,7 @@ export class CopilotChatView extends ItemView {
       }
       this.agentMode = !this.agentMode;
       this.settings.enableAgentMode = this.agentMode;
-      this.plugin.saveSettings();
+      void this.plugin.saveSettings();
       if (this.agentMode) {
         this.agentToggleEl.addClass("copilot-agent-active");
         this.statusEl.setText("Agent mode ON");
@@ -210,7 +218,7 @@ export class CopilotChatView extends ItemView {
     thinkBtn.addEventListener("click", () => {
       this.setThinking(!this.thinkingEnabled);
       this.settings.enableThinking = this.thinkingEnabled;
-      this.plugin.saveSettings();
+      void this.plugin.saveSettings();
       if (this.thinkingEnabled) thinkBtn.addClass("copilot-agent-active");
       else thinkBtn.removeClass("copilot-agent-active");
     });
@@ -234,7 +242,9 @@ export class CopilotChatView extends ItemView {
     container.addEventListener("dragover", (e) => e.preventDefault());
     container.addEventListener("drop", (e: Event) => {
       e.preventDefault();
-      this.handleFileDrop(e as any);
+      if (e instanceof DragEvent) {
+        this.handleFileDrop(e);
+      }
     });
 
     // Welcome message
@@ -972,7 +982,7 @@ export class CopilotChatView extends ItemView {
     if (this.budgetEl) {
       const bm = this.plugin.budgetManager;
       if (bm.isEnabled() && bm.canUse()) {
-        const cached = (bm as any).cachedUsage;
+        const cached = bm.getCachedUsage();
         if (cached) {
           const pct = cached.queryPercent;
           this.budgetEl.setText(`💰 ${cached.dailyQueries}/${cached.limitQueries}`);
@@ -1253,7 +1263,7 @@ export class CopilotChatView extends ItemView {
     const licenseKey = this.plugin.settings.licenseKey || "";
     const fp = LicenseManager.getFingerprint();
     const maxIter = this.settings.agentMaxIterations || 5;
-    const messages: Array<{ role: string; content: string | null; tool_calls?: any[]; tool_call_id?: string }> = [];
+    const messages: BudgetAgentMessage[] = [];
 
     if (this._budgetAgentContext && this._budgetAgentContext.length > 0) {
       for (const m of this._budgetAgentContext) { if (m.role !== "system") messages.push({ ...m }); }
@@ -1266,7 +1276,7 @@ export class CopilotChatView extends ItemView {
     messages.push({ role: "user", content: userText });
 
     const toolDefs = this.plugin.toolRegistry?.getAllTools?.() || [];
-    const toolMap = new Map(toolDefs.map((t: any) => [t.name, t]));
+    const toolMap = new Map<string, AgentTool>(toolDefs.map((t: AgentTool) => [t.name, t]));
     const router = new ToolRouter(null, toolMap);
     const routed = await router.route(userText);
     const tools = routed.tools;
@@ -1280,13 +1290,18 @@ export class CopilotChatView extends ItemView {
       while (iteration < maxIter) {
         iteration++;
         const result = await this.plugin.budgetManager.chat(
-          messages.map(m => { const item: any = { role: m.role, content: m.content || "" }; if (m.tool_calls) item.tool_calls = m.tool_calls; if (m.tool_call_id) item.tool_call_id = m.tool_call_id; return item; }),
+          messages.map(m => {
+            const item: { role: string; content: string; tool_calls?: BudgetAgentMessage["tool_calls"]; tool_call_id?: string } = { role: m.role, content: m.content || "" };
+            if (m.tool_calls) item.tool_calls = m.tool_calls;
+            if (m.tool_call_id) item.tool_call_id = m.tool_call_id;
+            return item;
+          }),
           licenseKey, fp, tools
         );
         if (result.content && !result.toolCalls) { fullContent += result.content; contentEl.empty(); await this.renderMarkdown(contentEl, fullContent); break; }
         if (result.toolCalls) {
           for (const tc of result.toolCalls) {
-            const toolName = tc.function?.name; const args = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {};
+            const toolName = tc.function.name; const args = tc.function.arguments ? JSON.parse(tc.function.arguments) : {};
             try {
               // Skip hallucinated tools that don't exist
               if (!this.plugin.toolRegistry?.getTool(toolName)) {
@@ -1303,14 +1318,14 @@ export class CopilotChatView extends ItemView {
                 }
               }
               let resultStr = await this.plugin.toolRegistry?.executeTool(toolName, args) || "";
-              const toolCallId = (tc as any).id || `call_${toolName}_${Date.now()}`;
-              (messages as any).push({ role: "assistant", content: null, tool_calls: [tc] });
-              (messages as any).push({ role: "tool", tool_call_id: toolCallId, content: resultStr.substring(0, 4000) });
+              const toolCallId = tc.id || `call_${toolName}_${Date.now()}`;
+              messages.push({ role: "assistant", content: null, tool_calls: [tc] });
+              messages.push({ role: "tool", tool_call_id: toolCallId, content: resultStr.substring(0, 4000) });
               const toolMsg = this.addMessage("system", `🔧 ${toolName}: ${resultStr.substring(0, 200)}`); window.setTimeout(() => toolMsg?.remove(), 15000);
             } catch (err) {
-              const toolCallId = (tc as any).id || `call_${toolName}_${Date.now()}`;
-              (messages as any).push({ role: "assistant", content: null, tool_calls: [tc] });
-              (messages as any).push({ role: "tool", tool_call_id: toolCallId, content: `Error: ${err instanceof Error ? err.message : String(err)}` });
+              const toolCallId = tc.id || `call_${toolName}_${Date.now()}`;
+              messages.push({ role: "assistant", content: null, tool_calls: [tc] });
+              messages.push({ role: "tool", tool_call_id: toolCallId, content: `Error: ${err instanceof Error ? err.message : String(err)}` });
             }
           }
         } else break;

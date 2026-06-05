@@ -33,7 +33,7 @@ export class BudgetLLMProvider implements LLMProvider {
       tools,
     );
     // If the model returned native tool_calls, format for AgentModeRunner
-    const tc = (result as any).toolCalls;
+    const tc = result.toolCalls;
     if (tc && tc.length > 0) {
       return JSON.stringify({ tool_calls: tc });
     }

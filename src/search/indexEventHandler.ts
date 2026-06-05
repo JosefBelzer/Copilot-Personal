@@ -19,8 +19,9 @@ export class IndexEventHandler {
   }
 
   private registerEvents(): void {
+    const v = this.vault as unknown as { on(name: string, cb: (...args: any[]) => any): EventRef };
     this.eventRefs.push(
-      (this.vault as any).on("create", async (file: TFile) => {
+      v.on("create", async (file: TFile) => {
         if (!this.enabled || !(file instanceof TFile)) return;
         if (file.extension !== "md") return;
         await this.indexOps.indexFile(file);
@@ -28,7 +29,7 @@ export class IndexEventHandler {
     );
 
     this.eventRefs.push(
-      (this.vault as any).on("modify", async (file: TFile) => {
+      v.on("modify", async (file: TFile) => {
         if (!this.enabled || !(file instanceof TFile)) return;
         if (file.extension !== "md") return;
         await this.indexOps.indexFile(file);
@@ -36,7 +37,7 @@ export class IndexEventHandler {
     );
 
     this.eventRefs.push(
-      (this.vault as any).on("delete", async (file: TFile) => {
+      v.on("delete", async (file: TFile) => {
         if (!this.enabled || !(file instanceof TFile)) return;
         if (file.extension !== "md") return;
         await this.indexOps.removeFile(file.path);

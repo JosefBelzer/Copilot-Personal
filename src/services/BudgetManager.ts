@@ -24,6 +24,22 @@ export interface BudgetUsage {
   resetsInHours: number;
 }
 
+export interface BudgetChatResponse {
+  content: string;
+  usage?: { total_tokens: number };
+  toolCalls?: Array<{ id: string; type: string; function: { name: string; arguments: string } }>;
+  model?: string;
+  budget?: BudgetUsageResponse;
+}
+
+export interface BudgetUsageResponse {
+  dailyTokens: number;
+  limitTokens: number;
+  dailyQueries: number;
+  limitQueries: number;
+  resetsAt?: string;
+}
+
 export class BudgetManager {
   private enabled = false;
   private workerUrl = "https://copilot-personal-worker.copilot-personal.workers.dev";
@@ -34,6 +50,7 @@ export class BudgetManager {
 
   setEnabled(enabled: boolean): void { this.enabled = enabled; }
   isEnabled(): boolean { return this.enabled; }
+  getCachedUsage(): BudgetUsage | null { return this.cachedUsage; }
 
   /**
    * Fetch current budget usage from Worker (server-side tracking).
@@ -55,7 +72,7 @@ export class BudgetManager {
       throw new Error(`Budget usage fetch failed (${response.status})`);
     }
 
-    const data = await response.json();
+    const data: BudgetUsageResponse = await response.json();
     const avgCost = 0.06 / 1_000_000;
     const cost = data.dailyTokens * avgCost;
 
@@ -94,14 +111,14 @@ export class BudgetManager {
    * Worker handles auth, tracking, and limits.
    */
   async chat(
-    messages: Array<{ role: string; content: string }>,
+    messages: Array<{ role: string; content: string; tool_calls?: Array<{ id?: string; type?: string; function: { name: string; arguments: string } }>; tool_call_id?: string }>,
     licenseKey: string,
     fingerprint?: string,
-    tools?: Array<any>,
-  ): Promise<{ content: string; usage?: { total_tokens: number }; toolCalls?: Array<{ function: { name: string; arguments: string } }>; model?: string; budget?: any }> {
-    const body: any = { messages, licenseKey };
-    if (fingerprint) body.fingerprint = fingerprint;
-    if (tools) body.tools = tools;
+    tools?: Array<{ type: string; function: { name: string; description?: string; parameters: Record<string, unknown> } }>,
+  ): Promise<BudgetChatResponse> {
+    const body: Record<string, unknown> = { messages, licenseKey };
+    if (fingerprint) body["fingerprint"] = fingerprint;
+    if (tools) body["tools"] = tools;
     // `fetch` is used for streaming support — `requestUrl` does not support ReadableStream in Obsidian
     const response = await fetch(`${this.workerUrl}/v1/budget-chat`, {
       method: "POST",
@@ -114,7 +131,7 @@ export class BudgetManager {
       throw new Error(err.error || `Budget API error (${response.status})`);
     }
 
-    const data = await response.json();
+    const data: BudgetChatResponse = await response.json();
     // Update cache from Worker response
     if (data.budget) {
       const avgCost = 0.06 / 1_000_000;
@@ -143,8 +160,8 @@ export class BudgetManager {
     licenseKey: string,
     fingerprint?: string,
   ): AsyncGenerator<{ content: string; done?: boolean }> {
-    const body: any = { messages, licenseKey, stream: true };
-    if (fingerprint) body.fingerprint = fingerprint;
+    const body: Record<string, unknown> = { messages, licenseKey, stream: true };
+    if (fingerprint) body["fingerprint"] = fingerprint;
 
     // `fetch` is used for streaming support — `requestUrl` does not support ReadableStream in Obsidian
     const response = await fetch(`${this.workerUrl}/v1/budget-chat`, {
