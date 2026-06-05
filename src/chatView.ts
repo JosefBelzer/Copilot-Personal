@@ -179,7 +179,7 @@ export class CopilotChatView extends ItemView {
     this.sendBtnEl.addEventListener("click", () => this.sendMessage());
 
     this.stopBtnEl = inputArea.createEl("button", { text: "Stop", cls: "copilot-stop-btn" });
-    this.stopBtnEl.style.display = "none";
+    this.stopBtnEl.classList.add("copilot-hidden");
     this.stopBtnEl.addEventListener("click", () => this.stopGeneration());
 
     this.agentToggleEl = inputArea.createEl("button", { text: "Agent", cls: "copilot-agent-toggle" });
@@ -391,7 +391,7 @@ export class CopilotChatView extends ItemView {
     }
     this.isGenerating = false;
     this.sendBtnEl.disabled = false;
-    this.stopBtnEl.style.display = "none";
+    this.stopBtnEl.classList.add("copilot-hidden");
     this.statusEl.setText("Stopped");
   }
 
@@ -419,7 +419,7 @@ export class CopilotChatView extends ItemView {
     this.inputEl.value = "";
     this.isGenerating = true;
     this.sendBtnEl.disabled = true;
-    this.stopBtnEl.style.display = "inline-block";
+    this.stopBtnEl.classList.remove("copilot-hidden");
     this.statusEl.setText(this.agentMode ? "Agent thinking..." : "Thinking...");
 
     this.addMessage("user", userText);
@@ -430,7 +430,8 @@ export class CopilotChatView extends ItemView {
         this.addMessage("system", "🔒 Web search requires a Pro license. Settings → License Key.");
         this.isGenerating = false;
         this.sendBtnEl.disabled = false;
-        this.stopBtnEl.style.display = "none";
+    this.stopBtnEl.classList.add("copilot-hidden");
+    this.stopBtnEl.classList.remove("copilot-show-inline");
         return;
       }
       if (this.settings.webSearchEnabled) {
@@ -451,7 +452,7 @@ export class CopilotChatView extends ItemView {
 
     this.isGenerating = false;
     this.sendBtnEl.disabled = false;
-    this.stopBtnEl.style.display = "none";
+    this.stopBtnEl.classList.add("copilot-hidden");
     this.abortController = null;
     this.statusEl.setText(this.agentMode ? "Agent mode ON" : "Ready");
     this.inputEl.focus();
@@ -513,7 +514,6 @@ export class CopilotChatView extends ItemView {
           this.chatHistoryEl.appendChild(progressEl);
         }
         progressEl.setText(`⏳ Step ${toolStepCount}: ${event.toolName}...`);
-        progressEl.style.color = "var(--text-accent)";
       } else if (event.type === "tool-end") {
         // Track writing tools
         if (event.toolName === "update_note" || event.toolName === "create_note") {
@@ -1210,9 +1210,7 @@ export class CopilotChatView extends ItemView {
     const img = contentEl.createEl("img", { cls: "copilot-image-preview" });
     img.src = imageDataUrl;
     img.alt = text;
-    img.style.maxWidth = "200px";
-    img.style.maxHeight = "200px";
-    img.style.borderRadius = "6px";
+    img.classList.add("copilot-img-preview");
 
     this.scrollToBottom();
   }

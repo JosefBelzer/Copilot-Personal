@@ -470,3 +470,6 @@ button.copilot-agent-toggle.copilot-agent-active {
   color: var(--text-error);
   animation: budget-pulse 2s infinite;
 }
+.copilot-hidden { display: none !important; }
+.copilot-show-inline { display: inline-block !important; }
+.copilot-img-preview { max-width: 200px; max-height: 200px; border-radius: 6px; }

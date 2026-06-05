@@ -244,7 +244,9 @@ export default class CopilotPlugin extends Plugin {
     this.indexEventHandler?.unregister();
     // Save index before unloading
     await this.vectorStoreManager.saveIndex();
-    this.app.workspace.detachLeavesOfType(CHAT_VIEW_TYPE);
+    // Detaching leaves on unload resets the leaf to its default location,
+    // which is not recommended. Let Obsidian manage the workspace.
+    // await this.app.workspace.detachLeavesOfType(CHAT_VIEW_TYPE);
     // Reset singletons so fresh instances are created on next load
     ToolRegistry.resetInstance();
     VectorStoreManager.resetInstance();
