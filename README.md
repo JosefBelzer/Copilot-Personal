@@ -1,6 +1,6 @@
-# Copilot Personal v1.5.0 — Obsidian AI Agent Plugin
+# Copilot Personal v1.5.9 — Obsidian AI Agent Plugin
 
-AI assistant for Obsidian. Multimodal chat with real streaming, RAG semantic search, autonomous agent (17 tools), 11 LLM providers, multi-provider fallback, PDF processing with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (store/obfuscated), full i18n with 12 languages. 151 tests. TypeScript strict mode.
+AI assistant for Obsidian. Multimodal chat with real streaming, RAG semantic search, autonomous agent (17 tools), 11 LLM providers, multi-provider fallback, PDF processing with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (store/obfuscated), full i18n with 12 languages. 370 tests. TypeScript strict mode.
 
 > 📖 [Spanish documentation](DOCUMENTATION_ES.md)
 
@@ -207,7 +207,7 @@ npx jest --verbose    # Run 151 tests across 16 suites
 ```
 
 ### Testing
-16 test suites covering: license management, circuit breaker, provider auto-detection, tool registry, agent detection, read/write tools, PDF tools, vector store CRUD, index operations, LM Studio service, settings, singleton reset, chat flow. Run with `npx jest --verbose`.
+26 test suites covering: license management, circuit breaker, provider auto-detection, tool registry, agent detection, read/write tools, PDF tools, vector store CRUD, index operations, LM Studio service, settings, singleton reset, chat flow, path utilities, dom utilities, tool router, plan tracker, context compactor, context layers, auto-save manager, constants, i18n, budget manager. Run with `npx jest --verbose`.
 
 ### Notes
 - **Legacy API key migration:** If you previously stored your API key in the old single-key field, it is automatically migrated to the per-provider key on first load after upgrading to v1.4.4.

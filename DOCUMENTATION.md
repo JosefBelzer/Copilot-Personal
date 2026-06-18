@@ -1,6 +1,6 @@
-# Copilot Personal — Documentation v1.5.0
+# Copilot Personal — Documentation v1.5.9
 
-> AI assistant with advanced agent capabilities for Obsidian. Multimodal chat with real streaming, semantic RAG, autonomous agent (17 tools), 11 LLM providers with native tool calling and multi-provider fallback, PDF rendering with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (clean store / obfuscated distribution), full i18n with 12 languages, and intelligent note auto-save. 151 tests.
+> AI assistant with advanced agent capabilities for Obsidian. Multimodal chat with real streaming, semantic RAG, autonomous agent (17 tools), 11 LLM providers with native tool calling and multi-provider fallback, PDF rendering with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (clean store / obfuscated distribution), full i18n with 12 languages, and intelligent note auto-save. 370 tests across 26 suites.
 
 > 📖 [Spanish documentation](DOCUMENTATION_ES.md)
 
@@ -405,7 +405,18 @@ Create `src/i18n/{code}.ts` and register in `src/i18n/index.ts`. English is alwa
 
 ## 16. Roadmap
 
-### v1.5.0 (Current)
+### v1.5.9 (Current)
+- [x] **display() → getSettingDefinitions()**: Migrated deprecated Obsidian API (≥1.13.0) with backward-compatible wrapper
+- [x] **activeDocument helper**: `src/utils/domUtils.ts` with `getActiveDocument()` for popout window safety
+- [x] **BudgetManager type safety**: `parseWorkerError()` helper replacing unsafe `as` cast
+- [x] **Promise void → .catch()**: Replaced fire-and-forget patterns
+- [x] **globalThis.setTimeout**: Fixed `withTimeout()` for Node.js test compatibility
+- [x] **ESLint disable comments**: Dynamic imports (pdfjs-dist, unpdf, youtube-transcript) properly annotated
+- [x] **10 new test suites**: domUtils, pathUtils, toolRouter, planTracker, contextCompactor, contextLayers, autoSaveManager, constants, i18n, budgetManager
+- [x] **370 tests across 26 suites** (up from 146 across 16)
+- [x] **0 TypeScript errors** (strict mode)
+
+### v1.5.0
 - [x] **Full i18n**: 12 languages with instant UI refresh — English, Spanish, Chinese, Japanese, Korean, German, French, Russian, Portuguese, Italian, Turkish, Arabic
 - [x] All ~600 UI strings internationalized via `t()` engine
 - [x] Language selector in Settings with live refresh of all UI components
