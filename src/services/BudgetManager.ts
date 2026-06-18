@@ -165,7 +165,7 @@ export class BudgetManager {
     });
 
     if (resp.status < 200 || resp.status >= 300) {
-      const err = (() => { try { return JSON.parse(resp.text); } catch { return { error: "Unknown error" }; } })() as { error?: string };
+      const err = parseWorkerError(resp.text);
       throw new Error(err.error || `Budget API error (${resp.status})`);
     }
 
@@ -191,5 +191,24 @@ export class BudgetManager {
     const now = new Date();
     const midnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
     return (midnight.getTime() - now.getTime()) / 3600000;
+  }
+}
+
+/* ─── Helper: type-safe error response parsing ────────────────────── */
+
+interface WorkerErrorResponse {
+  error?: string;
+  [key: string]: unknown;
+}
+
+function parseWorkerError(text: string): WorkerErrorResponse {
+  try {
+    const parsed: unknown = JSON.parse(text);
+    if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+      return parsed as WorkerErrorResponse;
+    }
+    return { error: String(parsed) };
+  } catch {
+    return { error: "Unknown error" };
   }
 }

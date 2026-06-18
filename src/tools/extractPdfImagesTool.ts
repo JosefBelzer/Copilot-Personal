@@ -2,6 +2,7 @@ import { App } from "obsidian";
 import { AgentTool } from "../agent/ToolRegistry";
 import { normalizePath } from "../utils/pathUtils";
 import { t } from "../i18n";
+import { getActiveDocument } from "../utils/domUtils";
 
 const TAG = "[extract_pdf_images]";
 
@@ -62,6 +63,7 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
         }
 
         // Load pdfjs for page rendering fallback
+        // eslint-disable-next-line import/no-extraneous-dependencies
         const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
         const { WORKER_URI } = await import("./pdfWorkerUri");
         pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_URI;
@@ -80,6 +82,7 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
         let unpdfAvailable = false;
         const pagesWithImages = new Set<number>();
         try {
+          // eslint-disable-next-line import/no-extraneous-dependencies
           const unpdf = await import("unpdf");
           unpdfAvailable = true;
           const docProxy = await unpdf.getDocumentProxy(uint8);
@@ -116,7 +119,7 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
           try {
             const page = await pdf.getPage(pageNum);
             const viewport = page.getViewport({ scale: 2.0 });
-            const canvas = (window.activeDocument ?? document).createElement("canvas");
+            const canvas = getActiveDocument().createElement("canvas");
             canvas.width = Math.floor(viewport.width);
             canvas.height = Math.floor(viewport.height);
             const ctx = canvas.getContext("2d");

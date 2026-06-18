@@ -2,6 +2,7 @@ import { App } from "obsidian";
 import { AgentTool } from "../agent/ToolRegistry";
 import { normalizePath } from "../utils/pathUtils";
 import { t } from "../i18n";
+import { getActiveDocument } from "../utils/domUtils";
 
 const TAG = "[render_pdf_pages]";
 
@@ -96,6 +97,7 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
         }
 
         // Load pdfjs
+        // eslint-disable-next-line import/no-extraneous-dependencies
         const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
         const { WORKER_URI } = await import("./pdfWorkerUri");
         pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_URI;
@@ -116,7 +118,7 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
             const viewport = page.getViewport({ scale });
 
             // Create an offscreen canvas (Electron/Obsidian has full DOM)
-            const canvas = (window.activeDocument ?? document).createElement("canvas");
+            const canvas = getActiveDocument().createElement("canvas");
             console.log(`[renderPdfPages] Canvas created for page ${pageNum}: ${canvas.width}x${canvas.height}`);
             canvas.width = Math.floor(viewport.width);
             canvas.height = Math.floor(viewport.height);

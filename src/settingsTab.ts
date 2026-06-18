@@ -32,8 +32,25 @@ export class CopilotSettingTab extends PluginSettingTab {
     this.plugin = plugin;
   }
 
+  /**
+   * @deprecated Obsidian ≥1.13.0 — use getSettingDefinitions() instead.
+   * Kept as a thin wrapper for backward compatibility.
+   */
   display(): void {
-    const { containerEl } = this;
+    this.renderSettingsIn(this.containerEl);
+  }
+
+  /** New API: returns declarative setting definitions (Obsidian ≥1.13.0). */
+  getSettingDefinitions(): any[] {
+    return [{
+      type: "custom" as const,
+      render: (el: HTMLElement) => this.renderSettingsIn(el),
+    }];
+  }
+
+  /** Core settings render logic — shared between display() and getSettingDefinitions(). */
+  private renderSettingsIn(ce: HTMLElement): void {
+    const containerEl = ce;
     containerEl.empty();
     new Setting(containerEl).setName(t("settings.title")).setHeading();
 
@@ -54,8 +71,7 @@ export class CopilotSettingTab extends PluginSettingTab {
           // Refresh chat view UI with new language
           const chatView = this.plugin.getChatView();
           if (chatView) chatView.refreshLanguage();
-          /* display() is deprecated since Obsidian 1.13.0 — will migrate to getSettingDefinitions() in v2.0 */
-          this.display(); // re-render settings with new language
+          this.renderSettingsIn(this.containerEl);
         });
       });
 
@@ -103,8 +119,7 @@ export class CopilotSettingTab extends PluginSettingTab {
       } else {
         new Notice(t("license.freeActivated"));
       }
-          /* display() is deprecated since Obsidian 1.13.0 — will migrate to getSettingDefinitions() in v2.0 */
-      this.display();
+          this.renderSettingsIn(this.containerEl);
     };
 
     new Setting(containerEl)
@@ -213,9 +228,7 @@ export class CopilotSettingTab extends PluginSettingTab {
             }
 
             await this.plugin.saveSettings();
-            // Re-render to show updated URL in the text field above
-            /* display() is deprecated since Obsidian 1.13.0 — will migrate to getSettingDefinitions() in v2.0 */
-            this.display();
+            this.renderSettingsIn(this.containerEl);
           })
       );
 
@@ -276,9 +289,7 @@ export class CopilotSettingTab extends PluginSettingTab {
               );
               new Notice(t("settings.lmStatusFoundNotice", { count: models.length, model: models[0] }));
 
-              // Re-render to update the model text fields
-              /* display() is deprecated since Obsidian 1.13.0 — will migrate to getSettingDefinitions() in v2.0 */
-              this.display();
+              this.renderSettingsIn(this.containerEl);
             } catch (err) {
               lmStatusEl.setText(
                 t("settings.lmStatusError", { error: err instanceof Error ? err.message : "Unknown error" })
@@ -305,7 +316,7 @@ export class CopilotSettingTab extends PluginSettingTab {
         setting.addDropdown((dropdown) => {
           models.forEach((m) => dropdown.addOption(m, m));
           dropdown.setValue(currentValue ?? models[0]);
-          dropdown.onChange((value) => { void onSet(value); });
+            dropdown.onChange((value) => { onSet(value).catch(() => {}); });
         });
       } else {
         setting.addText((text) =>
@@ -768,7 +779,7 @@ export class CopilotSettingTab extends PluginSettingTab {
         dropdown.setValue(this.plugin.settings.lmStudioModel ?? models[0]);
         dropdown.onChange((value) => {
           this.plugin.settings.lmStudioModel = value;
-          void this.plugin.saveSettings();
+          this.plugin.saveSettings().catch(() => {});
         });
       });
     } else {
@@ -835,6 +846,7 @@ export class CopilotSettingTab extends PluginSettingTab {
             text.setPlaceholder(cap.modelPlaceholder).setValue(settingsRecord[cap.modelKey] || "").onChange(async (v) => { settingsRecord[cap.modelKey] = v; await this.plugin.saveSettings(); });
             if (!isPro) text.inputEl.disabled = true;
           });
+      }
 
     // ── Budget AI (Pro only) ────────────────────────────────────────────
     if (isPro) {
@@ -879,20 +891,10 @@ export class CopilotSettingTab extends PluginSettingTab {
             .onChange(async (value) => {
               budget.setEnabled(value);
               await this.plugin.saveSettings();
-              /* display() is deprecated since Obsidian 1.13.0 — will migrate to getSettingDefinitions() in v2.0 */
-              this.display();
+              this.renderSettingsIn(this.containerEl);
             })
         );
     }
-
-    new Setting(containerEl)
-          .setName(t("settings.fallbackModelName", { cap: cap.label }))
-          .setDesc(t("settings.fallbackModelDesc", { cap: cap.label }))
-          .addText((text) => {
-            text.setPlaceholder(cap.modelPlaceholder).setValue(settingsRecord[cap.modelKey] || "").onChange(async (v) => { settingsRecord[cap.modelKey] = v; this.plugin.settings = Object.assign(this.plugin.settings, settingsRecord); await this.plugin.saveSettings(); });
-            if (!isPro) text.inputEl.disabled = true;
-          });
-      }
+    }
   }
-}
 }

@@ -10,6 +10,7 @@ import { ApplyView } from "./components/ApplyView";
 import { ChatHistoryBrowser } from "./components/ChatHistoryBrowser";
 import { MAX_MESSAGES_BEFORE_TRIM, MESSAGES_TRIM_KEEP } from "./constants";
 import { AutoSaveManager } from "./agent/AutoSaveManager";
+import { getActiveDocument } from "./utils/domUtils";
 import { ToolRouter } from "./agent/ToolRouter";
 import type { AgentTool } from "./agent/ToolRegistry";
 import { LicenseManager } from "./services/LicenseManager";
@@ -533,7 +534,7 @@ export class CopilotChatView extends ItemView {
         toolStepCount++;
         // Update or create progress indicator
         if (!progressEl) {
-          progressEl = (window.activeDocument ?? document).createElement("div");
+          progressEl = getActiveDocument().createElement("div");
           progressEl.className = "copilot-agent-progress";
           this.chatHistoryEl.appendChild(progressEl);
         }
