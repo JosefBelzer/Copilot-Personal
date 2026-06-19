@@ -1,6 +1,5 @@
 import { AgentTool } from "../agent/ToolRegistry";
-// @ts-ignore - youtube-transcript no tiene tipos
-// eslint-disable-next-line import/no-extraneous-dependencies
+// eslint-disable-next-line import/no-extraneous-dependencies -- Runtime dependency youtube-transcript not in direct imports
 import { YoutubeTranscript } from "youtube-transcript";
 import { t } from "../i18n";
 

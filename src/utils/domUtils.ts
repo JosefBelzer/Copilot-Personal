@@ -6,11 +6,15 @@
  * Use `getActiveDocument()` to get the correct document for element creation.
  */
 
+declare const activeDocument: Document | undefined;
+
 /**
  * Returns the correct Document for the current context, supporting
- * Obsidian popout windows. Falls back to global document when
- * `activeDocument` is unavailable (e.g., in tests).
+ * Obsidian popout windows. In Obsidian >=1.13, activeDocument is defined
+ * globally and points to the correct window's document (main or popout).
+ * Falls back to document only in test environments (JSDOM) where Obsidian
+ * globals are unavailable.
  */
 export function getActiveDocument(): Document {
-  return (globalThis as any).activeDocument ?? document;
+  return typeof activeDocument !== 'undefined' ? activeDocument : document;
 }

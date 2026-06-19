@@ -3,6 +3,8 @@
  * and handle .md extension auto-detection consistently across all tools.
  */
 
+import { requestUrl } from "obsidian";
+
 /** Normalize backslashes to forward slashes and collapse duplicate slashes. */
 export function normalizePath(path: string): string {
   return path.replace(/\\/g, "/").replace(/\/+/g, "/").replace(/\/$/, "");
@@ -45,12 +47,10 @@ export function fetchWithFallback(url: string, options: RequestInit): Promise<Re
   const method = options.method ?? "POST";
   const headers = options.headers as Record<string, string> | undefined;
   const body = options.body as string | undefined;
-  return import("obsidian").then(({ requestUrl }) =>
-    requestUrl({ url, method, headers, body }).then(r => {
-      const respHeaders = new Headers(r.headers);
-      return new Response(r.text, { status: r.status, headers: respHeaders });
-    })
-  );
+  return requestUrl({ url, method, headers, body }).then(r => {
+    const respHeaders = new Headers(r.headers);
+    return new Response(r.text, { status: r.status, headers: respHeaders });
+  });
 }
 
 /**
@@ -82,7 +82,7 @@ export function withTimeout<T>(promise: Promise<T>, ms: number, label: string = 
   return Promise.race([
     promise,
     new Promise<T>((_, reject) =>
-      globalThis.setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
     ),
   ]);
 }

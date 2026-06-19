@@ -67,7 +67,7 @@ export function createReadPdfTool(app: App): AgentTool {
         const arrayBuffer = await app.vault.adapter.readBinary(resolvedPath);
         const uint8 = new Uint8Array(arrayBuffer);
 
-        // eslint-disable-next-line import/no-extraneous-dependencies
+        // eslint-disable-next-line import/no-extraneous-dependencies -- Dynamic runtime import of pdfjs-dist for PDF text extraction
         const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
         if (!pdfjsLib.GlobalWorkerOptions) {
           (pdfjsLib as unknown as PdfjsModule).GlobalWorkerOptions = { workerSrc: WORKER_URI };

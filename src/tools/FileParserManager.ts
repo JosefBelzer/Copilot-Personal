@@ -25,8 +25,7 @@ export class PDFParser implements FileParser {
 
   async parseFile(content: ArrayBuffer, fileName: string): Promise<string> {
     try {
-      // @ts-ignore
-      // eslint-disable-next-line import/no-extraneous-dependencies
+      // eslint-disable-next-line import/no-extraneous-dependencies -- Runtime dynamic import for PDF parsing, not a direct dependency
       const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
       const { WORKER_URI } = await import("./pdfWorkerUri");
       if (!pdfjsLib.GlobalWorkerOptions) {

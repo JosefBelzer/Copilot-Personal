@@ -1,4 +1,5 @@
 ﻿import { App, PluginSettingTab, Setting, Notice } from "obsidian";
+import type { SettingDefinitionItem } from "obsidian";
 import CopilotPlugin from "./main";
 import { LmStudioService } from "./services/lmStudioService";
 import { PROVIDER_CAPABILITIES, ProviderType } from "./LLMProviders/providerTypes";
@@ -41,11 +42,11 @@ export class CopilotSettingTab extends PluginSettingTab {
   }
 
   /** New API: returns declarative setting definitions (Obsidian ≥1.13.0). */
-  getSettingDefinitions(): any[] {
+  getSettingDefinitions(): SettingDefinitionItem<string>[] {
     return [{
-      type: "custom" as const,
+      type: "custom",
       render: (el: HTMLElement) => this.renderSettingsIn(el),
-    }];
+    }] as unknown as SettingDefinitionItem<string>[];
   }
 
   /** Core settings render logic — shared between display() and getSettingDefinitions(). */
@@ -316,7 +317,7 @@ export class CopilotSettingTab extends PluginSettingTab {
         setting.addDropdown((dropdown) => {
           models.forEach((m) => dropdown.addOption(m, m));
           dropdown.setValue(currentValue ?? models[0]);
-            dropdown.onChange((value) => { onSet(value).catch(() => {}); });
+            dropdown.onChange((value) => { void onSet(value); });
         });
       } else {
         setting.addText((text) =>
@@ -779,7 +780,7 @@ export class CopilotSettingTab extends PluginSettingTab {
         dropdown.setValue(this.plugin.settings.lmStudioModel ?? models[0]);
         dropdown.onChange((value) => {
           this.plugin.settings.lmStudioModel = value;
-          this.plugin.saveSettings().catch(() => {});
+          void this.plugin.saveSettings();
         });
       });
     } else {

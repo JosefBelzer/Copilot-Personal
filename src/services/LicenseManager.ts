@@ -1,10 +1,9 @@
-import { Platform } from "obsidian";
+import { Platform, requestUrl } from "obsidian";
 import { CopilotSettings } from "../settings";
 import { t } from "../i18n";
 
 // Uses Obsidian's requestUrl for all environments (desktop and mobile).
 async function fetchWithFallbackFn(url: string, options: RequestInit): Promise<Response> {
-  const { requestUrl } = await import("obsidian");
   const r = await requestUrl({ url, method: options.method, headers: options.headers as Record<string, string>, body: options.body as string });
   return new Response(r.text, { status: r.status, headers: new Headers(r.headers) });
 }
@@ -105,7 +104,10 @@ export class LicenseManager {
       return { tier: "free" };
     }
 
-    const currentFp = LicenseManager.getFingerprint();
+    // Use stored fingerprint (from data.json) if available, so re-activation
+    // reuses the same device binding instead of registering a new device each time.
+    // Falls back to generating a fresh fingerprint only on first activation.
+    const currentFp = this.boundFingerprint ?? LicenseManager.getFingerprint();
 
     // Cloud validation via Cloudflare Worker
     const validationUrl = serverUrl || "https://copilot-personal-worker.copilot-personal.workers.dev/v1/validate";
@@ -117,6 +119,8 @@ export class LicenseManager {
       });
 
       if (!response.ok) {
+        const errText = await response.text();
+        console.warn(`[LicenseManager] Worker returned ${response.status}: ${errText.substring(0, 200)}`);
         const err = this.graceFallbackResult();
         return { ...err, error: t("license.serverError", { status: response.status }) };
       }
@@ -141,7 +145,11 @@ export class LicenseManager {
       };
       this.boundFingerprint = currentFp;
       return { tier: (data.tier as LicenseTier) || "pro", cloudResponse: data };
-    } catch {
+    } catch (err) {
+      // Network error — log the cause for debugging
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.warn(`[LicenseManager] Activation failed: ${errMsg}`);
+
       // No internet → grace period
       const result = this.graceFallbackResult();
       if (result.tier === "pro") return result;

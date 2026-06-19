@@ -100,7 +100,7 @@ export class CopilotChatView extends ItemView {
       this.sessionSaveInterval = null;
     }
     // Final session save
-    this.saveSession();
+    await this.saveSession();
     // Save conversation summary to memory
     if (this.settings.memoryEnabled && this.messages.length > 2) {
       try {
@@ -245,7 +245,7 @@ export class CopilotChatView extends ItemView {
     this.updateHeaderBadges();
 
     // Session auto-save for crash recovery (every 30s)
-    this.restoreSession();
+    await this.restoreSession();
     this.sessionSaveInterval = window.setInterval(() => this.saveSession(), 30000);
     window.addEventListener("beforeunload", () => this.saveSession());
 
@@ -1021,32 +1021,35 @@ export class CopilotChatView extends ItemView {
 
   /**
    * Save current chat session for crash recovery.
-   * sessionStorage is used ONLY for temporary crash recovery (cleared on new chat).
-   * All persistent data (settings, API keys, license, message counts) uses
-   * Obsidian's loadData()/saveData() API as required by review guidelines.
+   * Uses Obsidian's plugin data API (loadData/saveData) as required by review guidelines.
+   * Stores in data.json under _sessionBackup key, separate from plugin settings.
    */
-  private saveSession(): void {
+  private async saveSession(): Promise<void> {
     try {
       const msgs = this.messages.map(m => ({ role: m.role, content: m.content.length > 5000 ? m.content.substring(0, 2500) + "..." + m.content.substring(m.content.length - 2500) : m.content }));
       const state = { messages: msgs.slice(-20), timestamp: Date.now() };
-      const json = JSON.stringify(state);
-      if (json.length > 100000) return; // skip if too large for sessionStorage
-      // sessionStorage — temporary crash recovery only
-      sessionStorage.setItem("copilot-session-backup", json);
-    } catch { /* full or unavailable */ }
+      const data = await this.plugin.loadData() as Record<string, unknown>;
+      data._sessionBackup = state;
+      await this.plugin.saveData(data);
+    } catch { /* unavailable */ }
   }
 
   /**
    * Restore the last saved session after a crash or reload.
+   * Reads _sessionBackup from plugin data.json, restores if valid and recent.
    */
-  private restoreSession(): void {
+  private async restoreSession(): Promise<void> {
     try {
-      const raw = sessionStorage.getItem("copilot-session-backup");
-      if (!raw) return;
-      const state = JSON.parse(raw) as SessionState;
-      if (!state.messages?.length) return;
+      const data = await this.plugin.loadData() as Record<string, unknown>;
+      const state = data?._sessionBackup as SessionState | undefined;
+      if (!state?.messages?.length) return;
       const age = Date.now() - state.timestamp;
-      if (age > 3600000) { sessionStorage.removeItem("copilot-session-backup"); return; } // >1h old
+      if (age > 3600000) {
+        // Expired — clean up
+        data._sessionBackup = undefined;
+        await this.plugin.saveData(data);
+        return;
+      }
 
       const lastMsg = state.messages[state.messages.length - 1];
       const wasMidConversation = lastMsg?.role === "user" && age < 600000; // 10min
@@ -1058,7 +1061,9 @@ export class CopilotChatView extends ItemView {
         }
         this.addMessage("system", "📝 Previous session restored (crash recovery).");
       }
-      sessionStorage.removeItem("copilot-session-backup");
+      // Clean up after restore
+      data._sessionBackup = undefined;
+      await this.plugin.saveData(data);
     } catch {
       // Corrupted session data
     }
@@ -1254,7 +1259,9 @@ export class CopilotChatView extends ItemView {
     if (!contentEl) return;
     try {
       const licenseKey = this.plugin.settings.licenseKey || "";
-      const fp = LicenseManager.getFingerprint();
+      // Reuse the stored fingerprint from license activation instead of generating
+      // a new one on every call. This prevents consuming device slots on the worker.
+      const fp = this.plugin.licenseManager.getStoredFingerprint() ?? LicenseManager.getFingerprint();
       if (this.plugin.settings.streamEnabled) {
         let fullContent = "";
         const gen = this.plugin.budgetManager.chatStream(messages, licenseKey, fp);
@@ -1276,7 +1283,7 @@ export class CopilotChatView extends ItemView {
   /** Budget agent chat — tool-calling loop proxied through Worker with native tool calling. */
   private async handleBudgetAgentChat(userText: string) {
     const licenseKey = this.plugin.settings.licenseKey || "";
-    const fp = LicenseManager.getFingerprint();
+    const fp = this.plugin.licenseManager.getStoredFingerprint() ?? LicenseManager.getFingerprint();
     const maxIter = this.settings.agentMaxIterations || 5;
     const messages: BudgetAgentMessage[] = [];
 

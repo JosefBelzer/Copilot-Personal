@@ -97,7 +97,7 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
         }
 
         // Load pdfjs
-        // eslint-disable-next-line import/no-extraneous-dependencies
+        // eslint-disable-next-line import/no-extraneous-dependencies -- Dynamic runtime import of pdfjs-dist for page rendering
         const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
         const { WORKER_URI } = await import("./pdfWorkerUri");
         pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_URI;

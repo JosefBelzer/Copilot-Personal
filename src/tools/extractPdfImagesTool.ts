@@ -63,7 +63,7 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
         }
 
         // Load pdfjs for page rendering fallback
-        // eslint-disable-next-line import/no-extraneous-dependencies
+        // eslint-disable-next-line import/no-extraneous-dependencies -- Dynamic runtime import of pdfjs-dist for page rendering fallback
         const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
         const { WORKER_URI } = await import("./pdfWorkerUri");
         pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_URI;
@@ -82,7 +82,7 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
         let unpdfAvailable = false;
         const pagesWithImages = new Set<number>();
         try {
-          // eslint-disable-next-line import/no-extraneous-dependencies
+          // eslint-disable-next-line import/no-extraneous-dependencies -- Dynamic runtime import of unpdf for image extraction (optional dependency)
           const unpdf = await import("unpdf");
           unpdfAvailable = true;
           const docProxy = await unpdf.getDocumentProxy(uint8);

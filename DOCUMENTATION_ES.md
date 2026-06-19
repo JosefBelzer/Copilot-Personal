@@ -321,8 +321,19 @@ Grundlagen_des_Qualitätsmanagements.pdf, página 27
 ## 14. Atajos de teclado
 ## 15. Roadmap
 
-### v1.5.0 (Actual)
-- [x] **i18n completo**: 12 idiomas con cambio instantáneo — selector en Settings
+### v1.6.0 (Actual)
+- [x] **Cumplimiento revisión Obsidian**: Los 6 errores + 9 warnings corregidos — descripciones en directive comments, `any[]`→`SettingDefinitionItem`, `(globalThis as any)`→`declare const activeDocument`, `Promise void`→operador `void`, `globalThis.setTimeout`→`setTimeout`
+- [x] **Corrección BOM en `manifest.json`**: Eliminado BOM UTF-8 que impedía cargar el plugin en Obsidian
+- [x] **Corregido `import("obsidian")` en `LicenseManager.ts`**: Import dinámico ESM reemplazado por `import { requestUrl }` estático — bloqueaba validación de licencia para todos los usuarios Pro
+- [x] **Corregido `import("obsidian")` en `pathUtils.ts`**: Misma correción en `fetchWithFallback()` — afectaba TODOS los proveedores LLM (DeepSeek, OpenAI, Anthropic, Gemini...)
+- [x] **Reutilización de fingerprint**: LicenseManager ahora reusa el fingerprint guardado en `data.json` en lugar de generar uno nuevo cada vez — evita consumir slots de dispositivo
+- [x] **Reutilización de fingerprint en BudgetManager**: `chatView.ts` usa `getStoredFingerprint()` para llamadas al chat presupuestario — corrige error 429 "device_limit" en proveedor Copilot AI Pro
+- [x] **Migración de sessionStorage**: La recuperación de sesión ahora usa `plugin.loadData()/saveData()` — resuelve recomendación "Local Storage" de la revisión
+- [x] **385 tests en 27 suites** (desde 370 en 26)
+- [x] **Validación integral de 38 características**: DeepSeek (chat, streaming, tool calling) + Copilot AI Pro (chat, herramientas, uso) verificados
+- [x] **0 errores TypeScript** (modo estricto)
+
+### v1.5.0
 - [x] ~600 strings de UI internacionalizados con motor `t()`
 - [x] Traducción completa al español de settings, chat y herramientas
 - [x] Migración de `apiKey` legacy a claves por proveedor

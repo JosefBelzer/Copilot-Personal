@@ -1,4 +1,4 @@
-# Copilot Personal — Documentation v1.5.9
+# Copilot Personal — Documentation v1.6.0
 
 > AI assistant with advanced agent capabilities for Obsidian. Multimodal chat with real streaming, semantic RAG, autonomous agent (17 tools), 11 LLM providers with native tool calling and multi-provider fallback, PDF rendering with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (clean store / obfuscated distribution), full i18n with 12 languages, and intelligent note auto-save. 370 tests across 26 suites.
 
@@ -405,7 +405,20 @@ Create `src/i18n/{code}.ts` and register in `src/i18n/index.ts`. English is alwa
 
 ## 16. Roadmap
 
-### v1.5.9 (Current)
+### v1.6.0 (Current)
+- [x] **Obsidian review compliance**: All 6 errors + 9 warnings — directive comment descriptions, `any[]` → `SettingDefinitionItem`, `(globalThis as any)` → `declare const activeDocument`, `Promise void` → `void` operator, `globalThis.setTimeout` → `setTimeout`
+- [x] **`manifest.json` BOM fix**: Removed UTF-8 BOM preventing plugin load in Obsidian
+- [x] **Fixed `import("obsidian")` in `LicenseManager.ts`**: Replaced dynamic ESM import with static `import { requestUrl }` — crashed license validation for all Pro users
+- [x] **Fixed `import("obsidian")` in `pathUtils.ts`**: Same fix for `fetchWithFallback()` — crashed ALL LLM providers (DeepSeek, OpenAI, Anthropic, Gemini...)
+- [x] **Fingerprint reuse**: LicenseManager now reuses stored fingerprint from `data.json` instead of generating a new one each call — prevents consuming device limit slots
+- [x] **BudgetManager fingerprint reuse**: `chatView.ts` uses `getStoredFingerprint()` for budget chat calls — fixes 429 "device_limit" on Copilot AI Pro provider
+- [x] **Error logging added**: `console.warn` in `LicenseManager.activate()` catch and non-OK response blocks — enables diagnostic debugging
+- [x] **sessionStorage migration**: Chat session crash recovery now uses `plugin.loadData()/saveData()` — resolves Obsidian review "Local Storage" recommendation
+- [x] **385 tests across 27 suites** (up from 370 across 26)
+- [x] **38-feature comprehensive validation**: DeepSeek (chat, streaming, tool calling, multi-turn) + Copilot AI Pro (budget chat, tools, usage tracking) all verified
+- [x] **0 TypeScript errors** (strict mode)
+
+### v1.5.9
 - [x] **display() → getSettingDefinitions()**: Migrated deprecated Obsidian API (≥1.13.0) with backward-compatible wrapper
 - [x] **activeDocument helper**: `src/utils/domUtils.ts` with `getActiveDocument()` for popout window safety
 - [x] **BudgetManager type safety**: `parseWorkerError()` helper replacing unsafe `as` cast
