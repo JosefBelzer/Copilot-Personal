@@ -38,9 +38,11 @@ export interface CopilotSettings {
 
   // Web search
   webSearchEnabled: boolean;
+  webSearchProvider: "browser-use" | "exa";
   webSearchServerUrl: string;
   webSearchMaxResults: number;
   webSearchToken: string;
+  exaApiKey: string;
 
   // Vision
   visionEnabled: boolean;
@@ -112,9 +114,11 @@ export const DEFAULT_SETTINGS: CopilotSettings = {
   excludedFolders: "",
 
   webSearchEnabled: false,
+  webSearchProvider: "exa",
   webSearchServerUrl: "http://localhost:8000/search",
   webSearchMaxResults: 3,
   webSearchToken: "copilot-default-token-change-me",
+  exaApiKey: "",
 
   visionEnabled: false,
   enableImageDrop: true,

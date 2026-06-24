@@ -1,11 +1,11 @@
 import { AgentTool } from "../agent/ToolRegistry";
-import { WebSearchClient } from "../services/webSearchClient";
+import type { SearchClient } from "../services/searchClientInterface";
 import { t } from "../i18n";
 
 /**
- * search_web — envuelve el WebSearchClient como herramienta para el agente.
+ * search_web — wraps the active search client (browser-use or Exa) as an agent tool.
  */
-export function createWebSearchTool(webSearchClient: WebSearchClient): AgentTool {
+export function createWebSearchTool(webSearchClient: SearchClient): AgentTool {
   return {
     name: "search_web",
     description:

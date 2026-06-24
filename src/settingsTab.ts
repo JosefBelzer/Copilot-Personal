@@ -568,21 +568,73 @@ export class CopilotSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.webSearchEnabled = value;
             await this.plugin.saveSettings();
+            this.renderSettingsIn(this.containerEl);
           })
       );
 
     new Setting(containerEl)
-      .setName(t("settings.webSearchServerUrl"))
-      .setDesc(t("settings.webSearchServerUrlDesc"))
-      .addText((text) =>
-        text
-          .setPlaceholder("http://localhost:8000/search")
-          .setValue(this.plugin.settings.webSearchServerUrl)
+      .setName(t("settings.webSearchProvider"))
+      .setDesc(t("settings.webSearchProviderDesc"))
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption("exa", "Exa (API key, no server needed)")
+          .addOption("browser-use", "Browser-use (local Python server)")
+          .setValue(this.plugin.settings.webSearchProvider)
           .onChange(async (value) => {
-            this.plugin.settings.webSearchServerUrl = value;
+            this.plugin.settings.webSearchProvider = value as "exa" | "browser-use";
             await this.plugin.saveSettings();
+            this.renderSettingsIn(this.containerEl);
           })
       );
+
+    if (this.plugin.settings.webSearchProvider === "exa") {
+      new Setting(containerEl)
+        .setName(t("settings.exaApiKey"))
+        .setDesc(
+          createFragment((frag) => {
+            frag.appendText("Your Exa API key. Get one free at ");
+            frag.createEl("a", { text: "dashboard.exa.ai", href: "https://dashboard.exa.ai/api-keys" });
+            frag.appendText(".");
+          }),
+        )
+        .addText((text) => {
+          text.inputEl.type = "password";
+          text
+            .setPlaceholder("Enter your Exa API key")
+            .setValue(this.plugin.settings.exaApiKey)
+            .onChange(async (value) => {
+              this.plugin.settings.exaApiKey = value;
+              await this.plugin.saveSettings();
+            });
+        });
+    } else {
+      new Setting(containerEl)
+        .setName(t("settings.webSearchServerUrl"))
+        .setDesc(t("settings.webSearchServerUrlDesc"))
+        .addText((text) =>
+          text
+            .setPlaceholder("http://localhost:8000/search")
+            .setValue(this.plugin.settings.webSearchServerUrl)
+            .onChange(async (value) => {
+              this.plugin.settings.webSearchServerUrl = value;
+              await this.plugin.saveSettings();
+            })
+        );
+
+      new Setting(containerEl)
+        .setName(t("settings.webSearchToken"))
+        .setDesc(t("settings.webSearchTokenDesc"))
+        .addText((text) => {
+          text.inputEl.type = "password";
+          text
+            .setPlaceholder("your-secure-token")
+            .setValue(this.plugin.settings.webSearchToken)
+            .onChange(async (value) => {
+              this.plugin.settings.webSearchToken = value;
+              await this.plugin.saveSettings();
+            });
+        });
+    }
 
     new Setting(containerEl)
       .setName(t("settings.webSearchMaxResults"))
@@ -599,20 +651,6 @@ export class CopilotSettingTab extends PluginSettingTab {
             }
           })
       );
-
-    new Setting(containerEl)
-      .setName(t("settings.webSearchToken"))
-      .setDesc(t("settings.webSearchTokenDesc"))
-      .addText((text) => {
-        text.inputEl.type = "password";
-        text
-          .setPlaceholder("your-secure-token")
-          .setValue(this.plugin.settings.webSearchToken)
-          .onChange(async (value) => {
-            this.plugin.settings.webSearchToken = value;
-            await this.plugin.saveSettings();
-          });
-      });
 
     // === Vision ===
     new Setting(containerEl).setName(`${t("settings.sectionVision")}${caps.vision ? (isPro ? "" : " (🔒 Pro)") : " (⚠️ not supported)"}`).setHeading();

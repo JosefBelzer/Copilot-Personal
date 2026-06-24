@@ -5,6 +5,8 @@ import { LLMMessage } from "./LLMProviders/types";
 import { IndexOperations } from "./search/indexOperations";
 import { FileParserManager } from "./tools/FileParserManager";
 import { WebSearchClient } from "./services/webSearchClient";
+import { ExaSearchClient } from "./services/exaSearchClient";
+import type { SearchClient } from "./services/searchClientInterface";
 import { AgentEvent } from "./agent/AgentModeRunner";
 import { ApplyView } from "./components/ApplyView";
 import { ChatHistoryBrowser } from "./components/ChatHistoryBrowser";
@@ -862,7 +864,9 @@ export class CopilotChatView extends ItemView {
     this.addMessage("system", `Searching: ${query}`);
 
     try {
-      const searchClient = WebSearchClient.getInstance(this.settings);
+      const searchClient: SearchClient = this.settings.webSearchProvider === "exa"
+        ? ExaSearchClient.getInstance(this.settings)
+        : WebSearchClient.getInstance(this.settings);
       const response = await searchClient.search(query);
       const formattedResults = searchClient.formatResultsForLLM(response.results);
 
