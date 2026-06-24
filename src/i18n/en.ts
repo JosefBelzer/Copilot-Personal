@@ -82,8 +82,11 @@ export const en: Record<string, string> = {
 
   // Web Search
   "settings.webSearch": "Enable web search",
-  "settings.webSearchDesc": "Allow web search via browser-use microservice",
+  "settings.webSearchDesc": "Allow the agent to search the web",
   "settings.webSearchProLocked": "🔒 Web search requires a Pro license",
+  "settings.webSearchProvider": "Web search provider",
+  "settings.webSearchProviderDesc": "Choose how web search is performed",
+  "settings.exaApiKey": "Exa API key",
   "settings.webSearchServerUrl": "Web search server URL",
   "settings.webSearchServerUrlDesc": "URL of the browser-use Python microservice",
   "settings.webSearchMaxResults": "Max search results",
@@ -353,6 +356,7 @@ export const en: Record<string, string> = {
   // ═══════════════════════════════════════════════════════════════
 
   "webSearch.urlNotConfigured": "Web search server URL not configured.",
+  "webSearch.exaKeyNotConfigured": "Exa API key not configured. Set it in Settings > Exa Search.",
   "webSearch.serverError": "Search server returned {status}: {text}",
   "webSearch.noResults": "No results found.",
   "webSearch.resultItem": "[{index}] {title}\nURL: {url}\nSnippet: {snippet}",

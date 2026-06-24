@@ -7,6 +7,8 @@ import { IndexOperations } from "./search/indexOperations";
 import { IndexEventHandler } from "./search/indexEventHandler";
 import { FileParserManager } from "./tools/FileParserManager";
 import { WebSearchClient } from "./services/webSearchClient";
+import { ExaSearchClient } from "./services/exaSearchClient";
+import type { SearchClient } from "./services/searchClientInterface";
 import { ToolRegistry } from "./agent/ToolRegistry";
 import { AgentModeRunner } from "./agent/AgentModeRunner";
 import { createTimeSearchTool } from "./tools/timeSearchTool";
@@ -36,7 +38,7 @@ export default class CopilotPlugin extends Plugin {
   indexOperations!: IndexOperations;
   indexEventHandler!: IndexEventHandler;
   fileParserManager!: FileParserManager;
-  webSearchClient!: WebSearchClient;
+  webSearchClient!: SearchClient;
   toolRegistry!: ToolRegistry;
   agentRunner!: AgentModeRunner;
   memoryManager!: MemoryManager;
@@ -72,7 +74,7 @@ export default class CopilotPlugin extends Plugin {
 
     this.fileParserManager = new FileParserManager(this.app.vault);
 
-    this.webSearchClient = WebSearchClient.getInstance(this.settings);
+    this.webSearchClient = this.createSearchClient();
 
     // Initialize agent system
     this.toolRegistry = ToolRegistry.getInstance();
@@ -252,10 +254,19 @@ export default class CopilotPlugin extends Plugin {
     ToolRegistry.resetInstance();
     VectorStoreManager.resetInstance();
     WebSearchClient.resetInstance();
+    ExaSearchClient.resetInstance();
   }
 
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData()) as CopilotSettings;
+  }
+
+  /** Create the appropriate search client based on the web search provider setting. */
+  private createSearchClient(): SearchClient {
+    if (this.settings.webSearchProvider === "exa") {
+      return ExaSearchClient.getInstance(this.settings);
+    }
+    return WebSearchClient.getInstance(this.settings);
   }
 
   /** Migrate legacy single apiKey to the current provider's per-provider key */
@@ -275,7 +286,8 @@ export default class CopilotPlugin extends Plugin {
   async saveSettings() {
     await this.saveData(this.settings);
     this.providerManager.updateSettings(this.settings);
-    this.webSearchClient.updateSettings(this.settings);
+    // Re-create search client if provider changed
+    this.webSearchClient = this.createSearchClient();
 
     // Refresh chat view header badges (privacy icon + tier badge)
     const chatView = this.getChatView();
