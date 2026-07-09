@@ -250,6 +250,8 @@ export const es: Record<string, string> = {
   "settings.maxMemoriesDesc": "Número de recuerdos recientes a cargar en nuevo chat",
   "settings.maxAgentIterations": "Máx. iteraciones del agente",
   "settings.maxAgentIterationsDesc": "Número máximo de llamadas a herramientas por ejecución del agente",
+  "settings.agentInstructions": "Instrucciones personalizadas del agente",
+  "settings.agentInstructionsDesc": "Instrucciones adicionales para el System Prompt del agente. Úsalas para definir comportamiento, idioma, tono o área de expertise.",
   "settings.fallbackModelName": "Modelo {cap} (fallback)",
   "settings.fallbackModelDesc": "Nombre del modelo para {cap} en el proveedor de fallback",
   "settings.lmDetectStatusFoundAll": "Encontrados {count} modelo(s) en LM Studio. Primer modelo ({model}) establecido.",

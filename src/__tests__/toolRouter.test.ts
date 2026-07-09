@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Tests for ToolRouter.ts — LLM-based tool category classification.
  * Tests the fast-path, CATEGORY_MAP, buildRouted(), and the default fallback.
  * Does NOT require an actual LLM provider (unit tests).
@@ -92,7 +92,7 @@ describe("ToolRouter", () => {
       const router = new ToolRouter(null, allTools);
       // Force buildRouted via route() — without provider, goes to default which includes "read"
       const result = await router.route("any query");
-      const readTools = result.toolsByCategory.get("read")?.map(t => t.name) || [];
+      const readTools = result.toolsByCategory.get("read")?.map((t: any) => t.name) || [];
       expect(readTools).toContain("read_note");
       expect(readTools).toContain("read_pdf");
       expect(readTools).toContain("get_active_file");
@@ -101,16 +101,16 @@ describe("ToolRouter", () => {
 
     test("write category includes create_note and update_note", async () => {
       const router = new ToolRouter(null, allTools);
-      const result = await router.route("any");
-      const writeTools = result.toolsByCategory.get("write")?.map(t => t.name) || [];
+      const result = (router as any).buildRouted(["write"]);
+      const writeTools = result.toolsByCategory.get("write")?.map((t: any) => t.name) || [];
       expect(writeTools).toContain("create_note");
       expect(writeTools).toContain("update_note");
     });
 
-    test("search category includes find_files, list_notes, search_vault_fulltext, get_vault_stats", async () => {
+    test("search category includes find_files, list_notes, search_vault_fulltext, get_vault_stats (via buildRouted)", async () => {
       const router = new ToolRouter(null, allTools);
-      const result = await router.route("any");
-      const searchTools = result.toolsByCategory.get("search")?.map(t => t.name) || [];
+      const result = (router as any).buildRouted(["search"]);
+      const searchTools = result.toolsByCategory.get("search")?.map((t: any) => t.name) || [];
       expect(searchTools).toContain("find_files");
       expect(searchTools).toContain("list_notes");
       expect(searchTools).toContain("search_vault_fulltext");
@@ -119,42 +119,30 @@ describe("ToolRouter", () => {
 
     test("semantic category includes search_vault_semantic, search_vault_by_timeframe", async () => {
       const router = new ToolRouter(null, allTools);
-      // Force semantic category by using fast-path trigger (but need write+read)
-      // Without provider, default is read+search+write — semantic is NOT included
-      // Test that CATEGORY_MAP correctly maps these tools to semantic
-      const result = await router.route("any");
-      // Default categories don't include semantic, so toolsByCategory.get("semantic") 
-      // should return empty since the category wasn't requested
-      const semTools = result.toolsByCategory.get("semantic");
-      // Map entry only exists for categories that were actually in the route result
-      // Default = read+search+write, so semantic may not be in the map
-      expect(result.categories).toEqual(["read", "search", "write"]);
-      // But the default does include semantic's tool mappings? No.
-      // The test should verify the CATEGORY_MAP works when semantic IS requested.
-      // We need a custom test that directly tests buildRouted with ["semantic"]
-      // Skip this test — verified via the full-routing test below
+      const result = (router as any).buildRouted(["semantic"]);
+      const semTools = result.toolsByCategory.get("semantic")?.map((t: any) => t.name) || [];
+      expect(semTools).toContain("search_vault_semantic");
+      expect(semTools).toContain("search_vault_by_timeframe");
     });
 
     test("web category includes search_web when requested", async () => {
       const router = new ToolRouter(null, allTools);
-      const result = await router.route("any");
+      const result = (router as any).buildRouted(["search"]);
       // Default categories don't include web, but we can check that it's NOT present
       expect(result.categories).not.toContain("web");
     });
 
     test("media category includes analyze_image, youtube_transcript, render_pdf_pages, extract_pdf_images", async () => {
       const router = new ToolRouter(null, allTools);
-      const result = await router.route("any");
+      const result = (router as any).buildRouted(["search"]);
       // Default categories don't include media, but we can check that it's NOT present
       expect(result.categories).not.toContain("media");
     });
 
     test("render_pdf_pages appears in both read AND media CATEGORY_MAP entries", async () => {
       const router = new ToolRouter(null, allTools);
-      const result = await router.route("any");
-      const readTools = result.toolsByCategory.get("read")?.map(t => t.name) || [];
-      // render_pdf_pages has CATEGORY_MAP entry ["read", "media"]
-      // So it should appear in the read category when read is requested (which it is in default)
+      const result = (router as any).buildRouted(["read"]);
+      const readTools = result.toolsByCategory.get("read")?.map((t: any) => t.name) || [];
       expect(readTools).toContain("render_pdf_pages");
     });
   });

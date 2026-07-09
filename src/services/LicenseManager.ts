@@ -1,9 +1,13 @@
 import { Platform, requestUrl } from "obsidian";
 import { CopilotSettings } from "../settings";
 import { t } from "../i18n";
+import { WORKER_URL } from "./workerConfig";
 
-// Uses Obsidian's requestUrl for all environments (desktop and mobile).
+// Universal HTTP client: native fetch() in Electron, requestUrl fallback on mobile.
 async function fetchWithFallbackFn(url: string, options: RequestInit): Promise<Response> {
+  if (typeof fetch !== "undefined") {
+    return fetch(url, options);
+  }
   const r = await requestUrl({ url, method: options.method, headers: options.headers as Record<string, string>, body: options.body as string });
   return new Response(r.text, { status: r.status, headers: new Headers(r.headers) });
 }
@@ -34,7 +38,7 @@ interface LicenseValidationResponse {
 
 /**
  * LicenseManager — validates license keys and controls feature access.
- * Free tier: basic chat, 50 messages/day, 3 tools, no agent mode
+ * Free tier: unlimited chat (bring your own API key), 3 tools, no agent mode. Copilot AI: 5 queries/day free trial.
  * Pro tier: unlimited messages, agent mode, all tools, web search, PDF images
  *
  * Cloud-first validation via Cloudflare Worker.
@@ -110,12 +114,12 @@ export class LicenseManager {
     const currentFp = this.boundFingerprint ?? LicenseManager.getFingerprint();
 
     // Cloud validation via Cloudflare Worker
-    const validationUrl = serverUrl || "https://copilot-personal-worker.copilot-personal.workers.dev/v1/validate";
+    const validationUrl = serverUrl || WORKER_URL + "/v1/validate";
     try {
       const response = await fetchWithFallbackFn(validationUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key, fingerprint: currentFp, pluginVersion: "1.4.1" }),
+        body: JSON.stringify({ key, fingerprint: currentFp, pluginVersion: "1.6.0" }),
       });
 
       if (!response.ok) {
@@ -219,21 +223,30 @@ export class LicenseManager {
 
   isAllowed(): boolean {
     if (this.getTier() === "pro") return true;
-    return this.messageCount <= 50;
+    return this.messageCount <= 5; // Copilot AI free trial: 5/day (enforced server-side)
   }
 
   getRateLimit(): { used: number; limit: number; tier: LicenseTier } {
-    return { used: this.messageCount, limit: this.getTier() === "pro" ? Infinity : 50, tier: this.getTier() };
+    return { used: this.messageCount, limit: this.getTier() === "pro" ? Infinity : 5, tier: this.getTier() };
   }
 
   getActiveFeatures(): string[] {
     return this.currentLicense?.features ?? this.getFreeFeatures();
   }
 
+  /** Free users get 5 Copilot AI queries/day via server-side tracking */
+  canUseBudget(): boolean { return true; }
+
   private getFreeFeatures(): string[] { return ["chat_basic", "read_note", "read_pdf", "find_files"]; }
 
   private getProFeatures(): string[] {
     return ["chat_unlimited", "agent_mode", "all_tools", "web_search", "pdf_images", "rag_semantic", "export_chat", "slash_commands", "multi_provider", "priority_support"];
+  }
+
+  /** Features unlocked for everyone. Slash commands use user's provider (zero cost). */
+  hasUnlockedFeature(feature: string): boolean {
+    const unlocked = ["export_chat", "slash_commands", "multi_provider"];
+    return unlocked.includes(feature);
   }
 
   canUseAgent(): boolean { return this.hasFeature("agent_mode") || this.hasFeature("all_tools"); }

@@ -7,7 +7,7 @@ describe("CopilotSettings", () => {
   test("DEFAULT_SETTINGS has all required fields", () => {
     expect(DEFAULT_SETTINGS.apiKey).toBe("");
     expect(DEFAULT_SETTINGS.apiUrl).toBe("https://api.deepseek.com");
-    expect(DEFAULT_SETTINGS.providerType).toBe("auto");
+    expect(DEFAULT_SETTINGS.providerType).toBe("budget");
     expect(DEFAULT_SETTINGS.chatModel).toBe("deepseek-v4-flash");
     expect(DEFAULT_SETTINGS.embeddingModel).toBe("deepseek-embedding");
     expect(DEFAULT_SETTINGS.maxTokens).toBe(4096);

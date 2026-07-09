@@ -1,6 +1,6 @@
 import { App } from "obsidian";
 import { AgentTool } from "../agent/ToolRegistry";
-import { normalizePath } from "../utils/pathUtils";
+import { normalizePath, dirname, ensureMd, validatePath } from "../utils/pathUtils";
 import { t } from "../i18n";
 
 /**
@@ -34,6 +34,7 @@ export function createUpdateNoteTool(app: App): AgentTool {
       if (content === undefined || content === null) return t("tools.updateNote.error.noContent");
 
       const path = normalizePath(raw);
+      if (!validatePath(path)) return "Error: Invalid path.";
 
       try {
         const exists = await app.vault.adapter.exists(path);

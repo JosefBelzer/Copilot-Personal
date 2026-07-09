@@ -1,6 +1,6 @@
-# Copilot Personal — Documentación v1.5.0
+# Copilot Personal — Documentación v1.6.1
 
-> Asistente de IA con capacidades agentivas avanzadas para Obsidian. Chat multimodal con streaming real, RAG semántico, agente autónomo (17 herramientas), 11 proveedores LLM con tool calling nativo y fallback multi-proveedor, renderizado de PDFs con `unpdf`, sistema de licencias Free/Pro con validación cloud + grace period, CircuitBreaker en todos los providers, dual-build (store limpio / distribution ofuscado), y auto-guardado inteligente de notas. 151 tests.
+> Asistente de IA con capacidades agentivas avanzadas para Obsidian. Chat multimodal con streaming real, RAG semántico, agente autónomo (17 herramientas), 11 proveedores LLM con tool calling nativo y fallback multi-proveedor, renderizado de PDFs con `unpdf`, sistema de licencias Free/Pro con validación cloud + grace period, CircuitBreaker en todos los providers, dual-build (store limpio / distribution ofuscado), y auto-guardado inteligente de notas. 385 tests.
 
 ---
 
@@ -82,9 +82,10 @@ uvicorn main:app --host 127.0.0.1 --port 8000
 ## 2. Licencias Free vs Pro
 
 ### 🆓 Free (por defecto)
-- Chat básico ilimitado
-- 50 mensajes/día (persistente — sobrevive reinicios)
+- Chat básico ilimitado (trae tu propia API key)
+- Sin límite de mensajes en tu proveedor preferido
 - 3 herramientas: `read_note`, `read_pdf`, `find_files`
+- **💰 Copilot AI Free Trial** — 5 consultas/día. Sin API key. Selecciona **💰 Copilot AI** del dropdown de providers. Prueba funciones Pro (modo agente, herramientas inteligentes) antes de comprar.
 - Sin agent mode · Sin web search · Sin imágenes PDF · Sin RAG semántico
 - Las opciones Pro aparecen **deshabilitadas** (🔒) en la UI de settings
 
@@ -95,9 +96,11 @@ uvicorn main:app --host 127.0.0.1 --port 8000
 - **Multi-provider fallback** · **API keys por proveedor**
 - **💰 Copilot AI (incluido)** — Proveedor de IA gestionado integrado. 50 consultas/día. Sin API key. Modo agente soportado.
 
-### 💰 Copilot AI — Proveedor de Presupuesto (Pro)
+### 💰 Copilot AI — Proveedor de Presupuesto
 
-Incluido con Pro sin costo extra. Selecciona **💰 Copilot AI (Pro)** en el dropdown de provider. 50 consultas/día, control de uso por servidor (Cloudflare Worker) y compartido entre dispositivos.
+**Free Trial (5 consultas/día):** Cualquier usuario puede seleccionar **💰 Copilot AI** del dropdown de providers — sin API key, sin licencia, sin configuración. Experimenta las capacidades Pro sin riesgo antes de actualizar.
+
+**Pro (50 consultas/día):** Incluido con Pro sin costo extra. Selecciona **💰 Copilot AI (Pro)** en el dropdown. Control de uso por servidor (Cloudflare Worker) y compartido entre dispositivos.
 
 > ⚠️ **El modo agente aumenta el consumo.** Cada paso del agente cuenta como una consulta. Una tarea de 3 pasos = 3 consultas. Usa el agente para tareas complejas y chat simple para preguntas rápidas.
 
@@ -207,7 +210,7 @@ Vision:     qwen2.5-vl-27b-instruct (opcional)
 ### Indicadores visuales
 | Indicador | Significado |
 |-----------|-------------|
-| `🆓 Free` | Tier gratuito — 50 mensajes/día, funciones limitadas |
+| `🆓 Free` | Tier gratuito — sin límite de mensajes con tu API key |
 | `⭐ Pro` | Licencia Pro activa — todas las funciones desbloqueadas |
 | `🔒 Local` | Datos procesados en tu equipo (LM Studio) |
 | `☁️ Cloud` | Datos enviados a servidor externo (DeepSeek/OpenAI) |
@@ -321,7 +324,7 @@ Grundlagen_des_Qualitätsmanagements.pdf, página 27
 ## 14. Atajos de teclado
 ## 15. Roadmap
 
-### v1.6.0 (Actual)
+### v1.6.0 (Lanzada 2026-06-20)
 - [x] **Cumplimiento revisión Obsidian**: Los 6 errores + 9 warnings corregidos — descripciones en directive comments, `any[]`→`SettingDefinitionItem`, `(globalThis as any)`→`declare const activeDocument`, `Promise void`→operador `void`, `globalThis.setTimeout`→`setTimeout`
 - [x] **Corrección BOM en `manifest.json`**: Eliminado BOM UTF-8 que impedía cargar el plugin en Obsidian
 - [x] **Corregido `import("obsidian")` en `LicenseManager.ts`**: Import dinámico ESM reemplazado por `import { requestUrl }` estático — bloqueaba validación de licencia para todos los usuarios Pro
@@ -332,6 +335,23 @@ Grundlagen_des_Qualitätsmanagements.pdf, página 27
 - [x] **385 tests en 27 suites** (desde 370 en 26)
 - [x] **Validación integral de 38 características**: DeepSeek (chat, streaming, tool calling) + Copilot AI Pro (chat, herramientas, uso) verificados
 - [x] **0 errores TypeScript** (modo estricto)
+
+
+### v1.6.1 (Actual)
+- [x] **Instrucciones personalizadas del agente**: Campo en Settings para instructions del system prompt. Inyectado en chat normal, agente, budget chat y budget agent chat
+- [x] **Listas completas de modelos por proveedor**: DeepSeek (8), OpenAI (27), Anthropic (11), Gemini (16), Mistral (20), Groq (11), Perplexity (5), xAI (9), OpenRouter (~85)
+- [x] **/search-history**: Busca texto completo en el historial de chat guardado. Muestra snippets con contexto
+- [x] **/list-chats + /load-chat**: Lista y carga conversaciones guardadas usando ChatHistoryBrowser
+- [x] **/batch-process**: Procesa archivos markdown en carpeta con acciones: summarize, translate, rewrite, expand, toc
+- [x] **Popout chat window**: Boton Popout en el header. Arrastra la pestana a una ventana separada
+- [x] **Sincronizacion UI**: Los botones Agent/Think ahora leen/escriben directo de settings — sin desincronizacion
+- [x] **Budget chat con instrucciones**: handleBudgetChat ahora inyecta agentInstructions
+- [x] **Correccion Gemini streaming**: chatStream siempre agregaba models/ sin condicion — ahora verifica si el modelo ya contiene /
+- [x] **Correccion IDs Perplexity**: Eliminado prefijo perplexity/ — la API nativa espera sonar-pro no perplexity/sonar-pro
+- [x] **Rutas del worker corregidas**: Faltaban /v1/budget-chat y /v1/budget-usage en el router
+- [x] **Endpoint admin reset-devices**: Nuevo POST /admin/reset-devices para limpiar dispositivos de una licencia
+- [x] **Free trial integrado**: 5 consultas/dia sin API key. LicenseManager usa 5 como limite, worker enforce 5/dia por fingerprint
+- [ ] Multi-provider budget fallback
 
 ### v1.5.0
 - [x] ~600 strings de UI internacionalizados con motor `t()`
@@ -350,7 +370,7 @@ Grundlagen_des_Qualitätsmanagements.pdf, página 27
 - [x] **Web search token** configurable desde settings (ya no hardcoded)
 - [x] **Path traversal protection** mejorada en `readNoteTool` (detección de `..`, `.`, paths absolutos, encoded)
 - [x] **Timing-safe auth** en admin endpoint del Worker
-- [x] **Test suite**: 151 tests en 16 suites
+- [x] **Test suite**: 385 tests en 27 suites
 - [x] **CircuitBreaker** en TODOS los providers (chat + stream + embed)
 - [x] **Sanitización Markdown**: protección contra `<script>` y `on*` handlers
 - [x] **Console output disabled** en bundle ofuscado

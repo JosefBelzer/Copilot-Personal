@@ -220,6 +220,10 @@ export class IndexOperations {
       if (chunks.length === 0) return;
 
       const texts = chunks.map((c) => c.text);
+      if (!this.llmProvider?.embed) {
+        console.warn(`Skipping indexing of ${file.path}: no embed provider available`);
+        return;
+      }
       const vectors = await this.llmProvider.embed(texts);
 
       const records = chunks.map((chunk, idx) => ({

@@ -58,6 +58,7 @@ export interface CopilotSettings {
   // Agent Mode
   enableAgentMode: boolean;
   agentMaxIterations: number;
+  agentInstructions: string;
 
   // LM Studio (for vision / image analysis)
   lmStudioUrl: string;
@@ -91,7 +92,7 @@ export const DEFAULT_SETTINGS: CopilotSettings = {
   perplexityApiKey: "",
   xaiApiKey: "",
   apiUrl: "https://api.deepseek.com",
-  providerType: "auto",
+  providerType: "budget",
   language: "en",
   chatModel: "deepseek-v4-flash",
   embeddingModel: "deepseek-embedding",
@@ -128,6 +129,7 @@ export const DEFAULT_SETTINGS: CopilotSettings = {
 
   enableAgentMode: false,
   agentMaxIterations: 8,
+  agentInstructions: "",
 
   lmStudioUrl: "http://localhost:1234/v1",
   lmStudioModel: "qwen2.5-vl-27b-instruct",

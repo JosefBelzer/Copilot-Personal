@@ -166,8 +166,9 @@ export class GeminiProvider implements LLMProvider {
 
     let response: Response;
     try {
+      const streamModelPath = this.config.chatModel.includes("/") ? "" : "models/";
       response = await fetchWithFallback(
-        `${this.normalizeUrl()}/models/${this.config.chatModel}:streamGenerateContent?alt=sse`,
+        `${this.normalizeUrl()}/${streamModelPath}${this.config.chatModel}:streamGenerateContent?alt=sse`,
         {
           method: "POST",
           headers: {

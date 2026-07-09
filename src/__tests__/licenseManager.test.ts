@@ -48,17 +48,17 @@ describe("LicenseManager", () => {
   });
 
   describe("Rate limiting", () => {
-    test("free tier allows up to 50 messages", () => {
+    test("free tier allows up to 5 Copilot AI queries", () => {
       lm.activate("FREE");
-      for (let i = 0; i < 50; i++) {
+      for (let i = 0; i < 5; i++) {
         expect(lm.trackMessage()).toBe(true);
       }
-      expect(lm.trackMessage()).toBe(false); // 51st message blocked
+      expect(lm.trackMessage()).toBe(false); // 6th message blocked (free trial: 5/day)
     });
 
     test("rate limit resets on new day", () => {
       lm.activate("FREE");
-      for (let i = 0; i < 51; i++) lm.trackMessage();
+      for (let i = 0; i < 6; i++) lm.trackMessage();
       expect(lm.trackMessage()).toBe(false);
 
       // Simulate new day by manipulating the private field
@@ -76,7 +76,7 @@ describe("LicenseManager", () => {
       lm.trackMessage();
       const limit = lm.getRateLimit();
       expect(limit.used).toBe(1);
-      expect(limit.limit).toBe(50);
+      expect(limit.limit).toBe(5); // Free trial: 5/day Copilot AI
       expect(limit.tier).toBe("free");
     });
   });

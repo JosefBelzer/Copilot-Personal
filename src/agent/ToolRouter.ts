@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ToolRouter — classifies the user's query to determine which tool categories
  * are needed. Uses LLM-based classification as the PRIMARY method (not fragile
  * regex keyword matching). Only one fast-path for the unambiguous case of
@@ -98,7 +98,7 @@ export class ToolRouter {
           { role: "user", content: CLASSIFICATION_PROMPT + userQuery.substring(0, 600) },
         ]);
 
-        const jsonMatch = response.match(/\[[\s\S]*\]/);
+        const jsonMatch = response.match(/\[[\s\S]*?\]/);
         if (jsonMatch) {
           const categories = JSON.parse(jsonMatch[0]) as ToolCategory[];
           if (categories.length > 0) {

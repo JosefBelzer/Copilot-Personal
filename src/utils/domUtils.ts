@@ -16,5 +16,5 @@ declare const activeDocument: Document | undefined;
  * globals are unavailable.
  */
 export function getActiveDocument(): Document {
-  return typeof activeDocument !== 'undefined' ? activeDocument : document;
+  return typeof activeDocument !== 'undefined' ? activeDocument : window.document;
 }

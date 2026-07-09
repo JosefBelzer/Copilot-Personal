@@ -1,6 +1,6 @@
 import { App } from "obsidian";
 import { AgentTool } from "../agent/ToolRegistry";
-import { normalizePath, ensureMd, dirname } from "../utils/pathUtils";
+import { normalizePath, ensureMd, dirname, validatePath } from "../utils/pathUtils";
 import { t } from "../i18n";
 
 /**
@@ -34,6 +34,7 @@ export function createCreateNoteTool(app: App): AgentTool {
 
       try {
         const fileName = normalizePath(ensureMd(title));
+        if (!validatePath(fileName)) return "Error: Invalid note path.";
 
         // Check for existing note
         const existing = app.vault.getAbstractFileByPath(fileName);

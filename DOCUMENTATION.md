@@ -1,8 +1,8 @@
-# Copilot Personal — Documentation v1.6.0
+# Copilot Personal — Documentation v1.6.1
 
-> AI assistant with advanced agent capabilities for Obsidian. Multimodal chat with real streaming, semantic RAG, autonomous agent (17 tools), 11 LLM providers with native tool calling and multi-provider fallback, PDF rendering with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (clean store / obfuscated distribution), full i18n with 12 languages, and intelligent note auto-save. 370 tests across 26 suites.
+> AI assistant with advanced agent capabilities for Obsidian. Multimodal chat with real streaming, semantic RAG, autonomous agent (17 tools), 11 LLM providers with native tool calling and multi-provider fallback, PDF rendering with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (clean store / obfuscated distribution), full i18n with 12 languages, and intelligent note auto-save. 385 tests across 27 suites.
 
-> 📖 [Spanish documentation](DOCUMENTATION_ES.md)
+> ðŸ“– [Spanish documentation](DOCUMENTATION_ES.md)
 
 ---
 
@@ -57,12 +57,12 @@ npm run build:store    # Clean main.js (PR to Obsidian Community Plugins)
 npm run dev            # Dev mode with sourcemaps and watch
 ```
 
-> ⚠️ **IMPORTANT:** For the Obsidian Community Plugin store, ALWAYS use `npm run build:store`. The obfuscated build (`npm run build`) will be REJECTED by reviewers. Obfuscation is for external distribution only (Gumroad, ZIP, BRAT) to protect intellectual property.
+> âš ï¸ **IMPORTANT:** For the Obsidian Community Plugin store, ALWAYS use `npm run build:store`. The obfuscated build (`npm run build`) will be REJECTED by reviewers. Obfuscation is for external distribution only (Gumroad, ZIP, BRAT) to protect intellectual property.
 
 ### Manual Install
 1. Download the ZIP from [Releases](https://github.com/JosefBelzer/Copilot-Personal/releases)
 2. Extract to `YourVault/.obsidian/plugins/copilot-personal/`
-3. Enable in Settings → Community plugins → Copilot Personal
+3. Enable in Settings â†’ Community plugins â†’ Copilot Personal
 
 ### Web Search Server (optional)
 ```bash
@@ -73,48 +73,51 @@ set COPILOT_WEB_TOKEN=your-secure-token
 uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
-> ⚠️ **Important:** Configure a secure token on both the server (`COPILOT_WEB_TOKEN`) and the plugin (Settings → Web Search → Web search token). The default value `copilot-default-token-change-me` is insecure.
+> âš ï¸ **Important:** Configure a secure token on both the server (`COPILOT_WEB_TOKEN`) and the plugin (Settings â†’ Web Search â†’ Web search token). The default value `copilot-default-token-change-me` is insecure.
 
 ---
 
 ## 2. Free vs Pro Licensing
 
-### 🆓 Free (default)
+### ðŸ†“ Free (default)
 - Unlimited basic chat
-- 50 messages/day (persistent — survives restarts)
+- No message limits on your preferred provider
 - 3 tools: `read_note`, `read_pdf`, `find_files`
-- No agent mode · No web search · No PDF images · No semantic RAG
-- Pro options appear **disabled** (🔒) in settings UI
+- **💰 Copilot AI Free Trial** — 5 queries/day. No API key needed. Select **💰 Copilot AI** from the provider dropdown. Try Pro features (agent mode, smart tools) before buying.
+- No agent mode Â· No web search Â· No PDF images Â· No semantic RAG
+- Pro options appear **disabled** (ðŸ”’) in settings UI
 
-### ⭐ Pro ($4.99/mo via Lemon Squeezy)
+### â­ Pro ($4.99/mo via Lemon Squeezy)
 
-- **Unlimited messages** · **Agent mode** (17 tools)
-- **Web search** · **PDF with images** · **Semantic RAG**
-- **Chat export** (MD/JSON) · **Slash commands** · Priority support
-- **Multi-provider fallback** · **Per-provider API keys**
-- **💰 Copilot AI (included)** — Built-in budget provider via Mistral Nemo. No API key needed.
+- **Unlimited messages** Â· **Agent mode** (17 tools)
+- **Web search** Â· **PDF with images** Â· **Semantic RAG**
+- **Chat export** (MD/JSON) Â· **Slash commands** Â· Priority support
+- **Multi-provider fallback** Â· **Per-provider API keys**
+- **ðŸ’° Copilot AI (included)** â€” Built-in budget provider via Mistral Nemo. No API key needed.
 
-### 💰 Copilot AI Budget Provider (Pro)
+### 💰 Copilot AI Budget Provider
 
-Pro users get access to a managed AI provider at no extra cost. Select **💰 Copilot AI (Pro)** from the provider dropdown — no API key required, no configuration needed. Usage is tracked server-side per license.
+**Free Trial (5 queries/day):** Any user can select **💰 Copilot AI** from the provider dropdown — no API key, no license, no configuration. Experience Pro capabilities risk-free before upgrading.
+
+**Pro (50 queries/day):** Pro users get access to the managed AI provider at no extra cost. Select **💰 Copilot AI (Pro)** from the provider dropdown. Usage is tracked server-side per license.
 
 **Daily limits:** 50 queries/day. Reset at midnight UTC. Monitor usage via the `💰 X/50` badge in the chat header or the Budget AI section in Settings.
 
-> ⚠️ **Agent Mode increases consumption.** Each agent step (tool call + response) counts as one query. With the agent activated, the daily quota can deplete faster — a 3-step agent task uses 3 queries. Use Agent Mode for complex tasks, simple chat for quick questions.
+> âš ï¸ **Agent Mode increases consumption.** Each agent step (tool call + response) counts as one query. With the agent activated, the daily quota can deplete faster â€” a 3-step agent task uses 3 queries. Use Agent Mode for complex tasks, simple chat for quick questions.
 
-> ⚠️ **Cross-device quota is shared.** All devices using the same Pro license share the same daily quota.
+> âš ï¸ **Cross-device quota is shared.** All devices using the same Pro license share the same daily quota.
 
-> 🌐 **Supported languages:** English, 🇪🇸 Spanish, 🇫🇷 French, 🇩🇪 German, 🇮🇹 Italian, 🇧🇷 Portuguese, 🇨🇳 Chinese, 🇯🇵 Japanese, 🇰🇷 Korean, 🇸🇦 Arabic, 🇮🇳 Hindi (11 languages). For other UI languages, the budget AI responds in English.
+> ðŸŒ **Supported languages:** English, ðŸ‡ªðŸ‡¸ Spanish, ðŸ‡«ðŸ‡· French, ðŸ‡©ðŸ‡ª German, ðŸ‡®ðŸ‡¹ Italian, ðŸ‡§ðŸ‡· Portuguese, ðŸ‡¨ðŸ‡³ Chinese, ðŸ‡¯ðŸ‡µ Japanese, ðŸ‡°ðŸ‡· Korean, ðŸ‡¸ðŸ‡¦ Arabic, ðŸ‡®ðŸ‡³ Hindi (11 languages). For other UI languages, the budget AI responds in English.
 
 ### Activating Pro
 1. Purchase a Pro subscription at [belzersoftware.lemonsqueezy.com](https://belzersoftware.lemonsqueezy.com/checkout/buy/85655f95-93f7-4649-954a-8bc62472f302)
 2. You'll receive your **License Key** via email (Lemon Squeezy UUID format, e.g., `056b9494-...`)
-3. Settings → Copilot Personal → License Key → paste the key
-4. You'll see `✅ Pro license activated successfully.`
-5. The chat badge changes to `⭐ Pro`
+3. Settings â†’ Copilot Personal â†’ License Key â†’ paste the key
+4. You'll see `âœ… Pro license activated successfully.`
+5. The chat badge changes to `â­ Pro`
 6. All Pro options unlock automatically in settings
 
-> **Test key:** `COPIPRO-DEMO-DEMO-DEMO` (debug mode only — `COPILOT_DEBUG=1`).
+> **Test key:** `COPIPRO-DEMO-DEMO-DEMO` (debug mode only â€” `COPILOT_DEBUG=1`).
 
 ### License Security
 
@@ -135,52 +138,52 @@ Pro users get access to a managed AI provider at no extra cost. Select **💰 Co
 
 | Option | Best for | Setup |
 |--------|----------|-------|
-| **🔒 LM Studio (local)** | Complete privacy, no API key | Start LM Studio, load a model, URL: `http://localhost:1234/v1` |
-| **☁️ DeepSeek (cloud)** | Best performance, affordable | API key from [platform.deepseek.com](https://platform.deepseek.com) |
-| **☁️ OpenAI** | GPT-4o, complex tasks | API key from [platform.openai.com](https://platform.openai.com) |
-| **☁️ Anthropic** | Claude Sonnet/Opus | API key from [console.anthropic.com](https://console.anthropic.com) |
-| **☁️ Gemini** | Google, multi-modal | API key from [aistudio.google.com](https://aistudio.google.com) |
+| **ðŸ”’ LM Studio (local)** | Complete privacy, no API key | Start LM Studio, load a model, URL: `http://localhost:1234/v1` |
+| **â˜ï¸ DeepSeek (cloud)** | Best performance, affordable | API key from [platform.deepseek.com](https://platform.deepseek.com) |
+| **â˜ï¸ OpenAI** | GPT-4o, complex tasks | API key from [platform.openai.com](https://platform.openai.com) |
+| **â˜ï¸ Anthropic** | Claude Sonnet/Opus | API key from [console.anthropic.com](https://console.anthropic.com) |
+| **â˜ï¸ Gemini** | Google, multi-modal | API key from [aistudio.google.com](https://aistudio.google.com) |
 
-### Supported Providers (11) — Actual Capabilities
+### Supported Providers (11) â€” Actual Capabilities
 
 | Provider | Chat | Streaming | Embeddings | Vision | Tool Calling | Thinking |
 |----------|:----:|:---------:|:----------:|:------:|:------------:|:--------:|
-| DeepSeek | ✅ | ✅ Real | ✅ | ✅ | ✅ | ✅ |
-| OpenAI | ✅ | ✅ Real | ✅ | ✅ | ✅ | ❌ |
-| Anthropic | ✅ | ✅ Real | ❌ | ✅ | ✅ | ❌ |
-| Gemini | ✅ | ✅ Real | ✅ | ✅ | ✅ | ❌ |
-| Mistral | ✅ | ✅ Real | ✅ | ✅ (Pixtral) | ✅ | ❌ |
-| xAI (Grok) | ✅ | ✅ Real | ❌ | ✅ (Grok‑1.5V) | ✅ | ❌ |
-| Groq | ✅ | ✅ Real | ❌ | ❌ | ✅ | ❌ |
-| Perplexity | ✅ | ✅ Real | ❌ | ❌ | ✅ | ❌ |
-| OpenRouter | ✅ | ✅ Real | ✅ | ✅ | ✅ | ❌ |
-| LM Studio | ✅ | ✅ Real | ✅ | ✅ | ✅ | ❌ |
+| DeepSeek | âœ… | âœ… Real | âœ… | âœ… | âœ… | âœ… |
+| OpenAI | âœ… | âœ… Real | âœ… | âœ… | âœ… | âŒ |
+| Anthropic | âœ… | âœ… Real | âŒ | âœ… | âœ… | âŒ |
+| Gemini | âœ… | âœ… Real | âœ… | âœ… | âœ… | âŒ |
+| Mistral | âœ… | âœ… Real | âœ… | âœ… (Pixtral) | âœ… | âŒ |
+| xAI (Grok) | âœ… | âœ… Real | âŒ | âœ… (Grokâ€‘1.5V) | âœ… | âŒ |
+| Groq | âœ… | âœ… Real | âŒ | âŒ | âœ… | âŒ |
+| Perplexity | âœ… | âœ… Real | âŒ | âŒ | âœ… | âŒ |
+| OpenRouter | âœ… | âœ… Real | âœ… | âœ… | âœ… | âŒ |
+| LM Studio | âœ… | âœ… Real | âœ… | âœ… | âœ… | âŒ |
 
-> 💡 **Native tool calling:** OpenAI, Anthropic (input_schema), Gemini (functionDeclarations) — each uses their API's specific format.
-> 💡 **Real streaming:** fetch + ReadableStream on all providers.
-> 💡 **Smart settings:** Fields unsupported by the provider are automatically disabled in Settings.
+> ðŸ’¡ **Native tool calling:** OpenAI, Anthropic (input_schema), Gemini (functionDeclarations) â€” each uses their API's specific format.
+> ðŸ’¡ **Real streaming:** fetch + ReadableStream on all providers.
+> ðŸ’¡ **Smart settings:** Fields unsupported by the provider are automatically disabled in Settings.
 
-### 🔄 Multi-Provider Fallback (Pro)
+### ðŸ”„ Multi-Provider Fallback (Pro)
 
 If your primary provider lacks certain capabilities, you can configure a **second provider** to compensate:
 
-| Provider → Missing | Typical Fallback | Configuration |
+| Provider â†’ Missing | Typical Fallback | Configuration |
 |---------------------|------------------|---------------|
-| **Anthropic** → Embeddings | LM Studio (`nomic-embed-text`) | Settings → Multi-Provider Fallback |
-| **Groq** → Embeddings, Vision | LM Studio | Both fallbacks to LM Studio |
-| **Perplexity** → Embeddings, Vision | LM Studio | Same as Groq |
-| **DeepSeek** → (none, optional) | LM Studio (cost savings) | Configure both fallbacks for local use |
+| **Anthropic** â†’ Embeddings | LM Studio (`nomic-embed-text`) | Settings â†’ Multi-Provider Fallback |
+| **Groq** â†’ Embeddings, Vision | LM Studio | Both fallbacks to LM Studio |
+| **Perplexity** â†’ Embeddings, Vision | LM Studio | Same as Groq |
+| **DeepSeek** â†’ (none, optional) | LM Studio (cost savings) | Configure both fallbacks for local use |
 
 **How it works:** The system automatically detects which capabilities your primary provider lacks and redirects those tasks to the configured fallback provider. Chat always uses the primary provider. *Requires Pro license.*
 
 ### Step 2: Configure your API Key
-1. Go to Settings → Copilot Personal → API Configuration
+1. Go to Settings â†’ Copilot Personal â†’ API Configuration
 2. Paste your API key in the appropriate field
 3. Select the provider (Auto-detect works in most cases)
 
-> 💡 **Per-Provider API Keys:** Each provider remembers its own API key. Switching from DeepSeek to Gemini clears the field and shows the key saved for Gemini. This lets you configure multiple providers without mixing keys.
+> ðŸ’¡ **Per-Provider API Keys:** Each provider remembers its own API key. Switching from DeepSeek to Gemini clears the field and shows the key saved for Gemini. This lets you configure multiple providers without mixing keys.
 
-> ⚠️ **Warning:** API keys are stored in `data.json` inside the plugin folder (unencrypted). This file must NOT be committed to Git (it's in `.gitignore`). If you sync your vault, exclude `.obsidian/plugins/copilot-personal/data.json`.
+> âš ï¸ **Warning:** API keys are stored in `data.json` inside the plugin folder (unencrypted). This file must NOT be committed to Git (it's in `.gitignore`). If you sync your vault, exclude `.obsidian/plugins/copilot-personal/data.json`.
 
 ### Step 3: Select your model
 - **Chat Model:** `deepseek-v4-flash` (fast) or `deepseek-v4-pro` (powerful)
@@ -210,13 +213,13 @@ Vision:     qwen2.5-vl-27b-instruct (optional)
 ### Visual Indicators
 | Indicator | Meaning |
 |-----------|---------|
-| `🆓 Free` | Free tier — 50 messages/day, limited features |
-| `⭐ Pro` | Pro license active — all features unlocked |
-| `🔒 Local` | Data processed on your machine (LM Studio) |
-| `☁️ Cloud` | Data sent to external server (DeepSeek/OpenAI) |
-| `⏳ Step N: tool...` | Agent is running a tool |
-| `⚠️ NOT SAVED` | Model wrote note content without saving |
-| `⚠️ Invented links` | Model suggested links to non-existent notes |
+| `ðŸ†“ Free` | Free tier â€” no message limits with your API key |
+| `â­ Pro` | Pro license active â€” all features unlocked |
+| `ðŸ”’ Local` | Data processed on your machine (LM Studio) |
+| `â˜ï¸ Cloud` | Data sent to external server (DeepSeek/OpenAI) |
+| `â³ Step N: tool...` | Agent is running a tool |
+| `âš ï¸ NOT SAVED` | Model wrote note content without saving |
+| `âš ï¸ Invented links` | Model suggested links to non-existent notes |
 
 ---
 
@@ -311,11 +314,11 @@ Fundamentals_of_Quality_Management.pdf, page 27
 - **Text extraction:** `read_pdf` extracts text from any PDF in your vault. Use `pagesOnly: "10-20"` for specific pages or `tocOnly: true` for the table of contents.
 - **Page rendering:** `render_pdf_pages` converts PDF pages to PNG images saved in your vault. Use for embedding diagrams and figures with `![[path]]`.
 - **Image extraction:** `extract_pdf_images` extracts embedded JPG/PNG images from PDF pages. Falls back to full-page rendering if no raster images are found.
-- **Auto-find:** All PDF tools automatically search your vault to locate the file — you don't need the full path.
+- **Auto-find:** All PDF tools automatically search your vault to locate the file â€” you don't need the full path.
 
 ## 9. Semantic Search (RAG)
 
-- Enable in Settings → `Enable semantic search`
+- Enable in Settings â†’ `Enable semantic search`
 - Run **"Copilot: Index vault for semantic search"** from the command palette (Ctrl+P) to create the initial index
 - After indexing, semantic search is available via the Agent or the `search_vault_semantic` tool
 - The index auto-updates when files are created, modified, or deleted
@@ -323,9 +326,9 @@ Fundamentals_of_Quality_Management.pdf, page 27
 
 ## 10. Exporting Conversations
 
-- **Markdown:** Ctrl+P → "Copilot: Export chat as Markdown" → saves to your vault
-- **JSON:** Ctrl+P → "Copilot: Export chat as JSON" → structured export with full metadata
-- **Save to file:** Click the 💾 button in chat to save the current conversation
+- **Markdown:** Ctrl+P â†’ "Copilot: Export chat as Markdown" â†’ saves to your vault
+- **JSON:** Ctrl+P â†’ "Copilot: Export chat as JSON" â†’ structured export with full metadata
+- **Save to file:** Click the ðŸ’¾ button in chat to save the current conversation
 
 ## 11. Obsidian Commands
 
@@ -351,22 +354,22 @@ Copilot Personal supports **12 languages** with instant UI refresh. No restart n
 
 | Code | Language | Flag |
 |------|----------|:---:|
-| en | English | 🇬🇧 |
-| es | Spanish | 🇪🇸 |
-| zh | Chinese | 🇨🇳 |
-| ja | Japanese | 🇯🇵 |
-| ko | Korean | 🇰🇷 |
-| de | German | 🇩🇪 |
-| fr | French | 🇫🇷 |
-| ru | Russian | 🇷🇺 |
-| pt | Portuguese | 🇧🇷 |
-| it | Italian | 🇮🇹 |
-| tr | Turkish | 🇹🇷 |
-| ar | Arabic | 🇸🇦 |
+| en | English | ðŸ‡¬ðŸ‡§ |
+| es | Spanish | ðŸ‡ªðŸ‡¸ |
+| zh | Chinese | ðŸ‡¨ðŸ‡³ |
+| ja | Japanese | ðŸ‡¯ðŸ‡µ |
+| ko | Korean | ðŸ‡°ðŸ‡· |
+| de | German | ðŸ‡©ðŸ‡ª |
+| fr | French | ðŸ‡«ðŸ‡· |
+| ru | Russian | ðŸ‡·ðŸ‡º |
+| pt | Portuguese | ðŸ‡§ðŸ‡· |
+| it | Italian | ðŸ‡®ðŸ‡¹ |
+| tr | Turkish | ðŸ‡¹ðŸ‡· |
+| ar | Arabic | ðŸ‡¸ðŸ‡¦ |
 
 ### How to Change Language
 
-Settings → Copilot Personal → **Language / Idioma** (top of settings). Changes apply immediately — settings labels, chat buttons, status text, tooltips, and system messages all refresh in real time. No restart needed.
+Settings â†’ Copilot Personal â†’ **Language / Idioma** (top of settings). Changes apply immediately â€” settings labels, chat buttons, status text, tooltips, and system messages all refresh in real time. No restart needed.
 
 ### Adding New Languages
 
@@ -386,13 +389,13 @@ Create `src/i18n/{code}.ts` and register in `src/i18n/index.ts`. English is alwa
 
 | Problem | Solution |
 |---------|----------|
-| **Empty assistant bubble** | Check your API key in Settings → API Configuration. Run `location.reload()` in the Obsidian console (Ctrl+Shift+I). |
+| **Empty assistant bubble** | Check your API key in Settings â†’ API Configuration. Run `location.reload()` in the Obsidian console (Ctrl+Shift+I). |
 | **"License rejected: not_found"** | The key hasn't been provisioned yet. Wait for the confirmation email after purchase. |
-| **Agent mode disabled (🔒 Pro)** | Requires a Pro license or the `COPIPRO-DEMO-DEMO-DEMO` key in debug mode. |
+| **Agent mode disabled (ðŸ”’ Pro)** | Requires a Pro license or the `COPIPRO-DEMO-DEMO-DEMO` key in debug mode. |
 | **Provider error / ECONNREFUSED** | Check your API URL, key, and internet connection. For LM Studio, make sure the server is running. |
 | **Semantic search not working** | Run **"Index vault"** from the command palette first. Check that your embedding model generates valid vectors. |
-| **Plugin not responding** | Open DevTools (Ctrl+Shift+I) → check Console for errors. Reload Obsidian. |
-| **Rate limit reached** | Free tier: 50 messages/day. Upgrade to Pro for unlimited messages. |
+| **Plugin not responding** | Open DevTools (Ctrl+Shift+I) â†’ check Console for errors. Reload Obsidian. |
+| **Rate limit reached** | Free tier: no message limits. Bring your own API key from any provider. Copilot AI: 5 queries/day (free trial). |
 
 ## 15. Keyboard Shortcuts
 
@@ -400,37 +403,53 @@ Create `src/i18n/{code}.ts` and register in `src/i18n/index.ts`. English is alwa
 |----------|--------|
 | `Enter` | Send message |
 | `Shift+Enter` | New line in message |
-| `Ctrl+P` → Copilot | All plugin commands |
+| `Ctrl+P` â†’ Copilot | All plugin commands |
 | `Drag & Drop` | Add file context to chat (.md, .pdf, .png, .jpg) |
 
 ## 16. Roadmap
 
-### v1.6.0 (Current)
-- [x] **Obsidian review compliance**: All 6 errors + 9 warnings — directive comment descriptions, `any[]` → `SettingDefinitionItem`, `(globalThis as any)` → `declare const activeDocument`, `Promise void` → `void` operator, `globalThis.setTimeout` → `setTimeout`
+### v1.6.0 (Released 2026-06-20)
+- [x] **Obsidian review compliance**: All 6 errors + 9 warnings â€” directive comment descriptions, `any[]` â†’ `SettingDefinitionItem`, `(globalThis as any)` â†’ `declare const activeDocument`, `Promise void` â†’ `void` operator, `globalThis.setTimeout` â†’ `setTimeout`
 - [x] **`manifest.json` BOM fix**: Removed UTF-8 BOM preventing plugin load in Obsidian
-- [x] **Fixed `import("obsidian")` in `LicenseManager.ts`**: Replaced dynamic ESM import with static `import { requestUrl }` — crashed license validation for all Pro users
-- [x] **Fixed `import("obsidian")` in `pathUtils.ts`**: Same fix for `fetchWithFallback()` — crashed ALL LLM providers (DeepSeek, OpenAI, Anthropic, Gemini...)
-- [x] **Fingerprint reuse**: LicenseManager now reuses stored fingerprint from `data.json` instead of generating a new one each call — prevents consuming device limit slots
-- [x] **BudgetManager fingerprint reuse**: `chatView.ts` uses `getStoredFingerprint()` for budget chat calls — fixes 429 "device_limit" on Copilot AI Pro provider
-- [x] **Error logging added**: `console.warn` in `LicenseManager.activate()` catch and non-OK response blocks — enables diagnostic debugging
-- [x] **sessionStorage migration**: Chat session crash recovery now uses `plugin.loadData()/saveData()` — resolves Obsidian review "Local Storage" recommendation
+- [x] **Fixed `import("obsidian")` in `LicenseManager.ts`**: Replaced dynamic ESM import with static `import { requestUrl }` â€” crashed license validation for all Pro users
+- [x] **Fixed `import("obsidian")` in `pathUtils.ts`**: Same fix for `fetchWithFallback()` â€” crashed ALL LLM providers (DeepSeek, OpenAI, Anthropic, Gemini...)
+- [x] **Fingerprint reuse**: LicenseManager now reuses stored fingerprint from `data.json` instead of generating a new one each call â€” prevents consuming device limit slots
+- [x] **BudgetManager fingerprint reuse**: `chatView.ts` uses `getStoredFingerprint()` for budget chat calls â€” fixes 429 "device_limit" on Copilot AI Pro provider
+- [x] **Error logging added**: `console.warn` in `LicenseManager.activate()` catch and non-OK response blocks â€” enables diagnostic debugging
+- [x] **sessionStorage migration**: Chat session crash recovery now uses `plugin.loadData()/saveData()` â€” resolves Obsidian review "Local Storage" recommendation
 - [x] **385 tests across 27 suites** (up from 370 across 26)
 - [x] **38-feature comprehensive validation**: DeepSeek (chat, streaming, tool calling, multi-turn) + Copilot AI Pro (budget chat, tools, usage tracking) all verified
 - [x] **0 TypeScript errors** (strict mode)
 
+### v1.6.1 (Current)
+- [x] **Custom Agent Instructions**: Settings field for system prompt additions. Injected in regular chat, agent mode, budget chat, and budget agent chat
+- [x] **Complete model lists per provider**: DeepSeek (8), OpenAI (27), Anthropic (11), Gemini (16), Mistral (20), Groq (11), Perplexity (5), xAI (9), OpenRouter (~85). Updated settingsTab.ts PROVIDER_MODELS and chatView.ts populateModelSelector
+- [x] **/search-history command**: Full-text search across saved chat history files. Shows snippets with context
+- [x] **/list-chats + /load-chat commands**: List saved conversations and load their content. Uses ChatHistoryBrowser component
+- [x] **/batch-process command**: Process all markdown files in a folder with actions: summarize, translate, rewrite, expand, toc
+- [x] **Popout chat window**: Popout button in header. Opens chat in new leaf — drag to separate window
+- [x] **UI sync fixes**: Agent mode and Thinking mode toggles now read/write directly from settings.enableAgentMode/enableThinking — no more local state desync
+- [x] **Budget chat custom instructions**: Fixed handleBudgetChat to inject agentInstructions into system prompt
+- [x] **Gemini streaming URL fix**: chatStream always prepended models/ unconditionally — now correctly checks for / in model name
+- [x] **Perplexity model IDs fixed**: Removed perplexity/ prefix — native API expects sonar-pro not perplexity/sonar-pro
+- [x] **Worker routes fixed**: /v1/budget-chat and /v1/budget-usage were missing from router — added them
+- [x] **Admin reset-devices endpoint**: New POST /admin/reset-devices to clear device registrations for a license key
+- [x] **Free trial integration**: Free trial (5 queries/day) documented in code + docs. LicenseManager uses 5 as limit, worker enforces 5/day per fingerprint
+- [ ] Multi-provider budget fallback
+
 ### v1.5.9
-- [x] **display() → getSettingDefinitions()**: Migrated deprecated Obsidian API (≥1.13.0) with backward-compatible wrapper
+- [x] **display() â†’ getSettingDefinitions()**: Migrated deprecated Obsidian API (â‰¥1.13.0) with backward-compatible wrapper
 - [x] **activeDocument helper**: `src/utils/domUtils.ts` with `getActiveDocument()` for popout window safety
 - [x] **BudgetManager type safety**: `parseWorkerError()` helper replacing unsafe `as` cast
-- [x] **Promise void → .catch()**: Replaced fire-and-forget patterns
+- [x] **Promise void â†’ .catch()**: Replaced fire-and-forget patterns
 - [x] **globalThis.setTimeout**: Fixed `withTimeout()` for Node.js test compatibility
 - [x] **ESLint disable comments**: Dynamic imports (pdfjs-dist, unpdf, youtube-transcript) properly annotated
 - [x] **10 new test suites**: domUtils, pathUtils, toolRouter, planTracker, contextCompactor, contextLayers, autoSaveManager, constants, i18n, budgetManager
-- [x] **370 tests across 26 suites** (up from 146 across 16)
+- [x] **385 tests across 27 suites** (up from 146 across 16)
 - [x] **0 TypeScript errors** (strict mode)
 
 ### v1.5.0
-- [x] **Full i18n**: 12 languages with instant UI refresh — English, Spanish, Chinese, Japanese, Korean, German, French, Russian, Portuguese, Italian, Turkish, Arabic
+- [x] **Full i18n**: 12 languages with instant UI refresh â€” English, Spanish, Chinese, Japanese, Korean, German, French, Russian, Portuguese, Italian, Turkish, Arabic
 - [x] All ~600 UI strings internationalized via `t()` engine
 - [x] Language selector in Settings with live refresh of all UI components
 - [x] Spanish translations for all settings, chat, and tool interfaces
@@ -438,10 +457,10 @@ Create `src/i18n/{code}.ts` and register in `src/i18n/index.ts`. English is alwa
 
 ### v1.4.5
 - [x] **Dual-build**: `npm run build:store` (clean, Obsidian review) + `npm run build` (obfuscated, distribution)
-- [x] **Cloudflare Worker deployed**: `copilot-personal-worker.copilot-personal.workers.dev` — cloud validation, Lemon Squeezy webhook, device limit
+- [x] **Cloudflare Worker deployed**: `copilot-personal-worker.copilot-personal.workers.dev` â€” cloud validation, Lemon Squeezy webhook, device limit
 - [x] **Per-Provider API Keys**: each provider remembers its own key (DeepSeek, OpenAI, Gemini, etc.)
 - [x] **Lemon Squeezy licensing**: native UUID keys, no COPILOT- format, 100% cloud validation
-- [x] **UI gating Free/Pro**: toggles disabled (🔒) in settings when tier=free, error messages on validation
+- [x] **UI gating Free/Pro**: toggles disabled (ðŸ”’) in settings when tier=free, error messages on validation
 - [x] **Persistent counter**: daily message limit survives Obsidian restarts
 - [x] **Web search token** configurable from settings (no longer hardcoded)
 - [x] **Path traversal protection** improved in `readNoteTool`
@@ -451,27 +470,27 @@ Create `src/i18n/{code}.ts` and register in `src/i18n/index.ts`. English is alwa
 - [x] **CircuitBreaker** on ALL providers (chat + stream + embed)
 - [x] **Markdown sanitization**: protection against `<script>` and `on*` handlers
 - [x] **MIT License** for open-source compliance
-- [x] **Multi-Provider Fallback (Pro)** — automatic capability compensation
+- [x] **Multi-Provider Fallback (Pro)** â€” automatic capability compensation
 - [x] Agent mode with 17 tools
 - [x] ToolRouter with LLM classification (70-90% token savings)
 - [x] PDF rendering + image extraction with `unpdf`
 - [x] 7 Slash commands + Export MD/JSON
 - [x] Circuit breaker + timeouts + backoff on all providers
 - [x] Session auto-save crash recovery (sessionStorage every 30s)
-- [x] Privacy indicator (🔒 Local / ☁️ Cloud) + tier badge (🆓 Free / ⭐ Pro)
+- [x] Privacy indicator (ðŸ”’ Local / â˜ï¸ Cloud) + tier badge (ðŸ†“ Free / â­ Pro)
 - [x] LicenseManager with rate limiting + feature gating + fingerprint binding
 - [x] Invented wiki-link validation + multi-note auto-save
 - [x] 11 providers with real streaming (fetch + ReadableStream)
 - [x] Gemini native provider with tool calling (functionDeclarations)
 - [x] Anthropic native provider with tool calling (input_schema)
 - [x] Unified BaseOpenAIProvider + centralized buildBody()
-- [x] AutoSaveManager — splitNoteSections, validateWikiLinks, findNoteByHeading
-- [x] Chat avatars (👤/🤖/🔧) + fade-in animation
-- [x] Visual agent progress tracker (⏳ Step N: tool...)
+- [x] AutoSaveManager â€” splitNoteSections, validateWikiLinks, findNoteByHeading
+- [x] Chat avatars (ðŸ‘¤/ðŸ¤–/ðŸ”§) + fade-in animation
+- [x] Visual agent progress tracker (â³ Step N: tool...)
 - [x] Landing page + complete documentation
 - [x] TypeScript strict mode (0 errors)
 - [x] Build obfuscation with javascript-obfuscator
-- [x] `fetchWithFallback()` — Obsidian desktop + mobile compatibility
+- [x] `fetchWithFallback()` â€” Obsidian desktop + mobile compatibility
 - [x] `normalizeApiUrl()` unified for all providers
 - [x] 9 code audits passed
 
@@ -483,7 +502,7 @@ Create `src/i18n/{code}.ts` and register in `src/i18n/index.ts`. English is alwa
 - [ ] Notifications on long task completion
 - [ ] Cross-device settings sync
 
-### v2.0 (Pro — Commercial)
+### v2.0 (Pro â€” Commercial)
 - [x] Free vs Pro licensing system
 - [x] Cloud validation server (Cloudflare Worker deployed)
 - [x] Unlimited web search (Pro)
@@ -502,4 +521,4 @@ Create `src/i18n/{code}.ts` and register in `src/i18n/index.ts`. English is alwa
 
 ---
 
-**Copilot Personal v1.5.0** — Made with ❤️ for the Obsidian community.
+**Copilot Personal v1.5.0** â€” Made with â¤ï¸ for the Obsidian community.

@@ -1,6 +1,6 @@
 import { App } from "obsidian";
 import { AgentTool } from "../agent/ToolRegistry";
-import { normalizePath } from "../utils/pathUtils";
+import { normalizePath, validatePath } from "../utils/pathUtils";
 import { t } from "../i18n";
 import { getActiveDocument } from "../utils/domUtils";
 
@@ -52,6 +52,7 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
       try {
         // Auto-find the PDF if the path is wrong
         let resolvedPath = normalizePath(raw);
+        if (!validatePath(resolvedPath)) return "Error: Invalid PDF path.";
         let exists = await app.vault.adapter.exists(resolvedPath);
         if (!exists) {
           const basename = raw.replace(/^.*[/\\]/, "").toLowerCase();
@@ -78,6 +79,7 @@ export function createRenderPdfPagesTool(app: App): AgentTool {
         const outDir = outputFolder
           ? normalizePath(outputFolder)
           : `${pdfDir}${pdfBasename}_images`;
+        if (!validatePath(outDir)) return "Error: Invalid output path.";
 
         // Ensure output folder exists — create recursively if needed
         if (!(await app.vault.adapter.exists(outDir))) {

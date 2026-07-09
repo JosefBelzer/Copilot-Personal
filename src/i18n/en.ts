@@ -47,9 +47,12 @@ export const en: Record<string, string> = {
   "provider.name.xai": "xAI Grok",
   "provider.name.budget": "💰 Copilot AI (Pro)",
 
-  "settings.budgetTitle": "Budget AI (Pro)",
-  "settings.budgetEnable": "Use Copilot budget AI",
-  "settings.budgetEnableDesc": "Free, managed API via Mistral Nemo. No API key needed. Includes daily usage limits.",
+  "settings.budgetTitle": "💰 Copilot AI (free trial + Pro)",
+
+  "settings.budgetEnableDesc": "Free, managed API via Mistral Nemo. No API key needed. Free: 5 queries/day trial. Pro: 50 queries/day, unlimited if you have your own API key.",
+
+  "settings.budgetFreeTrialNotice": "✨ Copilot AI: 5 free queries/day to try! Upgrade to Pro for unlimited.",
+
   "settings.budgetProRequired": "🔒 Copilot AI requires a Pro license. Upgrade to Pro to use the managed budget API.",
 
   // Model Configuration
@@ -121,6 +124,8 @@ export const en: Record<string, string> = {
   "settings.agentModeProLocked": "🔒 Agent mode requires a Pro license",
   "settings.maxAgentIterations": "Max agent iterations",
   "settings.maxAgentIterationsDesc": "Maximum number of tool calls per agent run",
+  "settings.agentInstructions": "Custom agent instructions",
+  "settings.agentInstructionsDesc": "System prompt additions for the agent. These instructions are appended to every agent request — use them to set behavior, language, tone, or expertise.",
 
   "settings.lmDetectTitle": "LM Studio - Detect Models",
   "settings.lmStatusDefault": "Click 'Detect' to fetch available models from LM Studio.",
@@ -227,7 +232,7 @@ export const en: Record<string, string> = {
   "chat.agentFallback": "⚠️ Agent mode failed — fallback response:\n\n{response}",
   "chat.agentError": "Agent error: {message}",
   "chat.agentWarnNotSaved": "⚠️ **NOTE: The model claimed to have saved/modified a note, but NO write tool (update_note, create_note) or <!--save:--> marker was used. The claim is a hallucination.**",
-  "chat.budgetModelLabel": "🧠 Copilot AI",
+  "chat.budgetModelLabel": "💰 Copilot AI",
   "chat.budgetAgentNotAvailable": "🤖 Agent mode is not yet available with Copilot AI. Switch to a different provider (DeepSeek, OpenAI, etc.) in Settings → Provider to use Agent Mode.",
 
   // Messages — auto-save
@@ -437,7 +442,7 @@ export const en: Record<string, string> = {
   //  TOOL: find_files
   // ═══════════════════════════════════════════════════════════════
 
-  "tools.findFiles.description": "Searches files in the vault by name pattern. Returns paths of matching files. Useful for finding images, PDFs or notes when you don't know the exact path.",
+  "tools.findFiles.description": "Searches files in the vault by name pattern. Use this to LOCATE files and get their paths (e.g. 'find me the PDF named ISO'). For date-based search use search_vault_by_timeframe instead.",
   "tools.findFiles.paramNameQuery": "Part of the file name to search for (e.g. 'MapaPolitico', 'diagram', 'photo.png'). Case-insensitive.",
   "tools.findFiles.paramExtension": "Filter by extension (e.g. 'png', 'pdf', 'md'). Optional.",
   "tools.findFiles.error.emptyQuery": "Error: empty search term.",
@@ -457,7 +462,7 @@ export const en: Record<string, string> = {
   //  TOOL: search_vault_fulltext
   // ═══════════════════════════════════════════════════════════════
 
-  "tools.searchVaultFulltext.description": "Searches exact text across all vault notes (faster than semantic search).",
+  "tools.searchVaultFulltext.description": "Searches for EXACT text matches across all vault notes. Faster than semantic search. Use this when you know the exact words or phrases.",
   "tools.searchVaultFulltext.paramQuery": "Text to search.",
   "tools.searchVaultFulltext.error.emptyQuery": "Error: empty query.",
   "tools.searchVaultFulltext.notFound": "Did not find \"{query}\" in any note.",
@@ -466,7 +471,7 @@ export const en: Record<string, string> = {
   //  TOOL: search_vault_semantic
   // ═══════════════════════════════════════════════════════════════
 
-  "tools.searchVaultSemantic.description": "Searches vault notes using semantic search (RAG). Returns relevant fragments based on the query.",
+  "tools.searchVaultSemantic.description": "Searches vault notes by CONCEPT or IDEA (semantic/RAG search using vector embeddings). Returns relevant fragments even if the exact words don't match. Use this for finding content by meaning, NOT for exact text matches (use search_vault_fulltext for exact text).",
   "tools.searchVaultSemantic.paramQuery": "The search query.",
   "tools.searchVaultSemantic.paramStartDate": "Optional filter: ISO start date.",
   "tools.searchVaultSemantic.paramEndDate": "Optional filter: ISO end date.",
@@ -480,7 +485,7 @@ export const en: Record<string, string> = {
   //  TOOL: search_vault_by_timeframe
   // ═══════════════════════════════════════════════════════════════
 
-  "tools.searchVaultByTimeframe.description": "Searches vault notes modified between two dates in ISO 8601 format (YYYY-MM-DDTHH:mm:ss). Useful to see what the user did in a time period.",
+  "tools.searchVaultByTimeframe.description": "Searches vault notes by modification DATE RANGE (ISO 8601). ONLY use when the user EXPLICITLY requests notes from a specific time period (e.g. 'show notes from last month'). Do NOT use this when the user mentions a time word in passing (like 'the PDF I downloaded yesterday') — that is a find_files task for locating files by name.",
   "tools.searchVaultByTimeframe.paramStartDate": "Start date in ISO 8601 format, e.g. 2026-05-01T00:00:00",
   "tools.searchVaultByTimeframe.paramEndDate": "End date in ISO 8601 format, e.g. 2026-05-10T23:59:59",
   "tools.searchVaultByTimeframe.error.invalidDates": "Error: invalid dates. Use ISO 8601 format (YYYY-MM-DDTHH:mm:ss).",
@@ -583,7 +588,7 @@ export const en: Record<string, string> = {
   //  TOOL: get_frontmatter
   // ═══════════════════════════════════════════════════════════════
 
-  "tools.getFrontmatter.description": "Extracts the frontmatter (YAML metadata) from a note.",
+  "tools.getFrontmatter.description": "Extracts the YAML frontmatter (metadata) from a note. The frontmatter is the section between --- markers at the top of a note. Use this to read tags, aliases, dates, or any custom YAML fields.",
   "tools.getFrontmatter.paramPath": "Path to the note.",
   "tools.getFrontmatter.error.notFound": "Error: \"{path}\" does not exist.",
   "tools.getFrontmatter.noFrontmatter": "No frontmatter.",

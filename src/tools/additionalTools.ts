@@ -1,5 +1,6 @@
 import { App } from "obsidian";
 import { AgentTool } from "../agent/ToolRegistry";
+import { normalizePath, validatePath } from "../utils/pathUtils";
 import { t } from "../i18n";
 
 export function createListNotesTool(app: App): AgentTool {
@@ -112,9 +113,10 @@ export function createGetFrontmatterTool(app: App): AgentTool {
       required: ["path"],
     },
     execute: async (params: Record<string, unknown>): Promise<string> => {
-      const path = params.path as string;
-      const file = app.vault.getAbstractFileByPath(path);
-      if (!file) return t("tools.getFrontmatter.error.notFound", { path });
+      const resolvedPath = normalizePath(params.path as string);
+      if (!validatePath(resolvedPath)) return "Error: Invalid path.";
+      const file = app.vault.getAbstractFileByPath(resolvedPath);
+      if (!file) return t("tools.getFrontmatter.error.notFound", { path: resolvedPath });
       try {
         const content = await app.vault.read(file as import("obsidian").TFile);
         const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);

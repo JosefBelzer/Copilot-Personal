@@ -1,9 +1,18 @@
-/**
+﻿/**
  * Shared path utilities — normalize slashes, extract dirnames/basenames,
  * and handle .md extension auto-detection consistently across all tools.
  */
 
 import { requestUrl } from "obsidian";
+
+/** Validate file path: reject directory traversal (..), absolute paths, and encoded escapes. */
+export function validatePath(path: string): boolean {
+  if (path.startsWith("/") || path.startsWith("\\")) return false;
+  if (/(%2[eE]){2}/i.test(path)) return false;
+  const normalized = path.replace(/\\/g, "/").replace(/\/+/g, "/");
+  const segments = normalized.split("/");
+  return !segments.some(s => s === ".." || s === ".");
+}
 
 /** Normalize backslashes to forward slashes and collapse duplicate slashes. */
 export function normalizePath(path: string): string {
@@ -41,9 +50,16 @@ export function basenameNoExt(path: string): string {
  * Strips trailing slashes, removes /v1 suffix, and re-appends /v1.
  */
 /**
- * Uses Obsidian's requestUrl for all environments (desktop and mobile).
+ * Universal HTTP client: uses native fetch() in Electron (supports SSE streaming),
+ * falls back to Obsidian's requestUrl on mobile where fetch() is unavailable.
  */
 export function fetchWithFallback(url: string, options: RequestInit): Promise<Response> {
+  // In Obsidian desktop (Electron), native fetch() supports ReadableStream / SSE.
+  // On mobile, fall back to requestUrl which works on all platforms.
+  if (typeof fetch !== "undefined") {
+    return fetch(url, options);
+  }
+  // Mobile fallback: requestUrl (no streaming)
   const method = options.method ?? "POST";
   const headers = options.headers as Record<string, string> | undefined;
   const body = options.body as string | undefined;
@@ -74,6 +90,9 @@ export function normalizeGerman(s: string): string {
     .replace(/ß|ss/gi, "s");
 }
 
+/** Timer that works in Electron (window.setTimeout) and Node.js (setTimeout). */
+const safeTimeout = typeof window !== "undefined" ? window.setTimeout.bind(window) : setTimeout;
+
 /**
  * Wraps a Promise with a timeout. Rejects with TimeoutError if the
  * operation takes longer than `ms` milliseconds.
@@ -82,7 +101,7 @@ export function withTimeout<T>(promise: Promise<T>, ms: number, label: string = 
   return Promise.race([
     promise,
     new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+      safeTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
     ),
   ]);
 }

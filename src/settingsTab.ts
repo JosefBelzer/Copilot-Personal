@@ -1,4 +1,4 @@
-﻿import { App, PluginSettingTab, Setting, Notice } from "obsidian";
+import { App, PluginSettingTab, Setting, Notice } from "obsidian";
 import type { SettingDefinitionItem } from "obsidian";
 import CopilotPlugin from "./main";
 import { LmStudioService } from "./services/lmStudioService";
@@ -14,6 +14,238 @@ interface FeatureCap {
   modelKey: string;
   modelPlaceholder: string;
 }
+
+const PROVIDER_MODELS: Record<string, string[]> = {
+  deepseek: [
+    "deepseek-v4-flash",
+    "deepseek-v4-pro",
+    "deepseek-v3.2",
+    "deepseek-v4",
+    "deepseek-chat",
+    "deepseek-reasoner",
+    "deepseek-coder",
+    "deepseek-r1",
+  ],
+  openai: [
+    "gpt-5.3-codex",
+    "gpt-5.2",
+    "gpt-5.2-pro",
+    "gpt-5.1",
+    "gpt-5",
+    "o3-pro",
+    "o3",
+    "o1-pro",
+    "gpt-5-mini",
+    "gpt-5-nano",
+    "gpt-5-pro",
+    "gpt-4.1",
+    "gpt-4.1-mini",
+    "gpt-4.1-nano",
+    "gpt-4o",
+    "gpt-4o-mini",
+    "gpt-4o-search-preview",
+    "gpt-4o-mini-search-preview",
+    "omni-moderation",
+    "computer-use-preview",
+    "gpt-oss-120b",
+    "gpt-oss-20b",
+    "text-embedding-3-large",
+    "text-embedding-3-small",
+    "whisper",
+    "tts-1",
+    "gpt-4o-audio",
+  ],
+  anthropic: [
+    "claude-opus-4.8",
+    "claude-opus-4.6",
+    "claude-opus-4.1",
+    "claude-sonnet-5",
+    "claude-sonnet-4.6",
+    "claude-sonnet-4.5",
+    "claude-3.5-sonnet",
+    "claude-haiku-4.5",
+    "claude-3-haiku",
+    "claude-fable-5",
+    "claude-mythos-5",
+  ],
+  openrouter: [
+    "mistralai/mistral-nemo",
+    "deepseek/deepseek-chat",
+    "deepseek/deepseek-r1",
+    "deepseek/deepseek-v4-flash",
+    "deepseek/deepseek-v3.2",
+    "deepseek/deepseek-v4",
+    "openai/gpt-4o",
+    "openai/gpt-4o-mini",
+    "openai/gpt-4.1",
+    "openai/gpt-5",
+    "openai/gpt-5-mini",
+    "openai/gpt-5-nano",
+    "openai/gpt-5-pro",
+    "openai/gpt-5.1",
+    "openai/gpt-5.2",
+    "openai/gpt-5.2-pro",
+    "openai/gpt-5.3-codex",
+    "openai/gpt-5.4",
+    "openai/gpt-5.4-pro",
+    "openai/gpt-5.4-nano",
+    "openai/gpt-5.5",
+    "openai/gpt-5.5-pro",
+    "openai/o3",
+    "openai/o3-pro",
+    "anthropic/claude-3.5-sonnet",
+    "anthropic/claude-3-haiku",
+    "anthropic/claude-sonnet-4",
+    "anthropic/claude-sonnet-4.5",
+    "anthropic/claude-sonnet-4.6",
+    "anthropic/claude-sonnet-5",
+    "anthropic/claude-opus-4.1",
+    "anthropic/claude-opus-4.5",
+    "anthropic/claude-opus-4.6",
+    "anthropic/claude-opus-4.7",
+    "anthropic/claude-opus-4.8",
+    "anthropic/claude-haiku-4.5",
+    "anthropic/claude-fable-5",
+    "anthropic/claude-mythos-5",
+    "google/gemini-2.5-flash",
+    "google/gemini-2.5-pro",
+    "google/gemini-3.1-flash",
+    "google/gemini-3.1-flash-lite",
+    "google/gemini-3.1-pro",
+    "google/gemini-3.5-flash",
+    "google/gemini-3.5-pro",
+    "google/gemini-omni-flash",
+    "meta-llama/llama-3.1-8b-instruct",
+    "meta-llama/llama-3.3-70b-instruct",
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+    "qwen/qwen-2.5-7b-instruct",
+    "qwen/qwen-2.5-32b-instruct",
+    "qwen/qwen-2.5-72b-instruct",
+    "qwen/qwen3-32b",
+    "qwen/qwen3.6-27b",
+    "qwen/qwen3.6-flash",
+    "qwen/qwen3.7-max",
+    "qwen/qwen3.7-plus",
+    "mistralai/mistral-nemo",
+    "mistralai/mistral-large",
+    "mistralai/mistral-medium-3-5",
+    "mistralai/mixtral-8x22b-instruct",
+    "mistralai/mistral-large-2512",
+    "mistralai/ministral-14b-2512",
+    "mistralai/ministral-8b-2512",
+    "mistralai/ministral-3b-2512",
+    "mistralai/devstral-2512",
+    "mistralai/mistral-small-4",
+    "cohere/command-r",
+    "cohere/command-r-plus",
+    "nousresearch/hermes-3-llama-3.1-405b",
+    "microsoft/phi-3-medium-128k-instruct",
+    "cognitivecomputations/dolphin-mixtral-8x22b",
+    "sophosympatheia/rogue-ronin-103b",
+    "minimax/minimax-m2",
+    "minimax/minimax-m2.5",
+    "minimax/minimax-m2.7",
+    "minimax/minimax-m3",
+    "moonshotai/kimi-k2.5",
+    "moonshotai/kimi-k2.6",
+    "moonshotai/kimi-k2.7-code",
+    "nvidia/nemotron-3-ultra-550b-a55b",
+    "nvidia/nemotron-3-super-120b-a12b",
+    "perplexity/sonar-pro",
+    "perplexity/sonar-reasoning",
+    "perplexity/sonar-deep-research",
+    "xai/grok-4.3",
+    "xai/grok-4.3-latest",
+    "xai/grok-build-0.1",
+    "xai/grok-3",
+    "xai/grok-3-fast",
+    "xai/grok-3-mini",
+    "amazon/nova-premier-v1",
+    "amazon/nova-2-lite-v1",
+    "tencent/hy3",
+    "tencent/hy3-preview",
+    "xiaomi/mimo-v2.5-pro",
+    "sakana/fugu-ultra",
+    "inception/mercury-2",
+    "stepfun/step-3.5-flash",
+    "liquid/lfm-2.5-1.2b-instruct",
+    "liquid/lfm-2-24b-a2b",
+    "allenai/olmo-3-32b-think",
+    "ibm-granite/granite-4.0-h-micro",
+  ],
+  gemini: [
+    "gemini-3.5-flash",
+    "gemini-3.5-pro",
+    "gemini-3.1-pro",
+    "gemini-3.1-flash-lite",
+    "gemini-2.5-pro",
+    "gemini-2.5-flash",
+    "gemini-omni-flash",
+    "gemini-audio",
+    "gemini-robotics",
+    "gemini-embedding",
+    "gemini-2.0-flash-exp",
+    "gemini-1.5-pro",
+    "gemini-1.5-flash",
+    "imagen",
+    "veo",
+    "nano-banana",
+  ],
+  mistral: [
+    "magistral-medium-1.2",
+    "mistral-small-4",
+    "mistral-medium-3-5-v26.04",
+    "mistral-large-3",
+    "mistral-large-latest",
+    "mistral-nemo-latest",
+    "codestral-latest",
+    "mistral-embed",
+    "mistral-7b",
+    "mixtral-8x7b",
+    "mixtral-8x22b",
+    "codestral-mamba",
+    "mathstral",
+    "mistral-nemo",
+    "pixtral-12b",
+    "ministral-3-14b",
+    "ministral-3-8b",
+    "ministral-3-3b",
+    "voxtral-mini-transcribe",
+    "devstral",
+  ],
+  groq: [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "groq/compound",
+    "groq/compound-mini",
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+    "qwen/qwen3-32b",
+    "qwen/qwen3.6-27b",
+    "mixtral-8x7b-32768",
+    "gemma2-9b-it",
+  ],
+  perplexity: [
+    "sonar-pro",
+    "sonar",
+    "sonar-reasoning-pro",
+    "sonar-reasoning",
+    "sonar-deep-research",
+  ],
+  xai: [
+    "grok-4.3",
+    "grok-4.3-latest",
+    "grok-latest",
+    "grok-420-reasoning",
+    "grok-build-0.1",
+    "grok-imagine-image",
+    "grok-3",
+    "grok-3-fast",
+    "grok-3-mini",
+  ],
+  lmstudio: [],
+};
 
 export class CopilotSettingTab extends PluginSettingTab {
   plugin: CopilotPlugin;
@@ -113,9 +345,21 @@ export class CopilotSettingTab extends PluginSettingTab {
       const result = await this.plugin.licenseManager.activate(key);
       this.plugin.settings = this.plugin.licenseManager.applyRestrictions(this.plugin.settings);
       await this.plugin.saveSettings();
+      // Refresh budget cache after license activation (Free trial vs Pro budget)
+      const isPro = result.tier === "pro" && key !== "FREE";
+      this.plugin.budgetManager.setEnabled(isPro);
+      this.plugin.budgetManager.clearCache();
+      void this.plugin.budgetManager.fetchUsage(
+        key,
+        this.plugin.licenseManager.getStoredFingerprint() ?? undefined
+      ).then(() => {
+        // Update header badges with fresh budget data
+        const chatView = this.plugin.getChatView();
+        if (chatView && "updateHeaderBadges" in chatView) chatView.updateHeaderBadges();
+      }).catch(() => {});
       if (result.error) {
         new Notice(`⚠️ ${result.error}`);
-      } else if (result.tier === "pro" && key !== "FREE") {
+      } else if (isPro) {
         new Notice(t("license.proActivated"));
       } else {
         new Notice(t("license.freeActivated"));
@@ -175,11 +419,9 @@ export class CopilotSettingTab extends PluginSettingTab {
           .addOption("xai", t("provider.name.xai"))
           .setValue(this.plugin.settings.providerType)
           .onChange(async (value) => {
-            // Block Free users from selecting the budget provider
+            // Free users can select the budget provider (5 free queries/day trial)
             if (value === "budget" && !isPro) {
-              new Notice(t("settings.budgetProRequired"));
-              dropdown.setValue(this.plugin.settings.providerType); // revert
-              return;
+              new Notice(t("settings.budgetFreeTrialNotice"));
             }
 
             this.plugin.settings.providerType = value as ProviderType;
@@ -301,8 +543,11 @@ export class CopilotSettingTab extends PluginSettingTab {
 
     const models = this.plugin.settings.detectedModels ?? [];
     const hasDetected = models.length > 0;
+    const providerFixedModels = PROVIDER_MODELS[this.plugin.settings.providerType] ?? [];
+    const useFixedList = !hasDetected && providerFixedModels.length > 0;
+    const modelOptions = hasDetected ? models : useFixedList ? providerFixedModels : [];
 
-    // Helper: create a model selector — dropdown if models detected, text input otherwise
+    // Helper: create a model selector — dropdown if models available, text input otherwise
     const addModelSetting = (
       label: string,
       desc: string,
@@ -313,10 +558,10 @@ export class CopilotSettingTab extends PluginSettingTab {
       const setting = new Setting(containerEl)
         .setName(label)
         .setDesc(desc);
-      if (hasDetected) {
+      if (modelOptions.length > 0) {
         setting.addDropdown((dropdown) => {
-          models.forEach((m) => dropdown.addOption(m, m));
-          dropdown.setValue(currentValue ?? models[0]);
+          modelOptions.forEach((m) => dropdown.addOption(m, m));
+          dropdown.setValue(currentValue && modelOptions.includes(currentValue) ? currentValue : modelOptions[0]);
             dropdown.onChange((value) => { void onSet(value); });
         });
       } else {
@@ -754,6 +999,19 @@ export class CopilotSettingTab extends PluginSettingTab {
           })
       );
 
+    new Setting(containerEl)
+      .setName(t("settings.agentInstructions"))
+      .setDesc(t("settings.agentInstructionsDesc"))
+      .addTextArea((text) =>
+        text
+          .setPlaceholder("e.g. Always respond in Spanish. You are an expert Python developer.")
+          .setValue(this.plugin.settings.agentInstructions)
+          .onChange(async (value) => {
+            this.plugin.settings.agentInstructions = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
     // === LM Studio (Vision) ===
     new Setting(containerEl).setName(t("settings.lmVisionTitle")).setHeading();
 
@@ -849,10 +1107,12 @@ export class CopilotSettingTab extends PluginSettingTab {
           });
       }
 
-    // ── Budget AI (Pro only) ────────────────────────────────────────────
-    if (isPro) {
+    // ── Budget AI / Copilot AI ───────────────────────────────────────────
+    {
       const budget = this.plugin.budgetManager;
-      const licenseKey = this.plugin.settings.licenseKey || "";
+      const licenseKey = this.plugin.settings.licenseKey || "FREE";
+      const fp = this.plugin.licenseManager.getStoredFingerprint() ?? "";
+      const isBudgetPro = isPro;
 
       new Setting(containerEl).setName("💰 " + t("settings.budgetTitle")).setHeading();
 
@@ -863,20 +1123,33 @@ export class CopilotSettingTab extends PluginSettingTab {
       const stats = containerEl.createDiv("copilot-budget-stats");
       stats.createEl("span", { text: "📊 Loading..." });
       stats.createEl("span", { text: "💬 Loading..." });
-      stats.createEl("span", { text: "💵 Loading..." });
+      if (isBudgetPro) stats.createEl("span", { text: "💵 Loading..." });
       stats.createEl("span", { text: "⏰ Loading..." });
 
-      // Fetch async from Worker
-      budget.fetchUsage(licenseKey).then(usage => {
-        const maxPct = Math.max(usage.tokenPercent, usage.queryPercent);
-        bar.style.setProperty("--copilot-budget-width", maxPct + "%");
-        bar.className = "copilot-budget-bar-fill" +
-          (maxPct > 90 ? " copilot-budget-critical" : maxPct > 75 ? " copilot-budget-warn" : "");
-        stats.empty();
-        stats.createEl("span", { text: `📊 ${usage.dailyTokens.toLocaleString()} / ${usage.limitTokens.toLocaleString()} tokens` });
-        stats.createEl("span", { text: `💬 ${usage.dailyQueries} / ${usage.limitQueries} queries` });
-        stats.createEl("span", { text: `💵 ~$${usage.dailyCost.toFixed(3)} / $${usage.dailyCostLimit}` });
-        stats.createEl("span", { text: `⏰ Resets in ${usage.resetsInHours}h` });
+      // Fetch async from Worker (pass fingerprint for free trial tracking)
+      budget.fetchUsage(licenseKey, fp).then(usage => {
+        if (usage.freeTrial) {
+          // Free trial view
+          const ft = usage.freeTrial;
+          bar.style.setProperty("--copilot-budget-width", usage.queryPercent + "%");
+          bar.className = "copilot-budget-bar-fill" +
+            (ft.used >= ft.limit ? " copilot-budget-critical" : ft.used >= 3 ? " copilot-budget-warn" : "");
+          stats.empty();
+          stats.createEl("span", { text: `💬 ${ft.used} / ${ft.limit} free queries today` });
+          stats.createEl("span", { text: ft.used >= ft.limit ? "⭐ Upgrade to Pro for unlimited" : ft.used >= 3 ? "⏳ 3/5 used — trying Pro?" : `✨ ${ft.limit - ft.used} free remaining` });
+          stats.createEl("span", { text: `⏰ Resets in ${usage.resetsInHours}h` });
+        } else {
+          // Pro usage view
+          const maxPct = Math.max(usage.tokenPercent, usage.queryPercent);
+          bar.style.setProperty("--copilot-budget-width", maxPct + "%");
+          bar.className = "copilot-budget-bar-fill" +
+            (maxPct > 90 ? " copilot-budget-critical" : maxPct > 75 ? " copilot-budget-warn" : "");
+          stats.empty();
+          stats.createEl("span", { text: `📊 ${usage.dailyTokens.toLocaleString()} / ${usage.limitTokens.toLocaleString()} tokens` });
+          stats.createEl("span", { text: `💬 ${usage.dailyQueries} / ${usage.limitQueries} queries` });
+          stats.createEl("span", { text: `💵 ~$${usage.dailyCost.toFixed(3)} / $${usage.dailyCostLimit}` });
+          stats.createEl("span", { text: `⏰ Resets in ${usage.resetsInHours}h` });
+        }
       }).catch(() => {
         stats.empty();
         stats.createEl("span", { text: "⚠️ Could not load budget usage" });

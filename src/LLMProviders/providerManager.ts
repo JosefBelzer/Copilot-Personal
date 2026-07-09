@@ -131,10 +131,10 @@ export class ProviderManager {
 
   updateSettings(settings: CopilotSettings) {
     this.settings = settings;
-    const newType = this.detectProviderType();
+    // Update activeProvider FIRST so getProviderConfig() fetches the correct API key
+    this.activeProvider = this.detectProviderType();
     const config = this.getProviderConfig();
     for (const [, provider] of this.providers) provider.updateConfig(config);
-    if (newType !== this.activeProvider) this.activeProvider = newType;
   }
 
   setActiveProvider(type: ProviderType) {

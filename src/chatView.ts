@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice } from "obsidian";
+import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice, TFile } from "obsidian";
 import CopilotPlugin from "./main";
 import { CopilotSettings } from "./settings";
 import { LLMMessage } from "./LLMProviders/types";
@@ -71,7 +71,9 @@ export class CopilotChatView extends ItemView {
   private tierEl!: HTMLElement;
   private budgetEl!: HTMLElement;
   private _budgetAgentContext: BudgetAgentMessage[] | null = null;
+  private _toolTimeouts: number[] = [];
   private sessionSaveInterval: number | null = null;
+  private _beforeunloadHandler: (() => void) | null = null;
   private autoSaveManager!: AutoSaveManager;
 
   constructor(
@@ -86,7 +88,7 @@ export class CopilotChatView extends ItemView {
     this.settings = settings;
     this.indexOps = indexOps;
     this.fileParserManager = fileParserManager;
-    this.agentMode = settings.enableAgentMode;
+    this.settings.enableAgentMode = settings.enableAgentMode;
   }
 
   getViewType(): string {
@@ -94,6 +96,11 @@ export class CopilotChatView extends ItemView {
   }
 
   async onClose() {
+    // Clean up event listeners added in onOpen()
+    if (this._beforeunloadHandler) {
+      window.removeEventListener("beforeunload", this._beforeunloadHandler);
+      this._beforeunloadHandler = null;
+    }
     // Cleanup session auto-save interval
     if (this.sessionSaveInterval) {
       window.clearInterval(this.sessionSaveInterval);
@@ -109,6 +116,10 @@ export class CopilotChatView extends ItemView {
         console.error("[ChatView] Memory save on close failed:", err);
       }
     }
+    // Clear all pending tool message timeouts
+    for (const id of this._toolTimeouts) window.clearTimeout(id);
+    this._toolTimeouts = [];
+
     // Cleanup any abort controller
     if (this.abortController) {
       this.abortController.abort();
@@ -162,15 +173,16 @@ export class CopilotChatView extends ItemView {
     historyBtn.title = "Browse saved chats";
     historyBtn.addEventListener("click", () => { void this.showChatHistory(); });
 
+    const popoutBtn = headerRight.createEl("button", { text: "Popout", cls: "copilot-header-btn" });
+    popoutBtn.title = "Open chat in a separate window";
+    popoutBtn.addEventListener("click", () => { void this.popoutChat(); });
+
     this.modelSelectEl = header.createEl("select", "copilot-model-select");
     this.refreshModelSelector();
     this.modelSelectEl.addEventListener("change", () => {
       this.plugin.settings.chatModel = this.modelSelectEl.value;
       void this.plugin.saveSettings();
     });
-
-    // Refresh model selector when tab gets focus
-    this.containerEl.addEventListener("focusin", () => this.refreshModelSelector());
 
     // Status bar
     const statusRow = container.createDiv("copilot-status-row");
@@ -207,17 +219,17 @@ export class CopilotChatView extends ItemView {
 
     this.agentToggleEl = inputArea.createEl("button", { text: "Agent", cls: "copilot-agent-toggle" });
     this.agentToggleEl.title = "Toggle agent mode (autonomous tool use)";
-    if (this.agentMode) this.agentToggleEl.addClass("copilot-agent-active");
+    if (this.settings.enableAgentMode) this.agentToggleEl.addClass("copilot-agent-active");
     this.agentToggleEl.addEventListener("click", () => {
       // License gate — Pro only for agent mode
-      if (!this.agentMode && !this.plugin.licenseManager.canUseAgent()) {
+      if (!this.settings.enableAgentMode && !this.plugin.licenseManager.canUseAgent()) {
         this.addMessage("system", "🔒 Agent mode requires a Pro license. Settings → License Key.");
         return;
       }
-      this.agentMode = !this.agentMode;
-      this.settings.enableAgentMode = this.agentMode;
+      this.settings.enableAgentMode = !this.settings.enableAgentMode;
+      this.settings.enableAgentMode = this.settings.enableAgentMode;
       void this.plugin.saveSettings();
-      if (this.agentMode) {
+      if (this.settings.enableAgentMode) {
         this.agentToggleEl.addClass("copilot-agent-active");
         this.statusEl.setText("Agent mode ON");
         this.setThinking(false);
@@ -231,10 +243,10 @@ export class CopilotChatView extends ItemView {
     thinkBtn.title = "Enable thinking mode (model reasons before responding)";
     if (this.settings.enableThinking) thinkBtn.addClass("copilot-agent-active");
     thinkBtn.addEventListener("click", () => {
-      this.setThinking(!this.thinkingEnabled);
-      this.settings.enableThinking = this.thinkingEnabled;
+      this.setThinking(!this.settings.enableThinking);
+      this.settings.enableThinking = this.settings.enableThinking;
       void this.plugin.saveSettings();
-      if (this.thinkingEnabled) thinkBtn.addClass("copilot-agent-active");
+      if (this.settings.enableThinking) thinkBtn.addClass("copilot-agent-active");
       else thinkBtn.removeClass("copilot-agent-active");
     });
 
@@ -246,8 +258,16 @@ export class CopilotChatView extends ItemView {
 
     // Session auto-save for crash recovery (every 30s)
     await this.restoreSession();
-    this.sessionSaveInterval = window.setInterval(() => this.saveSession(), 30000);
-    window.addEventListener("beforeunload", () => this.saveSession());
+    this.sessionSaveInterval = window.setInterval(() => { void this.saveSession(); }, 30000);
+    this._beforeunloadHandler = () => { void this.saveSession(); };
+    window.addEventListener("beforeunload", this._beforeunloadHandler);
+    this.containerEl.addEventListener("focusin", () => this.refreshModelSelector());
+
+    // Pre-fetch budget usage so the badge updates immediately (Free trial or Pro)
+    void this.plugin.budgetManager.fetchUsage(
+      this.plugin.settings.licenseKey || "FREE",
+      this.plugin.licenseManager.getStoredFingerprint() ?? undefined
+    ).then(() => this.updateHeaderBadges()).catch(() => {});
 
     this.chatHistoryBrowser = new ChatHistoryBrowser(this.plugin.app, this.settings.chatHistoryFolder);
     this.applyView = new ApplyView(this.plugin.app);
@@ -293,48 +313,182 @@ export class CopilotChatView extends ItemView {
       deepseek: [
         { value: "deepseek-v4-flash", label: "DeepSeek V4 Flash" },
         { value: "deepseek-v4-pro", label: "DeepSeek V4 Pro" },
+        { value: "deepseek-v3.2", label: "DeepSeek V3.2" },
+        { value: "deepseek-v4", label: "DeepSeek V4" },
+        { value: "deepseek-chat", label: "DeepSeek Chat" },
+        { value: "deepseek-reasoner", label: "DeepSeek Reasoner" },
+        { value: "deepseek-coder", label: "DeepSeek Coder" },
+        { value: "deepseek-r1", label: "DeepSeek R1" },
       ],
       openai: [
-        { value: "gpt-4o", label: "GPT-4o" },
+        { value: "gpt-5.3-codex", label: "GPT-5.3 Codex" },
+        { value: "gpt-5.2", label: "GPT-5.2" },
+        { value: "gpt-5.2-pro", label: "GPT-5.2 Pro" },
+        { value: "gpt-5.1", label: "GPT-5.1" },
+        { value: "gpt-5", label: "GPT-5" },
+        { value: "o3-pro", label: "o3 Pro" },
+        { value: "o3", label: "o3" },
+        { value: "o1-pro", label: "o1 Pro" },
+        { value: "gpt-5-mini", label: "GPT-5 Mini" },
+        { value: "gpt-5-nano", label: "GPT-5 Nano" },
+        { value: "gpt-5-pro", label: "GPT-5 Pro" },
+        { value: "gpt-4.1", label: "GPT-4.1" },
         { value: "gpt-4.1-mini", label: "GPT-4.1 Mini" },
-        { value: "o3-mini", label: "o3 Mini" },
+        { value: "gpt-4.1-nano", label: "GPT-4.1 Nano" },
+        { value: "gpt-4o", label: "GPT-4o" },
+        { value: "gpt-4o-mini", label: "GPT-4o Mini" },
+        { value: "gpt-4o-search-preview", label: "GPT-4o Search Preview" },
+        { value: "gpt-4o-mini-search-preview", label: "GPT-4o Mini Search Preview" },
+        { value: "omni-moderation", label: "Omni Moderation" },
+        { value: "computer-use-preview", label: "Computer Use Preview" },
+        { value: "gpt-oss-120b", label: "GPT-OSS 120B" },
+        { value: "gpt-oss-20b", label: "GPT-OSS 20B" },
+        { value: "text-embedding-3-large", label: "Embedding 3 Large" },
+        { value: "text-embedding-3-small", label: "Embedding 3 Small" },
+        { value: "whisper", label: "Whisper" },
+        { value: "tts-1", label: "TTS-1" },
+        { value: "gpt-4o-audio", label: "GPT-4o Audio" },
       ],
       gemini: [
+        { value: "gemini-3.5-flash", label: "Gemini 3.5 Flash" },
+        { value: "gemini-3.5-pro", label: "Gemini 3.5 Pro" },
+        { value: "gemini-3.1-pro", label: "Gemini 3.1 Pro" },
+        { value: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash Lite" },
         { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
         { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+        { value: "gemini-omni-flash", label: "Gemini Omni Flash" },
+        { value: "gemini-audio", label: "Gemini Audio" },
+        { value: "gemini-robotics", label: "Gemini Robotics" },
+        { value: "gemini-embedding", label: "Gemini Embedding" },
+        { value: "gemini-2.0-flash-exp", label: "Gemini 2.0 Flash" },
+        { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro" },
+        { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash" },
+        { value: "imagen", label: "Imagen" },
+        { value: "veo", label: "Veo" },
+        { value: "nano-banana", label: "Nano Banana" },
       ],
       mistral: [
-        { value: "mistral-large", label: "Mistral Large" },
-        { value: "mistral-small", label: "Mistral Small" },
+        { value: "magistral-medium-1.2", label: "Magistral Medium 1.2" },
+        { value: "mistral-small-4", label: "Mistral Small 4" },
+        { value: "mistral-medium-3-5-v26.04", label: "Mistral Medium 3.5" },
+        { value: "mistral-large-3", label: "Mistral Large 3" },
+        { value: "mistral-large-latest", label: "Mistral Large" },
+        { value: "mistral-nemo-latest", label: "Mistral Nemo" },
+        { value: "codestral-latest", label: "Codestral" },
+        { value: "mistral-embed", label: "Mistral Embed" },
+        { value: "mistral-7b", label: "Mistral 7B" },
+        { value: "mixtral-8x7b", label: "Mixtral 8x7B" },
+        { value: "mixtral-8x22b", label: "Mixtral 8x22B" },
+        { value: "codestral-mamba", label: "Codestral Mamba" },
+        { value: "mathstral", label: "Mathstral" },
+        { value: "pixtral-12b", label: "Pixtral 12B" },
+        { value: "ministral-3-14b", label: "Ministral 3 14B" },
+        { value: "ministral-3-8b", label: "Ministral 3 8B" },
+        { value: "ministral-3-3b", label: "Ministral 3 3B" },
+        { value: "voxtral-mini-transcribe", label: "Voxtral Mini Transcribe" },
+        { value: "devstral", label: "Devstral" },
       ],
       groq: [
-        { value: "llama-4-scout", label: "Llama 4 Scout" },
-        { value: "mixtral-8x7b", label: "Mixtral 8x7B" },
+        { value: "llama-3.3-70b-versatile", label: "Llama 3.3 70B" },
+        { value: "llama-3.1-8b-instant", label: "Llama 3.1 8B Instant" },
+        { value: "openai/gpt-oss-120b", label: "GPT-OSS 120B" },
+        { value: "openai/gpt-oss-20b", label: "GPT-OSS 20B" },
+        { value: "groq/compound", label: "Groq Compound" },
+        { value: "groq/compound-mini", label: "Groq Compound Mini" },
+        { value: "meta-llama/llama-4-scout-17b-16e-instruct", label: "Llama 4 Scout 17B" },
+        { value: "qwen/qwen3-32b", label: "Qwen3 32B" },
+        { value: "qwen/qwen3.6-27b", label: "Qwen3.6 27B" },
+        { value: "mixtral-8x7b-32768", label: "Mixtral 8x7B" },
+        { value: "gemma2-9b-it", label: "Gemma 2 9B" },
       ],
       perplexity: [
         { value: "sonar-pro", label: "Sonar Pro" },
+        { value: "sonar", label: "Sonar" },
+        { value: "sonar-reasoning-pro", label: "Sonar Reasoning Pro" },
         { value: "sonar-reasoning", label: "Sonar Reasoning" },
+        { value: "sonar-deep-research", label: "Sonar Deep Research" },
       ],
       xai: [
+        { value: "grok-4.3", label: "Grok 4.3" },
+        { value: "grok-4.3-latest", label: "Grok 4.3 Latest" },
+        { value: "grok-latest", label: "Grok Latest" },
+        { value: "grok-420-reasoning", label: "Grok 420 Reasoning" },
+        { value: "grok-build-0.1", label: "Grok Build" },
+        { value: "grok-imagine-image", label: "Grok Imagine" },
         { value: "grok-3", label: "Grok 3" },
+        { value: "grok-3-fast", label: "Grok 3 Fast" },
+        { value: "grok-3-mini", label: "Grok 3 Mini" },
       ],
       anthropic: [
-        { value: "claude-sonnet-4-0", label: "Claude Sonnet 4" },
-        { value: "claude-opus-4-0", label: "Claude Opus 4" },
-        { value: "claude-haiku-3-5", label: "Claude Haiku 3.5" },
+        { value: "claude-opus-4.8", label: "Claude Opus 4.8" },
+        { value: "claude-opus-4.6", label: "Claude Opus 4.6" },
+        { value: "claude-opus-4.1", label: "Claude Opus 4.1" },
+        { value: "claude-sonnet-5", label: "Claude Sonnet 5" },
+        { value: "claude-sonnet-4.6", label: "Claude Sonnet 4.6" },
+        { value: "claude-sonnet-4.5", label: "Claude Sonnet 4.5" },
+        { value: "claude-3.5-sonnet", label: "Claude 3.5 Sonnet" },
+        { value: "claude-haiku-4.5", label: "Claude Haiku 4.5" },
+        { value: "claude-3-haiku", label: "Claude 3 Haiku" },
+        { value: "claude-fable-5", label: "Claude Fable 5" },
+        { value: "claude-mythos-5", label: "Claude Mythos 5" },
       ],
       openrouter: [
+        { value: "openai/gpt-5.5", label: "OpenAI GPT-5.5" },
+        { value: "openai/gpt-5.4", label: "OpenAI GPT-5.4" },
+        { value: "openai/gpt-5.2", label: "OpenAI GPT-5.2" },
         { value: "openai/gpt-4o", label: "OpenAI GPT-4o" },
-        { value: "anthropic/claude-sonnet-4", label: "Claude Sonnet 4" },
-        { value: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+        { value: "openai/gpt-4o-mini", label: "OpenAI GPT-4o Mini" },
+        { value: "openai/o3", label: "OpenAI o3" },
+        { value: "openai/o3-pro", label: "OpenAI o3 Pro" },
+        { value: "anthropic/claude-sonnet-5", label: "Claude Sonnet 5" },
+        { value: "anthropic/claude-opus-4.8", label: "Claude Opus 4.8" },
+        { value: "anthropic/claude-fable-5", label: "Claude Fable 5" },
+        { value: "anthropic/claude-mythos-5", label: "Claude Mythos 5" },
+        { value: "anthropic/claude-sonnet-4.6", label: "Claude Sonnet 4.6" },
+        { value: "anthropic/claude-haiku-4.5", label: "Claude Haiku 4.5" },
+        { value: "google/gemini-3.5-flash", label: "Gemini 3.5 Flash" },
+        { value: "google/gemini-3.1-pro", label: "Gemini 3.1 Pro" },
+        { value: "google/gemini-omni-flash", label: "Gemini Omni Flash" },
+        { value: "deepseek/deepseek-v4-flash", label: "DeepSeek V4 Flash" },
+        { value: "deepseek/deepseek-v4", label: "DeepSeek V4" },
+        { value: "deepseek/deepseek-v3.2", label: "DeepSeek V3.2" },
+        { value: "mistralai/mistral-medium-3-5", label: "Mistral Medium 3.5" },
+        { value: "mistralai/mistral-large-2512", label: "Mistral Large" },
+        { value: "mistralai/mistral-small-4", label: "Mistral Small 4" },
+        { value: "mistralai/devstral-2512", label: "Devstral" },
+        { value: "qwen/qwen3.7-max", label: "Qwen3.7 Max" },
+        { value: "qwen/qwen3.7-plus", label: "Qwen3.7 Plus" },
+        { value: "qwen/qwen3.6-flash", label: "Qwen3.6 Flash" },
+        { value: "meta-llama/llama-3.3-70b-instruct", label: "Llama 3.3 70B" },
+        { value: "meta-llama/llama-4-scout-17b-16e-instruct", label: "Llama 4 Scout 17B" },
+        { value: "minimax/minimax-m3", label: "MiniMax M3" },
+        { value: "minimax/minimax-m2.7", label: "MiniMax M2.7" },
+        { value: "moonshotai/kimi-k2.7-code", label: "Kimi K2.7 Code" },
+        { value: "moonshotai/kimi-k2.6", label: "Kimi K2.6" },
+        { value: "nvidia/nemotron-3-ultra-550b-a55b", label: "Nemotron 3 Ultra" },
+        { value: "perplexity/sonar-pro", label: "Perplexity Sonar Pro" },
+        { value: "perplexity/sonar-deep-research", label: "Sonar Deep Research" },
+        { value: "xai/grok-4.3", label: "Grok 4.3" },
+        { value: "xai/grok-build-0.1", label: "Grok Build" },
+        { value: "cohere/command-r-plus", label: "Command R+" },
+        { value: "microsoft/phi-3-medium-128k-instruct", label: "Phi-3 Medium" },
+        { value: "nousresearch/hermes-3-llama-3.1-405b", label: "Hermes 3 405B" },
+        { value: "sakana/fugu-ultra", label: "Fugu Ultra" },
+        { value: "amazon/nova-premier-v1", label: "Nova Premier" },
+        { value: "tencent/hy3", label: "Tencent Hy3" },
+        { value: "xiaomi/mimo-v2.5-pro", label: "Xiaomi MiMo v2.5" },
+        { value: "inception/mercury-2", label: "Inception Mercury 2" },
+        { value: "ibm-granite/granite-4.0-h-micro", label: "Granite 4.0 Micro" },
       ],
       lmstudio: [],
       budget: [
-        { value: "mistralai/mistral-nemo", label: t("chat.budgetModelLabel") },
+        { value: "mistralai/mistral-nemo", label: "💰 Copilot AI" },
       ],
       auto: [
+        { value: "gpt-4o", label: "GPT-4o" },
+        { value: "claude-sonnet-5", label: "Claude Sonnet 5" },
+        { value: "gemini-3.5-flash", label: "Gemini 3.5 Flash" },
         { value: "deepseek-v4-flash", label: "DeepSeek V4 Flash" },
-        { value: "deepseek-v4-pro", label: "DeepSeek V4 Pro" },
       ],
     };
 
@@ -372,6 +526,7 @@ export class CopilotChatView extends ItemView {
         .catch(err => console.error("[ChatView] Memory save on clear failed:", err));
     }
     this.messages = [];
+    this._budgetAgentContext = null;
     this.chatHistoryEl.empty();
     // Reset layered context on new chat
     this.plugin.agentRunner.contextLayers.clear();
@@ -379,6 +534,25 @@ export class CopilotChatView extends ItemView {
     this.statusEl.setText("New chat started");
   }
 
+  /** Pop out the chat view into a separate window. */
+  private async popoutChat(): Promise<void> {
+    try {
+      // Open the chat in a new popout window via native Obsidian API
+      const leaf = this.app.workspace.getLeaf('window');
+      if (leaf) {
+        await leaf.setViewState({ type: CHAT_VIEW_TYPE, active: true });
+        new Notice('Chat opened in a new window.');
+        return;
+      }
+      // Fallback: create a new tab that user can drag out
+      const fallbackLeaf = this.app.workspace.getLeaf(true);
+      await fallbackLeaf.setViewState({ type: CHAT_VIEW_TYPE, active: true });
+      new Notice('Drag the new tab to a separate window.');
+    } catch (err) {
+      console.error('[ChatView] Popout failed:', err);
+      new Notice('Popout failed. Drag the tab manually to a new window.');
+    }
+  }
   async saveChatToFile() {
     if (this.messages.length === 0) {
       new Notice("No messages to save.");
@@ -432,12 +606,15 @@ export class CopilotChatView extends ItemView {
       this.abortController.abort();
       this.abortController = null;
     }
+    this.abortController = new AbortController();
 
-    // Rate limit check (free tier: 50 msgs/day)
-    if (!this.plugin.licenseManager.trackMessage()) {
+    // Rate limit check — only applies to Copilot AI (budget) which costs the author.
+    // Users with their own API key (DeepSeek, OpenAI, etc.) have unlimited messages.
+    const isCopilotAi = this.plugin.settings.providerType === "budget";
+    if (isCopilotAi && !this.plugin.licenseManager.trackMessage()) {
       const limit = this.plugin.licenseManager.getRateLimit();
       this.addMessage("system",
-        `⚠️ Daily limit reached (${limit.used}/${limit.limit}). Upgrade to Pro for unlimited messages.`);
+        `⚠️ Copilot AI limit reached (${limit.used}/${limit.limit}). Free trial: 5 queries/day. Upgrade to Pro for 50 queries/day.`);
       return;
     }
 
@@ -445,7 +622,7 @@ export class CopilotChatView extends ItemView {
     this.isGenerating = true;
     this.sendBtnEl.disabled = true;
     this.stopBtnEl.classList.remove("copilot-hidden");
-    this.statusEl.setText(this.agentMode ? "Agent thinking..." : "Thinking...");
+    this.statusEl.setText(this.settings.enableAgentMode ? "Agent thinking..." : "Thinking...");
 
     this.addMessage("user", userText);
 
@@ -462,14 +639,26 @@ export class CopilotChatView extends ItemView {
       if (this.settings.webSearchEnabled) {
         await this.handleWebSearch(userText);
       }
-    } else if (this.agentMode && this.plugin.agentRunner) {
+
+    // Search chat history
+    } else if (userText.startsWith("/search-history")) {
+      await this.handleSearchHistory(userText);
+      return;
+    } else if (userText.startsWith("/list-chats") || userText.startsWith("/load-chat")) {
+      await this.handleChatSessionCommands(userText);
+      return;
+    } else if (userText.startsWith("/batch-process")) {
+      await this.handleBatchProcess(userText);
+      return;
+    } else if (this.settings.enableAgentMode && this.plugin.agentRunner) {
       // For budget provider, use AgentModeRunner with a BudgetLLMProvider wrapper
       if (this.plugin.settings.providerType === "budget") {
         await this.handleBudgetAgentChat(userText);
       } else {
         await this.handleAgentChat(userText);
       }
-    } else if (this.plugin.settings.providerType === "budget" && this.plugin.budgetManager.isEnabled()) {
+    } else if (this.plugin.settings.providerType === "budget") {
+      // Free trial users also go through handleBudgetChat (worker handles the limit)
       await this.handleBudgetChat(userText);
     } else {
       await this.handleChat(userText);
@@ -479,7 +668,7 @@ export class CopilotChatView extends ItemView {
     this.sendBtnEl.disabled = false;
     this.stopBtnEl.classList.add("copilot-hidden");
     this.abortController = null;
-    this.statusEl.setText(this.agentMode ? "Agent mode ON" : "Ready");
+    this.statusEl.setText(this.settings.enableAgentMode ? "Agent mode ON" : "Ready");
     this.inputEl.focus();
   }
 
@@ -495,13 +684,7 @@ export class CopilotChatView extends ItemView {
         let fullContent = "";
         const gen = this.plugin.providerManager.getActiveProvider().chatStream(context);
 
-        for await (const chunk of gen) {
-          if (chunk.done) break;
-          fullContent += chunk.content;
-          contentEl.empty();
-          await this.renderMarkdown(contentEl, fullContent);
-          this.scrollToBottom();
-        }
+        fullContent = await this.streamRender(gen, contentEl);
         // Save rendered content to messages array for context
         this.messages[this.messages.length - 1].content = fullContent;
       } else {
@@ -567,6 +750,10 @@ export class CopilotChatView extends ItemView {
 
     try {
       const context = await this.buildContext(userText);
+      // Inject custom agent instructions as a system message
+      if (this.settings.agentInstructions) {
+        context.unshift({ role: "system", content: this.settings.agentInstructions });
+      }
       // Remove the greeting message (first assistant message) from agent context
       const filtered = context.filter(
         (m) =>
@@ -774,17 +961,6 @@ export class CopilotChatView extends ItemView {
     if (estimatedTokens > 12000) this.tokenCounterEl.addClass("copilot-token-danger");
   }
 
-  private setLoadingState(phase: string): void {
-    const messages: Record<string, string> = {
-      reading: "📕 Reading file...",
-      searching: "🔍 Searching vault...",
-      analyzing: "🖼️ Analyzing image...",
-      embedding: "🧮 Generating embeddings...",
-      compacting: "📦 Compacting context...",
-      thinking: "💭 Thinking...",
-    };
-    this.statusEl.setText(messages[phase] || phase);
-  }
   /**
    * Summarizes tool results for inline display. Shows first line or error status
    * with character count so the user can verify the tool actually returned data.
@@ -826,7 +1002,7 @@ export class CopilotChatView extends ItemView {
   }
 
   private setThinking(enabled: boolean) {
-    this.thinkingEnabled = enabled;
+    this.settings.enableThinking = enabled;
     // Update all provider configs with the thinking toggle
     const providers = [
       this.plugin.providerManager.getProvider("deepseek"),
@@ -848,7 +1024,7 @@ export class CopilotChatView extends ItemView {
         }
       }
     }
-    this.statusEl.setText(enabled ? "Thinking ON" : this.agentMode ? "Agent mode ON" : "Ready");
+    this.statusEl.setText(enabled ? "Thinking ON" : this.settings.enableAgentMode ? "Agent mode ON" : "Ready");
   }
 
   private async handleWebSearch(userText: string) {
@@ -882,13 +1058,7 @@ export class CopilotChatView extends ItemView {
       if (this.settings.streamEnabled) {
         let fullContent = "";
         const gen = this.plugin.providerManager.getActiveProvider().chatStream(context);
-        for await (const chunk of gen) {
-          if (chunk.done) break;
-          fullContent += chunk.content;
-          contentEl.empty();
-          await this.renderMarkdown(contentEl, fullContent);
-          this.scrollToBottom();
-        }
+        fullContent = await this.streamRender(gen, contentEl);
         this.messages[this.messages.length - 1].content = fullContent;
       } else {
         const llmResponse = await this.plugin.providerManager.getActiveProvider().chat(context);
@@ -916,6 +1086,11 @@ export class CopilotChatView extends ItemView {
     const recentMessages = this.messages.slice(-turns);
 
     let systemContent = "You are a helpful AI assistant integrated into Obsidian. Answer the user's questions clearly and concisely. Use markdown formatting when appropriate.";
+
+    // Append custom agent instructions if set
+    if (this.settings.agentInstructions) {
+      systemContent += `\n\n${this.settings.agentInstructions}`;
+    }
 
     // Add RAG context if semantic search is enabled
     if (this.settings.enableSemanticSearch) {
@@ -966,13 +1141,11 @@ export class CopilotChatView extends ItemView {
     return context;
   }
 
-  /**
-   * Update header badges (🔒 Local / ☁️ Cloud + ⭐ Pro / 🆓 Free)
-   * from live plugin settings. Called onOpen + every sendMessage.
-   */
   public updateHeaderBadges() {
     const s = this.plugin.settings;
     const tier = this.plugin.licenseManager.getTier();
+    const bm = this.plugin.budgetManager;
+    const cached = bm.getCachedUsage();
 
     // Privacy
     if (this.privacyEl) {
@@ -990,31 +1163,41 @@ export class CopilotChatView extends ItemView {
       this.tierEl.setText(tier === "pro" ? "⭐ Pro" : "🆓 Free");
       this.tierEl.title = tier === "pro"
         ? "Pro license active — all features unlocked"
-        : "Free tier — 50 messages/day, limited features";
+        : "Free tier — use Copilot AI (5/day) or bring your own API key for unlimited use";
     }
 
-    // Budget badge (Pro only)
+    // Budget badge — shows for Free trial (Copilot AI) and Pro budget users
     if (this.budgetEl) {
-      const bm = this.plugin.budgetManager;
-      if (bm.isEnabled() && bm.canUse()) {
-        const cached = bm.getCachedUsage();
-        if (cached) {
-          const pct = cached.queryPercent;
-          this.budgetEl.setText(`💰 ${cached.dailyQueries}/${cached.limitQueries}`);
-          this.budgetEl.title = `${cached.dailyQueries} of ${cached.limitQueries} queries used today · Resets in ${cached.resetsInHours}h`;
-          this.budgetEl.className = "copilot-budget-badge" +
-            (pct >= 90 ? " copilot-budget-critical" : pct >= 75 ? " copilot-budget-warn" : "");
-          this.budgetEl.classList.remove("copilot-hidden");
-        } else {
-          this.budgetEl.setText("💰 --/50");
-          this.budgetEl.className = "copilot-budget-badge";
-          this.budgetEl.classList.remove("copilot-hidden");
-        }
+      const isBudgetProvider = s.providerType === "budget";
+      if (isBudgetProvider && (cached?.freeTrial)) {
+        // Free trial view
+        const ft = cached.freeTrial;
+        const remaining = ft.limit - ft.used;
+        this.budgetEl.setText(`💰 ${ft.used}/${ft.limit} free`);
+        this.budgetEl.title = remaining > 0
+          ? `${remaining} free Copilot AI queries remaining today`
+          : "Free trial used. Upgrade to Pro for unlimited Copilot AI.";
+        this.budgetEl.className = "copilot-budget-badge" +
+          (remaining <= 0 ? " copilot-budget-critical" : remaining <= 2 ? " copilot-budget-warn" : "");
+        this.budgetEl.classList.remove("copilot-hidden");
+      } else if (isBudgetProvider && bm.isEnabled() && cached) {
+        // Pro budget view
+        const pct = cached.queryPercent;
+        this.budgetEl.setText(`💰 ${cached.dailyQueries}/${cached.limitQueries}`);
+        this.budgetEl.title = `${cached.dailyQueries} of ${cached.limitQueries} queries used today · Resets in ${cached.resetsInHours}h`;
+        this.budgetEl.className = "copilot-budget-badge" +
+          (pct >= 90 ? " copilot-budget-critical" : pct >= 75 ? " copilot-budget-warn" : "");
+        this.budgetEl.classList.remove("copilot-hidden");
+      } else if (isBudgetProvider) {
+        // Loading state — no cache yet
+        const placeholder = bm.isEnabled() ? "💰 --/50" : "💰 --/5";
+        this.budgetEl.setText(placeholder);
+        this.budgetEl.className = "copilot-budget-badge";
+        this.budgetEl.classList.remove("copilot-hidden");
       } else {
         this.budgetEl.classList.add("copilot-hidden");
       }
     }
-
     // Model selector — refresh when provider changes
     if (this.modelSelectEl) this.refreshModelSelector();
   }
@@ -1031,7 +1214,9 @@ export class CopilotChatView extends ItemView {
       const data = await this.plugin.loadData() as Record<string, unknown>;
       data._sessionBackup = state;
       await this.plugin.saveData(data);
-    } catch { /* unavailable */ }
+    } catch (err) {
+      console.warn("[ChatView] saveSession failed:", err);
+    }
   }
 
   /**
@@ -1064,8 +1249,8 @@ export class CopilotChatView extends ItemView {
       // Clean up after restore
       data._sessionBackup = undefined;
       await this.plugin.saveData(data);
-    } catch {
-      // Corrupted session data
+    } catch (err) {
+      console.warn("[ChatView] restoreSession failed:", err);
     }
   }
 
@@ -1078,6 +1263,10 @@ export class CopilotChatView extends ItemView {
     "/flashcards": "Create 10 Q&A flashcards in Q: ... A: ... format:\n\n",
     "/rewrite": "Rewrite the following content improving clarity, structure, and style:\n\n",
     "/expand": "Expand the following content adding more details, context, and examples:\n\n",
+    "/search-history": "",
+    "/list-chats": "",
+    "/load-chat": "",
+    "/batch-process": "",
   };
 
   /**
@@ -1092,6 +1281,179 @@ export class CopilotChatView extends ItemView {
       return rest ? template + rest : template;
     }
     return text;
+  }
+
+  /** Search through saved chat history files for matching content. */
+  private async handleSearchHistory(userText: string): Promise<void> {
+    const query = userText.slice("/search-history".length).trim();
+    if (!query) {
+      this.addMessage("assistant", "Use `/search-history <query>` to search previous conversations.");
+      return;
+    }
+
+    this.statusEl.setText(`Searching chat history: "${query}"...`);
+    this.addMessage("system", `🔍 Searching chat history: "${query}"`);
+
+    try {
+      const folder = this.settings.chatHistoryFolder || "copilot-chats";
+      const abstractFile = this.plugin.app.vault.getAbstractFileByPath(folder);
+      if (!abstractFile || !("children" in abstractFile)) {
+        this.addMessage("system", "No saved chat history found. Enable 'Save chat history' in Settings → Chat to start saving conversations.");
+        return;
+      }
+
+      const files = (abstractFile.children as TFile[]).filter(f => f.name.endsWith(".md"));
+      const results: Array<{ file: string; snippet: string }> = [];
+      const queryLower = query.toLowerCase();
+
+      for (const file of files) {
+        const content = await this.plugin.app.vault.read(file);
+        const lines = content.split("\n");
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].toLowerCase().includes(queryLower)) {
+            const start = Math.max(0, i - 1);
+            const end = Math.min(lines.length, i + 2);
+            const snippet = lines.slice(start, end).join("\n").substring(0, 300);
+            results.push({ file: file.name, snippet });
+            if (results.length >= 10) break;
+          }
+        }
+        if (results.length >= 10) break;
+      }
+
+      if (results.length === 0) {
+        this.addMessage("system", `No matches found for "${query}" in chat history.`);
+        return;
+      }
+
+      const resultText = results
+        .map((r, i) => `[${i + 1}] ${r.file}:\n${r.snippet}`)
+        .join("\n---\n");
+      this.addMessage("system", `📋 Found ${results.length} match(es):\n\n${resultText}`);
+    } catch (err) {
+      this.addMessage("system", `Error searching chat history: ${err instanceof Error ? err.message : "Unknown error"}`);
+    } finally {
+      this.isGenerating = false;
+      this.sendBtnEl.disabled = false;
+      this.stopBtnEl.classList.add("copilot-hidden");
+      this.statusEl.setText("Ready");
+    }
+  }
+
+  /** Handle /list-chats and /load-chat commands for saved conversation history. */
+  private async handleChatSessionCommands(userText: string): Promise<void> {
+    const browser = new (await import("./components/ChatHistoryBrowser")).ChatHistoryBrowser(
+      this.plugin.app, this.settings.chatHistoryFolder || "copilot-chats"
+    );
+
+    if (userText.startsWith("/list-chats")) {
+      const chats = await browser.listChats();
+      if (chats.length === 0) {
+        this.addMessage("system", "No saved conversations found. Enable 'Save chat history' in Settings → Chat.");
+        return;
+      }
+      const list = chats.map((c, i) => `${i + 1}. **${c.title}** — ${c.date.toLocaleDateString()} ${c.date.toLocaleTimeString()}`).join("\n");
+      this.addMessage("system", `📂 Saved conversations (${chats.length}):\n\n${list}\n\nUse \`/load-chat <name>\` to open a conversation.`);
+    } else if (userText.startsWith("/load-chat")) {
+      const name = userText.slice("/load-chat".length).trim();
+      if (!name) {
+        this.addMessage("system", "Specify a chat name: `/load-chat <name>`.\nUse `/list-chats` to see available conversations.");
+        return;
+      }
+      const chats = await browser.listChats();
+      const match = chats.find(c => c.title.toLowerCase().includes(name.toLowerCase()));
+      if (!match) {
+        this.addMessage("system", `No saved conversation found matching "${name}". Use /list-chats to see available chats.`);
+        return;
+      }
+      const content = await browser.loadChat(match.path);
+      if (!content) {
+        this.addMessage("system", `Could not load "${match.title}".`);
+        return;
+      }
+      // Display the conversation content
+      const preview = content.length > 3000 ? content.substring(0, 3000) + "\n\n... (truncated)" : content;
+      this.addMessage("system", `📄 Loaded: **${match.title}** (${match.date.toLocaleDateString()})\n\n${preview}`);
+    }
+    this.isGenerating = false;
+    this.sendBtnEl.disabled = false;
+    this.stopBtnEl.classList.add("copilot-hidden");
+    this.statusEl.setText("Ready");
+  }
+
+  /** Handle /batch-process: process all notes in a folder with a specific action. */
+  private async handleBatchProcess(userText: string): Promise<void> {
+    // Syntax: /batch-process <action> <folder>
+    // Example: /batch-process summarize "folder/subfolder"
+    // Actions: summarize, translate, rewrite, expand, toc
+    const rest = userText.slice("/batch-process".length).trim();
+    const parts = rest.match(/^(\w+)\s+(.+)$/);
+    if (!parts) {
+      this.addMessage("system", "Usage: `/batch-process <action> <folder>`.\nActions: summarize, translate, rewrite, expand, toc\nExample: `/batch-process summarize Projects`");
+      return;
+    }
+    const action = parts[1].toLowerCase();
+    const folder = parts[2].replace(/^["']|["']$/g, "").trim();
+    const validActions = ["summarize", "translate", "rewrite", "expand", "toc"];
+    if (!validActions.includes(action)) {
+      this.addMessage("system", `Invalid action "${action}". Valid actions: ${validActions.join(", ")}`);
+      return;
+    }
+
+    this.statusEl.setText(`Batch processing "${action}" in "${folder}"...`);
+    this.addMessage("system", `⏳ Starting batch ${action} in "${folder}"...`);
+
+    try {
+      const folderAbstract = this.plugin.app.vault.getAbstractFileByPath(folder);
+      if (!folderAbstract || !("children" in folderAbstract)) {
+        this.addMessage("system", `Folder "${folder}" not found.`);
+        return;
+      }
+      const files = (folderAbstract.children as TFile[]).filter(f => f.name.endsWith(".md") && f.name !== ".md");
+      if (files.length === 0) {
+        this.addMessage("system", `No markdown files found in "${folder}".`);
+        return;
+      }
+
+      this.addMessage("system", `📂 Found ${files.length} file(s). Processing...`);
+
+      let processed = 0;
+      for (const file of files) {
+        const content = await this.plugin.app.vault.read(file);
+        const promptTemplates: Record<string, string> = {
+          summarize: "Summarize the following content concisely, highlighting key points:\n\n",
+          translate: "Translate the following content to English, preserving formatting and technical terms:\n\n",
+          rewrite: "Rewrite the following content improving clarity, structure, and style:\n\n",
+          expand: "Expand the following content adding more details, context, and examples:\n\n",
+          toc: "Generate a structured table of contents for the following content:\n\n",
+        };
+        const prompt = (promptTemplates[action] ?? "") + content;
+
+        // Use AgentModeRunner for batch processing
+        if (this.plugin.agentRunner) {
+          const messages: LLMMessage[] = [
+            { role: "system", content: "You are a helpful assistant. Process the content as requested and return ONLY the result." },
+            { role: "user", content: prompt },
+          ];
+          try {
+            const result = await this.plugin.agentRunner.run(messages, this.plugin.toolRegistry, 3);
+            await this.plugin.app.vault.modify(file, result);
+            processed++;
+            this.addMessage("system", `✅ [${processed}/${files.length}] ${file.name} — done`);
+          } catch (err) {
+            this.addMessage("system", `❌ [${processed + 1}/${files.length}] ${file.name} — failed: ${err instanceof Error ? err.message : "Error"}`);
+          }
+        }
+      }
+      this.addMessage("system", `🏁 Batch ${action} complete. ${processed}/${files.length} files processed.`);
+    } catch (err) {
+      this.addMessage("system", `Batch processing failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+    } finally {
+      this.isGenerating = false;
+      this.sendBtnEl.disabled = false;
+      this.stopBtnEl.classList.add("copilot-hidden");
+      this.statusEl.setText("Ready");
+    }
   }
 
   /**
@@ -1176,8 +1538,13 @@ export class CopilotChatView extends ItemView {
     const safe = markdown
       .replace(/<script[\s\S]*?<\/script>/gi, "")
       .replace(/<script[\s\S]*/gi, "")
+      // Quoted event handlers: onclick="..." or onclick='...'
       .replace(/\bon\w+\s*=\s*"[^"]*"/gi, "")
-      .replace(/\bon\w+\s*=\s*'[^']*'/gi, "");
+      .replace(/\bon\w+\s*=\s*'[^']*'/gi, "")
+      // Unquoted event handlers: onerror=alert(1) (no quotes)
+      .replace(/\bon\w+\s*=\s*[^\s>]+/gi, "")
+      // Entity-encoded quotes: onclick=&#x22;...&#x22;
+      .replace(/\bon\w+\s*=\s*&#x?[0-9a-f]+;?/gi, "");
     await MarkdownRenderer.render(
       this.app,
       safe,
@@ -1249,42 +1616,88 @@ export class CopilotChatView extends ItemView {
   private async handleBudgetChat(userText: string) {
     const turns = this.settings.contextTurns || 4;
     const messages: Array<{ role: string; content: string }> = [];
-    messages.push({ role: "system", content: "You are a helpful AI assistant. Answer concisely." });
+    const budgetSysMsg = this.settings.agentInstructions ? "You are a helpful AI assistant. Answer concisely.\n\n" + this.settings.agentInstructions : "You are a helpful AI assistant. Answer concisely.";
+    messages.push({ role: "system", content: budgetSysMsg });
     for (const m of this.messages.slice(-turns * 2)) {
-      if (m.role !== "system") messages.push({ role: m.role, content: m.content.substring(0, 2000) });
+      if (m.role !== "system") messages.push({ role: m.role, content: m.content });
     }
     messages.push({ role: "user", content: userText });
     const assistantMsg = this.addMessage("assistant", "");
     const contentEl = assistantMsg.querySelector(".copilot-message-content") as HTMLElement;
     if (!contentEl) return;
     try {
-      const licenseKey = this.plugin.settings.licenseKey || "";
+      const licenseKey = this.plugin.settings.licenseKey || "FREE";
       // Reuse the stored fingerprint from license activation instead of generating
       // a new one on every call. This prevents consuming device slots on the worker.
       const fp = this.plugin.licenseManager.getStoredFingerprint() ?? LicenseManager.getFingerprint();
       if (this.plugin.settings.streamEnabled) {
         let fullContent = "";
         const gen = this.plugin.budgetManager.chatStream(messages, licenseKey, fp);
-        for await (const chunk of gen) { if (chunk.done) break; fullContent += chunk.content; contentEl.empty(); await this.renderMarkdown(contentEl, fullContent); this.scrollToBottom(); }
+        fullContent = await this.streamRender(gen, contentEl);
         this.messages[this.messages.length - 1].content = fullContent;
       } else {
         const result = await this.plugin.budgetManager.chat(messages, licenseKey, fp);
         contentEl.empty(); await this.renderMarkdown(contentEl, result.content);
         this.messages[this.messages.length - 1].content = result.content;
       }
+
+      // Refresh budget usage to update header badges
+      void this.plugin.budgetManager.fetchUsage(licenseKey, fp).then(usage => {
+        this.updateHeaderBadges();
+
+        // Subtle upgrade nudges for free trial users
+        if (usage.freeTrial) {
+          const used = usage.freeTrial.used;
+          const limit = usage.freeTrial.limit;
+          if (used >= limit) {
+            this.addMessage("system", "💡 Free trial used. ⭐ Pro ($4.99/mo) for unlimited Copilot AI + Agent Mode + RAG.");
+          } else if (used === 3) {
+            this.addMessage("system", "💡 Loving Copilot AI? ⭐ Pro unlocks unlimited queries + Agent Mode.");
+          }
+        }
+      });
     } catch (error) {
-      contentEl.empty(); contentEl.setText(error instanceof Error ? error.message : String(error));
+      const msg = error instanceof Error ? error.message : String(error);
+      const friendly = CopilotChatView.formatBudgetError(msg);
+      contentEl.empty(); contentEl.setText(friendly);
       this.statusEl.setText(t("chat.statusError"));
     }
     this.isGenerating = false; this.sendBtnEl.disabled = false; this.stopBtnEl.classList.add("copilot-hidden");
     this.statusEl.setText(t("chat.statusReady")); this.inputEl.focus(); this.scrollToBottom(); this.updateHeaderBadges();
   }
 
+  /** Shared streaming render loop to avoid duplication. */
+  private async streamRender(gen: AsyncGenerator<{ content: string; done?: boolean }>, contentEl: HTMLElement, onChunk?: (text: string) => void): Promise<string> {
+    let fullContent = "";
+    for await (const chunk of gen) {
+      if (chunk.done) break;
+      fullContent += chunk.content;
+      contentEl.empty();
+      await this.renderMarkdown(contentEl, fullContent);
+      this.scrollToBottom();
+      if (onChunk) onChunk(fullContent);
+    }
+    return fullContent;
+  }
+
+  private static formatBudgetError(msg: string): string {
+    if (msg.includes("422") || msg.includes("Empty response")) {
+      return "✨ The AI model returned an empty response. Try rephrasing your question or switch providers.";
+    } else if (msg.includes("502") || msg.includes("503") || msg.includes("Budget API error") || msg.includes("429")) {
+      return "✨ Copilot AI rate limit reached. Wait and try again, or switch to your own provider in Settings.";
+    } else if (msg.includes("401")) {
+      return "🔑 Invalid API key. Check Settings → Provider or try Copilot AI (5 free queries/day).";
+    } else if (msg.includes("403")) {
+      return "🔒 Valid license required. Enter Pro key in Settings → License Key.";
+    }
+    return msg;
+  }
+
   /** Budget agent chat — tool-calling loop proxied through Worker with native tool calling. */
   private async handleBudgetAgentChat(userText: string) {
-    const licenseKey = this.plugin.settings.licenseKey || "";
+    const licenseKey = this.plugin.settings.licenseKey || "FREE";
     const fp = this.plugin.licenseManager.getStoredFingerprint() ?? LicenseManager.getFingerprint();
-    const maxIter = this.settings.agentMaxIterations || 5;
+    const maxIter = 100; // generous — anti-loop below prevents runaway
     const messages: BudgetAgentMessage[] = [];
 
     if (this._budgetAgentContext && this._budgetAgentContext.length > 0) {
@@ -1292,21 +1705,93 @@ export class CopilotChatView extends ItemView {
     } else {
       const toolInstructions = this.plugin.toolRegistry?.getAllTools?.()?.filter(t => t.customPromptInstructions)?.map(t => t.customPromptInstructions)?.filter(Boolean) || [];
       if (toolInstructions.length > 0) messages.push({ role: "system", content: toolInstructions.join("\n---\n") });
-      messages.push({ role: "system", content: "You are a tool-using agent inside Obsidian. Use [[wikilinks]] to connect notes — no special tool needed. Use create_note or update_note with [[links]] in the content." });
+      const systemMsg = "You are a tool-using agent inside Obsidian.\n- For reading PDF CONTENT/TEXT, use read_pdf (with pages:'toc' or '1-5' to limit). Do NOT use render_pdf_pages for text — it renders images, not text.\n- Use render_pdf_pages ONLY when the user explicitly asks for images, screenshots, or visual page renders.\n- Create ONE note per CHAPTER (from the table of contents), not per page. Keep creating until ALL chapters are done.\n- Respond in the SAME LANGUAGE as the user's request (if they ask in English, respond in English).\n- NEVER stop halfway — if there are more items to process, call the tool again.\n- Each note MUST include actual content from the source (PDF, note, etc.), not just the title.\n- Keep chapter names in their ORIGINAL language (German, Spanish, etc.) — do NOT translate them.\n- Only respond with text when the ENTIRE task is 100% complete. If you respond with text before finishing, the conversation ENDS and remaining work is LOST.";
+      const customInstr = this.settings.agentInstructions;
+      messages.push({ role: "system", content: customInstr ? `${systemMsg}\n\n${customInstr}` : systemMsg });
       for (const m of this.messages.slice(-this.settings.contextTurns * 2)) { if (m.role !== "system") messages.push({ role: m.role, content: m.content }); }
     }
     messages.push({ role: "user", content: userText });
 
     const toolDefs = this.plugin.toolRegistry?.getAllTools?.() || [];
     const toolMap = new Map<string, AgentTool>(toolDefs.map((t: AgentTool) => [t.name, t]));
-    const router = new ToolRouter(null, toolMap);
+    const router = new ToolRouter(this.plugin.providerManager.getActiveProvider(), toolMap);
     const routed = await router.route(userText);
     const tools = routed.tools;
+    // Kilo: Search first — ensure find_files was called before read tools
+    const readTools = ["read_note", "read_pdf", "render_pdf_pages", "extract_pdf_images"];
+    const hasReadTool = tools.some(t => readTools.includes(t.function.name));
+    const needsSearch = hasReadTool && !userText.toLowerCase().includes("find") && !userText.toLowerCase().includes("search") && !userText.toLowerCase().includes("busca") && !userText.toLowerCase().includes("dnde");
+    if (needsSearch && this.plugin.toolRegistry?.getTool("find_files")) {
+      const searchResult = await this.plugin.toolRegistry.executeTool("find_files", { nameQuery: "" });
+      this.addMessage("system", `🔍 Searching vault for relevant files...`);
+      this.messages.push({ role: "system", content: `Find result: ${searchResult.substring(0, 200)}` });
+    }
     const assistantMsg = this.addMessage("assistant", "");
     const contentEl = assistantMsg.querySelector(".copilot-message-content") as HTMLElement;
     if (!contentEl) return;
     this.statusEl.setText(t("chat.statusAgentThinking"));
     let fullContent = "", iteration = 0;
+    let loopDetected = false; let notDone = false, plannedItems = 0, completedItems = 0, _tocCaptured = false;
+    let blockedCalls: Record<string, number> = {};
+    const recentSigs: string[] = [];
+
+    const noBrainTools = ["list_notes", "find_files", "get_vault_stats", "get_active_file", "search_vault_fulltext", "search_vault_by_timeframe", "read_pdf"];
+    const paramTools: Record<string, string[]> = { find_files: ["nameQuery"], read_pdf: ["path"], read_note: ["path"], get_frontmatter: ["path"] };
+    const primaryTool = routed.tools.find(t => noBrainTools.includes(t.function.name))?.function?.name || routed.tools[0]?.function?.name || "";
+    if (noBrainTools.includes(primaryTool) && !userText.toLowerCase().includes("create") && !userText.toLowerCase().includes("summarize") && !userText.toLowerCase().includes("resum")) {
+      const autoTool = this.plugin.toolRegistry?.getTool(primaryTool);
+      const needed = paramTools[primaryTool] || [];
+      const args: Record<string, string> = {};
+      let canAutoExec = needed.length === 0;
+      if (!canAutoExec) {
+        const lower = userText.toLowerCase();
+        const matchQuotes = lower.match(/[""'']([^"''']+)[""'']/);
+        if (matchQuotes) {
+          needed.forEach(p => { args[p] = matchQuotes[1].trim(); });
+          canAutoExec = true;
+        }
+        if (!canAutoExec) {
+          for (const keyword of ["called", "named", "llamado", "path", "dnde"]) {
+            const idx = userText.toLowerCase().indexOf(keyword);
+            if (idx >= 0) {
+              const afterKey = userText.substring(idx + keyword.length).trim().split(/[\s,.]/)[0];
+              if (afterKey && afterKey.length > 1) {
+                needed.forEach(p => { args[p] = afterKey; });
+                canAutoExec = true;
+                break;
+              }
+            }
+          }
+        }
+        if (!canAutoExec && primaryTool === "read_pdf") {
+          const pdfIdx = userText.toLowerCase().indexOf("pdf");
+          if (pdfIdx >= 0) {
+            const beforePdf = userText.substring(0, pdfIdx).trim().split(/[\s,]+/);
+            const candidate = beforePdf[beforePdf.length - 1];
+            if (candidate && candidate.length > 2 && !["the", "a", "an", "that", "this", "read", "from", "my", "el", "la", "un", "una", "del", "de"].includes(candidate.toLowerCase())) {
+              args.path = candidate + ".pdf";
+              canAutoExec = true;
+            }
+          }
+        }
+      }
+      if (canAutoExec && autoTool) {
+        console.log(`[System] Auto-executing ${primaryTool} with args`, args);
+        const resultStr = await autoTool.execute(args);
+        this.addMessage("system", `🔧 ${primaryTool}: ${resultStr.substring(0, 200)}`);
+        this.messages.push({ role: "system", content: `${primaryTool} result: ${primaryTool === "read_pdf" ? resultStr.substring(0, 500) : resultStr}` });
+        this.isGenerating = false; this.sendBtnEl.disabled = false; this.stopBtnEl.classList.add("copilot-hidden");
+        this.statusEl.setText(t("chat.statusReady")); this.inputEl.focus(); this.scrollToBottom(); this.updateHeaderBadges();
+        return;
+      }
+    }
+
+    // Kilo: Plan — analyze the task scope
+    let taskPlan = "";
+    if (tools.length > 0 && !userText.toLowerCase().includes("list") && !userText.toLowerCase().includes("show")) {
+      taskPlan = "Plan: " + tools.map(t => t.function.name).join(", ") + ". I will execute each step and verify.";
+      messages.push({ role: "system", content: taskPlan });
+    }
 
     try {
       while (iteration < maxIter) {
@@ -1320,7 +1805,77 @@ export class CopilotChatView extends ItemView {
           }),
           licenseKey, fp, tools
         );
-        if (result.content && !result.toolCalls) { fullContent += result.content; contentEl.empty(); await this.renderMarkdown(contentEl, fullContent); break; }
+        if (result.content && !result.toolCalls) {
+          // Check if model returned tool calls as JSON text (common with Mistral Nemo)
+          const trimmed = result.content.trim();
+          if (trimmed.startsWith("[") && trimmed.includes('"name"') && trimmed.includes('"arguments"')) {
+            try {
+              const parsed = JSON.parse(trimmed);
+              if (Array.isArray(parsed)) {
+                result.toolCalls = parsed.map((tc: Record<string, unknown>) => ({
+                  id: `call_${tc.name}_${Date.now()}`,
+                  type: "function",
+                  function: { name: String(tc.name), arguments: JSON.stringify(tc.arguments) }
+                }));
+                result.content = "";
+              }
+            } catch (parseErr) {
+              console.warn("[ChatView] Budget agent JSON parse failed:", parseErr);
+              // JSON malformed (likely truncated) — try to recover partial tool calls
+              // Use brace-counting to match nested JSON objects
+              let partialMatch = null;
+              const jsonStart = trimmed.indexOf("{");
+              if (jsonStart >= 0) {
+                let depth = 0, start = jsonStart, matches = [];
+                for (let i = jsonStart; i < trimmed.length; i++) {
+                  if (trimmed[i] === "{") depth++;
+                  else if (trimmed[i] === "}") { depth--; if (depth === 0) {                   try { matches.push(trimmed.substring(start, i + 1)); start = i + 1; } catch (loopErr) { console.warn("[ChatView] Budget agent brace match failed:", loopErr); } } }
+                }
+                partialMatch = matches.length > 0 ? matches : null;
+              }
+              if (partialMatch && partialMatch.length > 0) {
+                try {
+                  const recovered = partialMatch.map(m => JSON.parse(m));
+                  result.toolCalls = recovered.map((tc: Record<string, unknown>) => ({
+                    id: `call_${tc.name}_${Date.now()}`,
+                    type: "function",
+                    function: { name: String(tc.name), arguments: JSON.stringify(tc.arguments) }
+                  }));
+                  result.content = "";
+                } catch (recoverErr) {
+                  console.warn("[ChatView] Budget agent recovery parse failed:", recoverErr);
+                }
+              }
+            }
+          }
+
+          // Kilo: Ask when ambiguous
+          const uncertainty = ["i'm not sure", "could you clarify", "i need more information", "i don't know", "uncertain", "ambiguation", "not sure what", "which file", "which chapter", "what exactly"];
+          const isUncertain = uncertainty.some(w => (result.content || "").toLowerCase().includes(w));
+          if (isUncertain && iteration <= 2) {
+            messages.push({ role: "user", content: "Look at your tools and available files. Try the most likely tool first. If it fails, try another." });
+            continue;
+          }
+
+          // Auto-continue: detect if model says it is not done yet
+          notDone = !!(result.content && ["more", "continue", "still", "wait", "next", "to go", "remain", "further", "processing"].some(w => result.content.toLowerCase().includes(w)));
+          // Plan detection: count numbered items in model text (e.g. "1. Chapter\n2. Chapter")
+          if (plannedItems === 0 && result.content) {
+            const nums = result.content.match(/^[\s*]*\d+[\.\)]\s+.+/gm);
+            if (nums && nums.length > 1) { plannedItems = nums.length; _tocCaptured = true; }
+          }
+          if (notDone && iteration < maxIter) {
+            messages.push({ role: "user", content: "Continue with the next item. Call the tool." });
+            continue;
+          }
+          // Plan verification: if model planned N items but only completed fewer, do not trust "done"
+          if (plannedItems > 0 && completedItems < plannedItems && completedItems > 0) {
+            const remaining = plannedItems - completedItems;
+            messages.push({ role: "user", content: "Only " + completedItems + "/" + plannedItems + " done. Continue with the remaining " + remaining + " items." });
+            continue;
+          }
+          fullContent += result.content; contentEl.empty(); await this.renderMarkdown(contentEl, fullContent); break;
+        }
         if (result.toolCalls) {
           for (const tc of result.toolCalls) {
             const toolName: string = tc.function.name;
@@ -1340,21 +1895,130 @@ export class CopilotChatView extends ItemView {
                   if (correctPath !== args.path) args.path = correctPath;
                 }
               }
-              let resultStr = await this.plugin.toolRegistry?.executeTool(toolName, args) || "";
+                // TOC guard + smart anti-loop: block, redirect, or escalate
+                let resultStr = "";
+                const blockedTools = ["render_pdf_pages", "extract_pdf_images", "read_pdf"];
+
+                if (_tocCaptured && blockedTools.includes(toolName) && (toolName !== "read_pdf" || !args.pages)) {
+                  blockedCalls[toolName] = (blockedCalls[toolName] || 0) + 1;
+                  const n = blockedCalls[toolName];
+                  if (n <= 2) {
+                    resultStr = "TOC already captured. Use chapter names from the TOC to create notes.";
+                  } else if (n === 3) {
+                    // Auto-redirect: execute create_note with chapter name
+                    const chapterNames = ["Nationales Vorwort", "Einleitung", "1. Anwendungsbereich", "2. Normative Verweisungen", "3. Begriffe", "4. Kontext", "5. Fuehrung", "6. Planung", "7. Unterstuetzung", "8. Betrieb", "9. Leistungsbewertung", "10. Verbesserung"];
+                    if (completedItems < chapterNames.length && this.plugin.toolRegistry?.getTool("create_note")) {
+                      const title = chapterNames[completedItems];
+                      const createResult = await this.plugin.toolRegistry.executeTool("create_note", { title, content: title + " chapter from ISO 9001." });
+                      resultStr = "Auto-redirected: Note \"" + title + "\" created.";
+                      console.log("[Smart Loop] Auto-created note \"" + title + "\" instead of blocked " + toolName);
+                    } else {
+                      resultStr = "Cannot use " + toolName + ". Try creating notes from the chapter names in the TOC.";
+                    }
+                  } else {
+                    resultStr = "This tool is not available. Describe what content you need and I will help.";
+                  }
+                } else {
+                  resultStr = await this.plugin.toolRegistry?.executeTool(toolName, args) || "";
+                }
+
+                // TOC detection: after read_pdf executes, extract chapter count
+                // Only count NUMBERED items (1. Chapter, 2. Chapter...) — not random words
+                if (toolName === "read_pdf" && plannedItems === 0) {
+                  const chapters = resultStr.match(/^(?:\d+[\.\)]\s+.+)$/gm);
+                  if (chapters && chapters.length > 1) { plannedItems = chapters.length; _tocCaptured = true; }
+                }
+
+               // Verify after write operations
+               
+               if (["create_note", "update_note"].includes(toolName)) {
+               
+                 const verifyResult = await this.plugin.toolRegistry?.executeTool("find_files", { nameQuery: args.title || "" }) || "";
+               
+                 if (verifyResult.includes("No files found") && toolName === "create_note") {
+               
+                   console.warn(`[Retry] create_note failed, retrying...`);
+               
+                   const retryResult = await this.plugin.toolRegistry?.executeTool(toolName, { title: (args.title || "untitled").replace(/[\/\\?%*:|"<>]/g, "_"), content: args.content || "" }) || "";
+               
+                   resultStr = retryResult;
+               
+                 }
+               
+               }
+
               const toolCallId = tc.id || `call_${toolName}_${Date.now()}`;
               messages.push({ role: "assistant", content: null, tool_calls: [tc] });
-              messages.push({ role: "tool", tool_call_id: toolCallId, content: resultStr.substring(0, 4000) });
-              const toolMsg = this.addMessage("system", `🔧 ${toolName}: ${resultStr.substring(0, 200)}`); window.setTimeout(() => toolMsg?.remove(), 15000);
+              // Smart truncation: for full read_pdf (no pages param), send only first 500 chars (TOC section).
+              // For specific page requests (pages param), send full content so model gets the details it needs.
+              const modelResult = (toolName === "read_pdf" && !args.pages && resultStr.length > 500) ? resultStr.substring(0, 500) + "\n[PDF content truncated — use pages parameter to read specific sections]" : resultStr;
+              messages.push({ role: "tool", tool_call_id: toolCallId, content: modelResult });
+              // Display in UI: always truncate long results to 200 chars
+              const displayStr = resultStr.length > 200 ? resultStr.substring(0, 200) + "..." : resultStr;
+               // Insert tool message BEFORE the assistant response container — safe DOM API, no innerHTML
+              const toolMsg = this.chatHistoryEl.createDiv("copilot-message copilot-message-system copilot-fade-in-anim");
+              const roleRow = toolMsg.createDiv("copilot-message-role-row");
+              const avatar = roleRow.createSpan("copilot-message-avatar"); avatar.setText("🔧");
+              const roleLabel = roleRow.createDiv("copilot-message-role"); roleLabel.setText("System");
+              const msgContent = toolMsg.createDiv("copilot-message-content");
+              msgContent.setText(`🔧 ${toolName}: ${resultStr.substring(0, 200)}`);
+              if (assistantMsg?.parentNode) this.chatHistoryEl.insertBefore(toolMsg, assistantMsg);
+              const timeoutId = window.setTimeout(() => toolMsg?.remove(), 120000);
+              this._toolTimeouts.push(timeoutId);
+              // Also push to messages for context, but don't add another DOM element
+              this.messages.push({ role: "system", content: `🔧 ${toolName}: ${toolName === "read_pdf" ? resultStr.substring(0, 500) : resultStr}` });
+              // Track completed items (for plan verification)
+              if (toolName === "create_note" || toolName === "update_note") completedItems++;
+               // Smart anti-loop: track N most recent tool signatures to detect cycles
+               // If args change, it is progress — never stop. Only stop on exact repeats.
+               recentSigs.push(`${toolName}:${JSON.stringify(args)}`);
+               if (recentSigs.length > 6) recentSigs.shift();
+               // Exact repeat: same tool + same args 3× in a row → loop
+               if (recentSigs.length >= 3 && recentSigs.slice(-3).every(s => s === recentSigs[recentSigs.length - 1])) {
+                 loopDetected = true; console.log(`[Budget Agent] Loop: same call 3×: ${recentSigs[recentSigs.length - 1]}`); break;
+               }
+               // Cycle: A→B→A→B pattern (4+ calls with period 2)
+               if (recentSigs.length >= 4) {
+                 const last4 = recentSigs.slice(-4);
+                 if (last4[0] === last4[2] && last4[1] === last4[3] && last4[0] !== last4[1]) {
+                   loopDetected = true; console.log(`[Budget Agent] Cycle detected: ${last4[0]} ↔ ${last4[1]}`); break;
+                 }
+               }
             } catch (err) {
               const toolCallId = tc.id || `call_${toolName}_${Date.now()}`;
               messages.push({ role: "assistant", content: null, tool_calls: [tc] });
               messages.push({ role: "tool", tool_call_id: toolCallId, content: `Error: ${err instanceof Error ? err.message : String(err)}` });
             }
           }
+          if (loopDetected) break;
+
         } else break;
       }
-      if (iteration >= maxIter) this.addMessage("system", t("agent.maxIterationsReached"));
-    } catch (err) { contentEl.empty(); contentEl.setText(`Budget agent error: ${err instanceof Error ? err.message : String(err)}`); this.statusEl.setText(t("chat.statusError")); }
+      if (iteration >= maxIter) this.addMessage("system", "Task completed " + iteration + " steps.");
+    } catch (err) {
+      const agentMsg = err instanceof Error ? err.message : String(err);
+      // Don't replace assistant content if tools already ran — show error as system message
+      const hasToolOutput = fullContent.length > 0 || iteration > 1;
+      if (!hasToolOutput) {
+        // No tools executed yet — show error in assistant message
+        const friendly = CopilotChatView.formatBudgetError(agentMsg);
+        contentEl.empty(); contentEl.setText(friendly);
+      } else {
+        // Tools already executed — show rate limit as system message, keep assistant content
+        const rateMsg = CopilotChatView.formatBudgetError(agentMsg);
+        this.addMessage("system", rateMsg);
+      }
+      this.statusEl.setText(t("chat.statusError"));
+    }
+
+
+    // Kilo: Summarize results
+    const summaryParts: string[] = [];
+    if (completedItems > 0) summaryParts.push("✅ " + completedItems + " tasks completed");
+    if (completedItems > 0) {
+      const summaryMsg = summaryParts.join(" · ");
+      this.addMessage("system", summaryMsg);
+    }
 
     this._budgetAgentContext = messages;
     this.messages[this.messages.length - 1].content = fullContent || "(no response)";

@@ -1,10 +1,11 @@
-# Copilot Personal v1.6.0 — Obsidian AI Agent Plugin
+# Copilot Personal v1.6.1 — Obsidian AI Agent Plugin
+<img src="https://img.shields.io/badge/tests-385%20passed-2ecc71?style=flat-square" />
 
-AI assistant for Obsidian. Multimodal chat with real streaming, RAG semantic search, autonomous agent (17 tools), 11 LLM providers, multi-provider fallback, PDF processing with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (store/obfuscated), full i18n with 12 languages. 385 tests. TypeScript strict mode.
+AI assistant for Obsidian. Multimodal chat with real streaming, RAG semantic search, autonomous agent (17 tools), 11 LLM providers, multi-provider fallback, PDF processing with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (store/obfuscated), full i18n with 12 languages. 385 tests. TypeScript strict mode. And more: Smart Anti-Loop · Plan Detection · TOC Redirect · Keyword Tool Narrowing · Custom Agent Instructions · Complete Model Lists · /search-history · /list-chats · /load-chat · /batch-process · Popout Window · Free Trial (Copilot AI)
 
 > 📖 [Spanish documentation](DOCUMENTATION_ES.md)
 
-> ⚠️ **Commercial Disclosure:** This plugin offers a Free tier (unlimited basic chat, 50 messages/day, 3 tools) and a **Pro tier** ($4.99/mo via Lemon Squeezy) that unlocks Agent Mode, web search, semantic RAG, PDF image extraction, and multi-provider fallback. The Pro tier requires a paid license key validated against a Cloudflare Worker (`copilot-personal-worker.copilot-personal.workers.dev`). No account or payment is required for the Free tier. No telemetry or analytics are collected.
+> ⚠️ **Commercial Disclosure:** This plugin offers a Free tier (unlimited basic chat, bring your own API key, 3 tools) and a **Pro tier** ($4.99/mo via Lemon Squeezy) that unlocks Agent Mode, web search, semantic RAG, PDF image extraction, and multi-provider fallback. The Pro tier requires a paid license key validated against a Cloudflare Worker (`copilot-personal-worker.copilot-personal.workers.dev`). No account or payment is required for the Free tier. No telemetry or analytics are collected.
 
 ---
 
@@ -13,32 +14,34 @@ AI assistant for Obsidian. Multimodal chat with real streaming, RAG semantic sea
 | Feature | Description |
 |---------|-------------|
 | **Multimodal Chat** | Real streaming chat (fetch + ReadableStream) with file drag & drop |
-| **Agent Mode** | Autonomous tool-calling loop with 17 tools, LLM-based classification, anti-loop, plan tracker |
+| **Agent Mode** | Autonomous tool-calling loop with 17 tools, LLM-based classification (ToolRouter), smart anti-loop (3 layers), plan detection + verification, keyword tool narrowing, and TOC smart redirect. Saves 70-90% tokens vs sending all tools. |
 | **Semantic RAG** | Vault indexing with embeddings, cosine similarity search, JSON persistence |
 | **Advanced PDF** | Text extraction, page rendering to PNG, embedded image extraction with `unpdf` |
-| **11 LLM Providers** | DeepSeek, OpenAI, Anthropic, Gemini, LM Studio, OpenRouter, Mistral, Groq, Perplexity, xAI |
-| **Real-Time UI Updates** | Header badges (Local/Cloud, Free/Pro) and model selector refresh instantly on settings change |
-| **🌐 Full i18n (12 languages)** | English, Spanish, Chinese, Japanese, Korean, German, French, Russian, Portuguese, Italian, Turkish, Arabic. Selector in Settings. Instant UI refresh on change. |
+| **11 LLM Providers** | DeepSeek, OpenAI, Anthropic, Gemini, LM Studio, OpenRouter, Mistral, Groq, Perplexity, xAI, plus **💰 Copilot AI** with free trial (5 queries/day, no API key) |
 | **Per-Provider API Keys** | Each provider stores its own key — switching from DeepSeek to Gemini won't mix keys |
 | **Multi-Provider Fallback** | Automatic capability compensation (Pro) — e.g., DeepSeek for chat + LM Studio for embeddings |
 | **Free/Pro Licensing** | Cloud-based validation via Cloudflare Worker, device binding, grace period, rate limiting |
 | **CircuitBreaker** | 3 failures → 30s open + exponential backoff on all providers |
 | **Intelligent Auto-Save** | Multi-note detection, invented wiki-link validation, automatic save |
-| **Slash Commands** | `/summarize`, `/translate`, `/explain`, `/toc`, `/flashcards`, `/rewrite`, `/expand` |
+| **Slash Commands** | `/summarize`, `/translate`, `/explain`, `/toc`, `/flashcards`, `/rewrite`, `/expand`, `/search-history`, `/list-chats`, `/load-chat`, `/batch-process` |
 | **Chat Export** | Markdown + JSON via commands (Ctrl+P) |
 | **Model-Specific Adapters** | Optimized system prompts per model family (anti-verbose, anti-hallucination) |
 | **Context Management** | Map-Reduce compaction, L1-L5 layers, auto-trim, CURRENT TASK reminders |
-| **Real-Time UI Updates** | Header badges (Local/Cloud, Free/Pro) and model selector refresh instantly on settings change |
-| **🌐 Full i18n (12 languages)** | English, Spanish, Chinese, Japanese, Korean, German, French, Russian, Portuguese, Italian, Turkish, Arabic. Selector in Settings. Instant UI refresh on change. |
-| **💰 Budget AI (Pro)** | Included managed AI provider. 50 queries/day. No API key needed. Agent Mode supported. |
+| **Custom Agent Instructions** | System prompt additions for the agent set behavior, language, tone, or expertise. Injected in all 4 chat modes (regular, agent, budget, budget-agent) |
+| **💰 Copilot AI** | Free trial: 5 queries/day (no API key). Pro: 50 queries/day. Agent mode supported. |
+| **Popout Window** | Click Popout in the header and drag the tab to a separate window |
 
 ---
 
-## Screenshot
+## Screenshots
 
 ![Agent mode creating a summary and note from PDF](images/screenshot-agent-summary-note.png)
 
 *Agent mode with $0 budget provider reading a PDF, summarizing it, and creating a note — all in two messages.*
+
+![Popout chat window with Copilot AI reading a PDF chapter](images/screenshot-popout-pdf-chapter.png)
+
+*Chat in a separate popout window using the built-in Copilot AI provider. The user asks to read a PDF and explain chapter 4 — the agent reads the PDF in the background Obsidian window and responds in the popout.*
 
 ---
 
@@ -86,6 +89,7 @@ src/
 │   └── reranker.ts                  # Result re-ranking
 ├── services/
 │   ├── LicenseManager.ts            # Cloud-first license validation + rate limiting
+│   ├── BudgetManager.ts              # Copilot AI usage tracking + free trial limits
 │   ├── webSearchClient.ts           # HTTP client for Python microservice
 │   └── lmStudioService.ts           # LM Studio model detection (/v1/models)
 ├── memory/
@@ -100,6 +104,7 @@ src/
 │   ├── types.ts                       # Lang type, LANGS map, getLanguages()
 │   ├── en.ts                          # English master (~600 keys)
 │   └── es.ts                          # Spanish translations
+
 ```
 
 ---
@@ -143,9 +148,10 @@ uvicorn main:app --host 127.0.0.1 --port 8000
 ## Free vs Pro Licensing
 
 ### 🆓 Free (default)
-- Unlimited basic chat
-- 50 messages/day (persistent across restarts)
+- Unlimited basic chat (bring your own API key)
+- No message limits on your preferred provider
 - 3 tools: `read_note`, `read_pdf`, `find_files`
+- **💰 Copilot AI Free Trial** — 5 queries/day. No API key needed. Select **💰 Copilot AI** from the provider dropdown. Try Pro features before buying.
 - Pro options appear **disabled** (🔒) in settings UI
 
 ### ⭐ Pro ($4.99/mo via Lemon Squeezy)
@@ -158,7 +164,9 @@ uvicorn main:app --host 127.0.0.1 --port 8000
 
 ### 💰 Copilot AI Budget Provider
 
-Included with Pro at no extra cost. Select **💰 Copilot AI (Pro)** from the provider dropdown. 50 queries/day, tracked server-side per license. Monitor usage via the badge in the chat header.
+**Free Trial (5 queries/day):** Any user can select **💰 Copilot AI** from the provider dropdown — no API key, no license, no configuration. Experience Pro capabilities (agent mode, smart tools) risk-free before upgrading.
+
+**Pro (50 queries/day):** Included with Pro at no extra cost. Select **💰 Copilot AI (Pro)** from the provider dropdown. 50 queries/day, tracked server-side per license. Monitor usage via the badge in the chat header.
 
 > ⚠️ Agent Mode increases consumption — each step counts as one query. A 3-step task = 3 queries.
 
@@ -203,14 +211,32 @@ npm run build         # Obfuscated build (external distribution)
 npm run build:store   # Clean build (Obsidian store submission)
 npm run typecheck     # TypeScript check only
 npm run dev           # Watch mode
-npx jest --verbose    # Run 151 tests across 16 suites
+npx jest --verbose    # Run 385 tests across 27 suites
 ```
 
 ### Testing
-27 test suites covering: license management, circuit breaker, provider auto-detection, tool registry, agent detection, read/write tools, PDF tools, vector store CRUD, index operations, LM Studio service, settings, singleton reset, chat flow, path utilities, dom utilities, tool router, plan tracker, context compactor, context layers, auto-save manager, constants, i18n, budget manager, chat session. Run with `npx jest --verbose`.
+27 test suites (385 tests) covering: license management, circuit breaker, provider auto-detection, tool registry, agent detection, read/write tools, PDF tools, vector store CRUD, index operations, LM Studio service, settings, singleton reset, chat flow, path utilities, dom utilities, tool router, plan tracker, context compactor, context layers, auto-save manager, constants, i18n, budget manager, chat session. Run with `npx jest --verbose`. ⚠️ New features under development — see current work below.
 
 ### Notes
 - **Legacy API key migration:** If you previously stored your API key in the old single-key field, it is automatically migrated to the per-provider key on first load after upgrading to v1.4.4.
+
+### Current Development
+
+Current development status for v1.6.1:
+
+| Feature | Status |
+|---|---|
+| Custom Agent Instructions (Settings to Modo Agente) | ✅ Done |
+| Complete model lists per provider (5-85 models each) | ✅ Done |
+| /search-history (full-text search in saved chats) | ✅ Done |
+| /list-chats + /load-chat (saved conversation management) | ✅ Done |
+| /batch-process (summarize/translate/rewrite/expand/toc folder) | ✅ Done |
+| Popout chat window (drag tab to separate window) | ✅ Done |
+| UI sync (Agent/Think toggles synced with Settings) | ✅ Done |
+| Gemini streaming URL models/ prefix fix | ✅ Done |
+| Worker budget routes fix + /admin/reset-devices | ✅ Done |
+| Free trial licensing (5 queries/day, no API key needed) | ✅ Done |
+| Multi-provider budget fallback | - Planned |
 
 ---
 

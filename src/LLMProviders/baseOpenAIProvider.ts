@@ -1,4 +1,4 @@
-import { requestUrl } from "obsidian";
+﻿import { requestUrl } from "obsidian";
 import { LLMMessage, ChatStreamChunk } from "./types";
 import { LLMProvider, ProviderConfig, ProviderType, ToolDefinition } from "./providerTypes";
 import { withTimeout, normalizeApiUrl, fetchWithFallback } from "../utils/pathUtils";

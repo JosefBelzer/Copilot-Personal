@@ -374,8 +374,8 @@ button.copilot-agent-toggle.copilot-agent-active {
 }
 
 /* Diff View */
-.copilot-diff-added { color: var(--text-success); background: rgba(var(--color-green-rgb), 0.1); }
-.copilot-diff-removed { color: var(--text-error); background: rgba(var(--color-red-rgb), 0.1); text-decoration: line-through; }
+.copilot-diff-added { color: var(--text-success); background: rgba(var(--background-modifier-success-rgb), 0.15); }
+.copilot-diff-removed { color: var(--text-error); background: rgba(var(--background-modifier-error-rgb), 0.15); text-decoration: line-through; }
 .copilot-diff-unchanged { color: var(--text-muted); }
 
 /* UI Widgets */
@@ -385,11 +385,11 @@ button.copilot-agent-toggle.copilot-agent-active {
 .copilot-ui-toggle { cursor: pointer; }
 .copilot-ui-select { padding: 4px 8px; border-radius: 4px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); color: var(--text-normal); font-size: 12px; }
 
-.theme-dark .copilot-message-assistant .copilot-message-content {
+body.theme-dark .copilot-message-assistant .copilot-message-content {
   background: var(--background-modifier-hover);
 }
 
-.theme-dark .copilot-message-content pre {
+body.theme-dark .copilot-message-content pre {
   background: var(--background-modifier-active-hover);
 }
 
@@ -409,7 +409,7 @@ button.copilot-agent-toggle.copilot-agent-active {
 
 /* Hallucination warning banner */
 .copilot-message-content .copilot-hallucination-warn {
-  background: rgba(var(--color-yellow-rgb), 0.15);
+  background: rgba(var(--background-modifier-warning-rgb), 0.15);
   border-left: 3px solid var(--text-warning);
   padding: 6px 10px;
   margin-bottom: 10px;

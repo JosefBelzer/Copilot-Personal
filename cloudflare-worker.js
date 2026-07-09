@@ -159,7 +159,7 @@ async function handleValidate(request, env) {
     });
   }
 
-  // --- Device limit (anti-sharing) ---
+  // --- Device limit (anti-sharing) with TOCTOU-safe re-verify ---
   if (!Array.isArray(record.devices)) record.devices = [];
 
   const isKnownDevice = record.devices.includes(fingerprint);
@@ -180,6 +180,24 @@ async function handleValidate(request, env) {
   }
 
   await putLicense(env, key, record);
+
+  // Re-read and verify to handle concurrent registration race
+  const verifyRecord = await getLicense(env, key);
+  if (verifyRecord && verifyRecord.devices.length > MAX_DEVICES_PER_LICENSE) {
+    // Race condition: another request registered simultaneously. Remove this fingerprint.
+    record.devices = record.devices.filter(d => d !== fingerprint);
+    await putLicense(env, key, record);
+    return json({
+      valid: false,
+      tier: "free",
+      reason: "device_limit",
+      error: "Límite de dispositivos alcanzado. Intente de nuevo.",
+      maxDevices: MAX_DEVICES_PER_LICENSE,
+    });
+  }
+
+  if (isKnownDevice) console.log(`[License] Known device for ${key.substring(0, 8)}...`);
+  else console.log(`[License] New device registered for ${key.substring(0, 8)}...`);
 
   return json({
     valid: true,
@@ -252,7 +270,7 @@ async function handleLemonSqueezyWebhook(request, env) {
       await env.LICENSES.put(`order:${orderId}`, licenseKey);
     }
 
-    console.log(`[License] Created ${licenseKey} → ${email} (order: ${orderId})`);
+    console.log(`[License] Created ${licenseKey.substring(0, 8)}... → ${email.substring(0, 4)}... (order: ${orderId})`);
     return json({ success: true, message: "License key registered successfully" }, 201);
   }
 
@@ -275,7 +293,7 @@ async function handleLemonSqueezyWebhook(request, env) {
         licenseData.status = "cancelled";
         licenseData.cancelledAt = new Date().toISOString();
         await putLicense(env, licenseKey, licenseData);
-        console.log(`[License] Cancelled ${licenseKey} (order: ${orderId})`);
+        console.log(`[License] Cancelled ${licenseKey.substring(0, 8)}... (order: ${orderId})`);
       }
     } else {
       console.log(`[Webhook] No license found for order ${orderId}`);
@@ -343,6 +361,300 @@ async function handleAdminInsert(request, env) {
   return json({ success: true, key, email }, 201);
 }
 
+// ─── POST /admin/reset-devices ────────────────────────────────────────────────
+
+/**
+ * Clear all registered devices for a license key.
+ * Allows the user to re-activate on new devices.
+ *
+ * Body: { key: "uuid" }
+ * Header: Authorization: Bearer <ADMIN_SECRET>
+ */
+async function handleAdminResetDevices(request, env) {
+  const auth = request.headers.get("Authorization") || "";
+  const adminSecret = env.ADMIN_SECRET;
+  if (!adminSecret) return error("Admin not configured", 500);
+
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  const valid = await constantTimeCompare(token, adminSecret);
+  if (!valid) return error("Unauthorized", 403);
+
+  let body;
+  try { body = await request.json(); } catch { return error("Invalid JSON body"); }
+
+  const { key } = body;
+  if (!key) return error("Missing key");
+
+  const existing = await getLicense(env, key);
+  if (!existing) return error("License key not found", 404);
+
+  existing.devices = [];
+  await putLicense(env, key, existing);
+  console.log(`[Admin] Devices reset for ${key.substring(0, 8)}...`);
+
+  return json({ success: true, message: "Devices reset. License can be activated on new devices." });
+}
+
+// ─── Budget state (KV: budget:{licenseKey}) ───────────────────────────
+
+const BUDGET_LIMITS = {
+  tokens: 250_000,
+  queries: 50,
+  costDollars: 0.03,
+};
+
+async function getBudgetState(env, licenseKey) {
+  const raw = await env.LICENSES.get(`budget:${licenseKey}`);
+  if (!raw) return { dailyTokens: 0, dailyQueries: 0, lastReset: getToday() };
+  try { return JSON.parse(raw); } catch { return { dailyTokens: 0, dailyQueries: 0, lastReset: getToday() }; }
+}
+
+async function saveBudgetState(env, licenseKey, state) {
+  await env.LICENSES.put(`budget:${licenseKey}`, JSON.stringify(state));
+}
+
+function getToday() {
+  return new Date().toISOString().split("T")[0];
+}
+
+// ─── POST /v1/budget-chat (Pro + Free trial) ────────────────────────
+
+async function handleBudgetChat(request, env) {
+  const budgetApiKey = env.BUDGET_API_KEY;
+  if (!budgetApiKey) return error("Budget API not configured", 500);
+
+  let body;
+  try { body = await request.json(); } catch { return error("Invalid JSON body"); }
+
+  const { messages, licenseKey: rawKey, fingerprint, tools, stream } = body;
+  if (!messages) return error("Missing messages");
+  // Free trial: empty string, "FREE", or missing Pro license → treat as free trial
+  const licenseKey = (!rawKey || rawKey === "FREE") ? "FREE" : rawKey;
+
+  // Determine if this is Pro or Free trial
+  const license = await getLicense(env, licenseKey);
+  const isPro = license && license.status === "active";
+  const isFreeTrial = !isPro && licenseKey === "FREE" && fingerprint;
+  let freeTrialUsed = 0;
+  let budget = null;
+  const today = getToday();
+
+  if (!isPro && !isFreeTrial) {
+    return error("Valid Pro license required for budget API", 403);
+  }
+
+  if (isFreeTrial) {
+    // Free trial: max 5 queries/day per fingerprint
+    const freeKey = `free:${fingerprint}:${today}`;
+    const freeRaw = await env.LICENSES.get(freeKey);
+    freeTrialUsed = parseInt(freeRaw || "0");
+
+    if (freeTrialUsed >= 5) {
+      return error("Free trial limit reached (5/day). Upgrade to Pro for unlimited Copilot AI.", 429);
+    }
+    console.log(`[FreeTrial] ${fingerprint} — ${freeTrialUsed + 1}/5 today`);
+  } else {
+    // Pro: device tracking
+    if (fingerprint) {
+      if (!Array.isArray(license.devices)) license.devices = [];
+      if (!license.devices.includes(fingerprint)) {
+        if (license.devices.length >= 3) {
+          return error("Device limit reached (3). Deactivate old devices first.", 429);
+        }
+        license.devices.push(fingerprint);
+        await putLicense(env, licenseKey, license);
+      }
+      console.log(`[Budget] Devices: ${license.devices.length}/3`);
+    }
+
+    // Pro: budget limits
+    budget = await getBudgetState(env, licenseKey);
+    if (budget.lastReset !== today) {
+      budget = { dailyTokens: 0, dailyQueries: 0, lastReset: today };
+    }
+    if (budget.dailyTokens >= BUDGET_LIMITS.tokens) {
+      return error("Daily token limit reached", 429);
+    }
+    if (budget.dailyQueries >= BUDGET_LIMITS.queries) {
+      return error("Daily query limit reached", 429);
+    }
+  }
+
+  // ── Call OpenRouter ──────────────────────────────────────────────────
+  const apiUrl = env.BUDGET_API_URL || "https://openrouter.ai/api/v1/chat/completions";
+  const budgetModel = body.model || env.BUDGET_MODEL || "mistralai/mistral-nemo";
+  const who = isPro ? `Pro ${licenseKey.substring(0,8)}...` : `Free trial ${fingerprint.substring(0,8)}`;
+
+  console.log(`[Budget] ${who} → ${budgetModel} — ${freeTrialUsed+1}/5 free, or ${budget?.dailyQueries??0}/${BUDGET_LIMITS.queries} queries`);
+
+  try {
+    // Retry on 429 (OpenRouter rate limit) with exponential backoff: 5s, 10s, 20s
+    let apiResponse = null;
+    let lastError = null;
+    const delays = [5000, 10000, 20000];
+    for (let retry = 0; retry <= delays.length; retry++) {
+      if (retry > 0) await new Promise(r => setTimeout(r, delays[retry - 1]));
+      apiResponse = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${budgetApiKey}`,
+          "HTTP-Referer": "https://github.com/JosefBelzer/Copilot-Personal",
+          "X-Title": "Copilot Personal (Obsidian Plugin)",
+        },
+        body: JSON.stringify({
+          model: budgetModel,
+          messages,
+          temperature: 0.3,
+          max_tokens: 32768,
+          ...(stream ? { stream: true } : {}),
+          ...(tools ? { tools, tool_choice: "auto" } : {}),
+        }),
+      });
+      if (apiResponse.status === 429) {
+        lastError = apiResponse;
+        console.log(`[Budget] 429 rate limit, retry ${retry + 1}/${delays.length} after ${delays[retry] || 0}ms`);
+        continue;
+      }
+      lastError = null;
+      break;
+    }
+    if (lastError) {
+      console.error(`[Budget] Rate limit exceeded after ${delays.length} retries`);
+      return error("Budget API rate limit reached. Try again in 30 seconds.", 429);
+    }
+
+    // Helper: increment counter after successful API response
+    async function incrementCounter() {
+      if (isFreeTrial) {
+        const freeKey = `free:${fingerprint}:${today}`;
+        const raw = await env.LICENSES.get(freeKey);
+        const count = parseInt(raw || "0");
+        await env.LICENSES.put(freeKey, String(count + 1), { expirationTtl: 86400 });
+      } else if (budget) {
+        budget.dailyQueries++;
+        await saveBudgetState(env, licenseKey, budget);
+      }
+    }
+
+    // Streaming mode — relay SSE directly to client
+    if (stream) {
+      if (!apiResponse.ok) {
+        console.error(`[Budget Stream] API error ${apiResponse.status}`);
+        return error(`Budget API error (${apiResponse.status})`, 502);
+      }
+      await incrementCounter();
+      console.log(`[Budget Stream] Streaming to client`);
+      return new Response(apiResponse.body, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+        },
+      });
+    }
+
+    // Non-streaming — parse JSON and track tokens
+    if (!apiResponse.ok) {
+      const errText = await apiResponse.text();
+      console.error(`[Budget] API error ${apiResponse.status}: ${errText.substring(0, 200)}`);
+      return error(`Budget API error (${apiResponse.status})`, 502);
+    }
+
+    const data = await apiResponse.json();
+    const content = data.choices?.[0]?.message?.content || "";
+    const toolCalls = data.choices?.[0]?.message?.tool_calls;
+    const usage = data.usage || { total_tokens: 0 };
+
+    // Empty response without tool calls: don't count query, return error
+    if (!content && !toolCalls) {
+      console.error("[Budget] Empty response from model");
+      return error("Empty response from AI model. Try rephrasing your request.", 422);
+    }
+
+    // If model returned tool calls but caller didn't send tools, convert to text
+    if (toolCalls && !tools) {
+      const names = toolCalls.map(t => t.function?.name || "unknown").join(", ");
+      const fallback = `I'd like to use the following tools: ${names}. However, the budget AI is in text-only mode. For complex tasks with tools, switch to Agent Mode or use your own API key in Settings → Provider.`;
+      await incrementCounter();
+      return json({ content: fallback, usage, model: budgetModel, budget: { dailyTokens: budget?.dailyTokens??0, limitTokens: BUDGET_LIMITS.tokens, dailyQueries: budget?.dailyQueries??0, limitQueries: BUDGET_LIMITS.queries, resetsAt: today + "T23:59:59Z", freeTrial: isFreeTrial ? { used: freeTrialUsed + 1, limit: 5 } : undefined } }, 200);
+    }
+
+    // Update counters
+    await incrementCounter();
+    if (!isFreeTrial && budget) {
+      budget.dailyTokens += usage.total_tokens || 0;
+      await saveBudgetState(env, licenseKey, budget);
+    }
+    console.log(`[Budget] OK — ${usage.total_tokens} tokens`);
+
+    return json({
+      content,
+      usage,
+      model: budgetModel,
+      ...(toolCalls ? { toolCalls } : {}),
+      budget: {
+        dailyTokens: budget?.dailyTokens ?? 0,
+        limitTokens: BUDGET_LIMITS.tokens,
+        dailyQueries: budget?.dailyQueries ?? 0,
+        limitQueries: BUDGET_LIMITS.queries,
+        resetsAt: today + "T23:59:59Z",
+        freeTrial: isFreeTrial ? { used: freeTrialUsed + 1, limit: 5 } : undefined,
+      },
+    }, 200);
+  } catch (err) {
+    console.error("[Budget] Fetch failed:", err.message);
+    return error("Budget API unreachable", 503);
+  }
+}
+
+// ─── POST /v1/budget-usage (returns current consumption for UI) ────────
+
+async function handleBudgetUsage(request, env) {
+  let body;
+  try { body = await request.json(); } catch { return error("Invalid JSON body"); }
+
+  const { licenseKey: rawKey, fingerprint } = body;
+  // Free trial: empty string or "FREE" → return free trial data
+  const licenseKey = (!rawKey || rawKey === "FREE") ? "FREE" : rawKey;
+  if (!licenseKey) return error("Missing licenseKey");
+
+  const license = await getLicense(env, licenseKey);
+  const isPro = license && license.status === "active";
+  const isFreeTrial = !isPro && licenseKey === "FREE";
+
+  if (!isPro && !isFreeTrial) {
+    return error("Valid license required", 403);
+  }
+
+  if (isFreeTrial && fingerprint) {
+    // Return free trial usage
+    const today = getToday();
+    const freeKey = `free:${fingerprint}:${today}`;
+    const raw = await env.LICENSES.get(freeKey);
+    const used = parseInt(raw || "0");
+    return json({
+      freeTrial: true,
+      freeUsed: used,
+      freeLimit: 5,
+      resetsAt: today + "T23:59:59Z",
+    });
+  }
+
+  const budget = await getBudgetState(env, licenseKey);
+  const today = getToday();
+  if (budget.lastReset !== today) Object.assign(budget, { dailyTokens: 0, dailyQueries: 0, lastReset: today });
+
+  return json({
+    dailyTokens: budget.dailyTokens,
+    limitTokens: BUDGET_LIMITS.tokens,
+    dailyQueries: budget.dailyQueries,
+    limitQueries: BUDGET_LIMITS.queries,
+    resetsAt: today + "T23:59:59Z",
+  });
+}
+
 // ─── Router ──────────────────────────────────────────────────────────────────
 
 async function handleRequest(request, env) {
@@ -381,9 +693,24 @@ async function handleRequest(request, env) {
     return handleAdminInsert(request, env);
   }
 
+  // Admin — reset devices for a license key
+  if (request.method === "POST" && url.pathname === "/admin/reset-devices") {
+    return handleAdminResetDevices(request, env);
+  }
+
   // Also accept the old path for backwards compatibility
   if (request.method === "POST" && url.pathname === "/v1/webhooks/lemonsqueezy") {
     return handleLemonSqueezyWebhook(request, env);
+  }
+
+  // Budget API — proxied chat (API key never leaves the Worker)
+  if (request.method === "POST" && url.pathname === "/v1/budget-chat") {
+    return handleBudgetChat(request, env);
+  }
+
+  // Budget usage — return current consumption for UI
+  if (request.method === "POST" && url.pathname === "/v1/budget-usage") {
+    return handleBudgetUsage(request, env);
   }
 
   return json({ error: "Not found" }, 404);

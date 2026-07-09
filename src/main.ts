@@ -277,9 +277,11 @@ export default class CopilotPlugin extends Plugin {
     this.providerManager.updateSettings(this.settings);
     this.webSearchClient.updateSettings(this.settings);
 
-    // Refresh chat view header badges (privacy icon + tier badge)
+    // Only refresh badges if the chat view is fully initialized (may not be during onload)
     const chatView = this.getChatView();
-    if (chatView) chatView.updateHeaderBadges();
+    if (chatView && "updateHeaderBadges" in chatView) {
+      chatView.updateHeaderBadges();
+    }
   }
 
   private registerAgentTools() {
