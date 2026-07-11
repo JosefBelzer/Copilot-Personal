@@ -227,7 +227,6 @@ export class CopilotChatView extends ItemView {
         return;
       }
       this.settings.enableAgentMode = !this.settings.enableAgentMode;
-      this.settings.enableAgentMode = this.settings.enableAgentMode;
       void this.plugin.saveSettings();
       if (this.settings.enableAgentMode) {
         this.agentToggleEl.addClass("copilot-agent-active");
@@ -244,7 +243,6 @@ export class CopilotChatView extends ItemView {
     if (this.settings.enableThinking) thinkBtn.addClass("copilot-agent-active");
     thinkBtn.addEventListener("click", () => {
       this.setThinking(!this.settings.enableThinking);
-      this.settings.enableThinking = this.settings.enableThinking;
       void this.plugin.saveSettings();
       if (this.settings.enableThinking) thinkBtn.addClass("copilot-agent-active");
       else thinkBtn.removeClass("copilot-agent-active");
@@ -1861,7 +1859,7 @@ export class CopilotChatView extends ItemView {
           notDone = !!(result.content && ["more", "continue", "still", "wait", "next", "to go", "remain", "further", "processing"].some(w => result.content.toLowerCase().includes(w)));
           // Plan detection: count numbered items in model text (e.g. "1. Chapter\n2. Chapter")
           if (plannedItems === 0 && result.content) {
-            const nums = result.content.match(/^[\s*]*\d+[\.\)]\s+.+/gm);
+            const nums = result.content.match(/^[\s*]*\d+[.)]\s+.+/gm);
             if (nums && nums.length > 1) { plannedItems = nums.length; _tocCaptured = true; }
           }
           if (notDone && iteration < maxIter) {
@@ -1909,7 +1907,7 @@ export class CopilotChatView extends ItemView {
                     const chapterNames = ["Nationales Vorwort", "Einleitung", "1. Anwendungsbereich", "2. Normative Verweisungen", "3. Begriffe", "4. Kontext", "5. Fuehrung", "6. Planung", "7. Unterstuetzung", "8. Betrieb", "9. Leistungsbewertung", "10. Verbesserung"];
                     if (completedItems < chapterNames.length && this.plugin.toolRegistry?.getTool("create_note")) {
                       const title = chapterNames[completedItems];
-                      const createResult = await this.plugin.toolRegistry.executeTool("create_note", { title, content: title + " chapter from ISO 9001." });
+                      await this.plugin.toolRegistry.executeTool("create_note", { title, content: title + " chapter from ISO 9001." });
                       resultStr = "Auto-redirected: Note \"" + title + "\" created.";
                       console.log("[Smart Loop] Auto-created note \"" + title + "\" instead of blocked " + toolName);
                     } else {
@@ -1925,7 +1923,7 @@ export class CopilotChatView extends ItemView {
                 // TOC detection: after read_pdf executes, extract chapter count
                 // Only count NUMBERED items (1. Chapter, 2. Chapter...) — not random words
                 if (toolName === "read_pdf" && plannedItems === 0) {
-                  const chapters = resultStr.match(/^(?:\d+[\.\)]\s+.+)$/gm);
+                  const chapters = resultStr.match(/^(?:\d+[.)]\s+.+)$/gm);
                   if (chapters && chapters.length > 1) { plannedItems = chapters.length; _tocCaptured = true; }
                 }
 
@@ -1939,7 +1937,7 @@ export class CopilotChatView extends ItemView {
                
                    console.warn(`[Retry] create_note failed, retrying...`);
                
-                   const retryResult = await this.plugin.toolRegistry?.executeTool(toolName, { title: (args.title || "untitled").replace(/[\/\\?%*:|"<>]/g, "_"), content: args.content || "" }) || "";
+                   const retryResult = await this.plugin.toolRegistry?.executeTool(toolName, { title: (args.title || "untitled").replace(/[/\\?%*:|"<>]/g, "_"), content: args.content || "" }) || "";
                
                    resultStr = retryResult;
                
@@ -1954,8 +1952,7 @@ export class CopilotChatView extends ItemView {
               const modelResult = (toolName === "read_pdf" && !args.pages && resultStr.length > 500) ? resultStr.substring(0, 500) + "\n[PDF content truncated — use pages parameter to read specific sections]" : resultStr;
               messages.push({ role: "tool", tool_call_id: toolCallId, content: modelResult });
               // Display in UI: always truncate long results to 200 chars
-              const displayStr = resultStr.length > 200 ? resultStr.substring(0, 200) + "..." : resultStr;
-               // Insert tool message BEFORE the assistant response container — safe DOM API, no innerHTML
+              // Insert tool message BEFORE the assistant response container — safe DOM API, no innerHTML
               const toolMsg = this.chatHistoryEl.createDiv("copilot-message copilot-message-system copilot-fade-in-anim");
               const roleRow = toolMsg.createDiv("copilot-message-role-row");
               const avatar = roleRow.createSpan("copilot-message-avatar"); avatar.setText("🔧");

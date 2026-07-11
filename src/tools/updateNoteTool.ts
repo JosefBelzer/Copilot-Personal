@@ -1,6 +1,6 @@
 import { App } from "obsidian";
 import { AgentTool } from "../agent/ToolRegistry";
-import { normalizePath, dirname, ensureMd, validatePath } from "../utils/pathUtils";
+import { normalizePath, validatePath } from "../utils/pathUtils";
 import { t } from "../i18n";
 
 /**

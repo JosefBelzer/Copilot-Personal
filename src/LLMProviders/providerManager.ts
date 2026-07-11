@@ -23,7 +23,7 @@ export class ProviderManager {
 
   private detectProviderType(): ProviderType {
     if (this.settings.providerType && this.settings.providerType !== "auto") {
-      return this.settings.providerType as ProviderType;
+      return this.settings.providerType;
     }
     const url = this.settings.apiUrl.toLowerCase();
     if (url.includes("deepseek")) return "deepseek";
@@ -85,10 +85,10 @@ export class ProviderManager {
       : null;
 
     if (fallbackKey) {
-      const fallbackType = this.settings[fallbackKey];
+      const fallbackType = this.settings[fallbackKey] as ProviderType;
       if (fallbackType) {
-        const provider = this.providers.get(fallbackType as ProviderType);
-        if (provider && providerSupports(fallbackType as ProviderType, task)) {
+        const provider = this.providers.get(fallbackType);
+        if (provider && providerSupports(fallbackType, task)) {
           provider.updateConfig(this.getFallbackConfig(task, fallbackType));
           return provider;
         }

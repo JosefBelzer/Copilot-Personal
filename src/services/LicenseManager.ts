@@ -85,7 +85,7 @@ export class LicenseManager {
   /** Demo key only works in debug/development mode */
   private static isDebugMode(): boolean {
     try {
-      return typeof process !== "undefined" && (process.env?.NODE_ENV === "development" || process.env?.COPILOT_DEBUG === "1");
+      return typeof process !== "undefined" && ((process?.env as Record<string, string | undefined>)?.NODE_ENV === "development" || (process?.env as Record<string, string | undefined>)?.COPILOT_DEBUG === "1");
     } catch { return false; }
   }
 

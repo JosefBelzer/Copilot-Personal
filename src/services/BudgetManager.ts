@@ -178,7 +178,7 @@ export class BudgetManager {
     if (typeof fetch !== "undefined") {
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30000);
+        const timeout = window.setTimeout(() => controller.abort(), 30000);
 
         const response = await fetch(`${this.workerUrl}/v1/budget-chat`, {
           method: "POST",
@@ -186,7 +186,7 @@ export class BudgetManager {
           body: JSON.stringify({ ...body, stream: true }),
           signal: controller.signal,
         });
-        clearTimeout(timeout);
+        window.clearTimeout(timeout);
 
         if (!response.ok) {
           const errText = await response.text();
@@ -212,19 +212,19 @@ export class BudgetManager {
               const dataLine = part.startsWith("data: ") ? part.slice(6) : part;
               if (dataLine === "[DONE]") break;
               try {
-                const parsed = JSON.parse(dataLine);
-                const content = parsed.choices?.[0]?.delta?.content || parsed.choices?.[0]?.text || "";
-                if (content) yield { content };
+                const parsed: Record<string, unknown> = JSON.parse(dataLine);
+                const choices = parsed.choices as Array<{ delta?: { content?: string }; text?: string }> | undefined;
+                const content = choices?.[0]?.delta?.content || choices?.[0]?.text || "";
               } catch { /* skip malformed SSE chunks */ }
             }
           }
           // Flush remaining buffer
           if (buffer.trim()) {
             try {
-              const parsed = JSON.parse(buffer.startsWith("data: ") ? buffer.slice(6) : buffer);
-              const content = parsed.choices?.[0]?.delta?.content || parsed.choices?.[0]?.text || "";
-              if (content) yield { content };
-            } catch {}
+              const parsed: Record<string, unknown> = JSON.parse(buffer.startsWith("data: ") ? buffer.slice(6) : buffer);
+              const choices = parsed.choices as Array<{ delta?: { content?: string }; text?: string }> | undefined;
+              const content = choices?.[0]?.delta?.content || choices?.[0]?.text || "";
+            } catch { /* skip malformed SSE chunks */ }
           }
           yield { content: "", done: true };
           return;

@@ -424,7 +424,7 @@ export class CopilotSettingTab extends PluginSettingTab {
               new Notice(t("settings.budgetFreeTrialNotice"));
             }
 
-            this.plugin.settings.providerType = value as ProviderType;
+            this.plugin.settings.providerType = value as typeof this.plugin.settings.providerType;
 
             // Auto-update API URL for known providers
             const defaultUrls: Record<string, string> = {
@@ -560,7 +560,7 @@ export class CopilotSettingTab extends PluginSettingTab {
         .setDesc(desc);
       if (modelOptions.length > 0) {
         setting.addDropdown((dropdown) => {
-          modelOptions.forEach((m) => dropdown.addOption(m, m));
+          modelOptions.forEach((m) => { dropdown.addOption(m, m); });
           dropdown.setValue(currentValue && modelOptions.includes(currentValue) ? currentValue : modelOptions[0]);
             dropdown.onChange((value) => { void onSet(value); });
         });
@@ -1034,7 +1034,7 @@ export class CopilotSettingTab extends PluginSettingTab {
 
     if (hasDetected) {
       lmModelSetting.addDropdown((dropdown) => {
-        models.forEach((m) => dropdown.addOption(m, m));
+        models.forEach((m) => { dropdown.addOption(m, m); });
         dropdown.setValue(this.plugin.settings.lmStudioModel ?? models[0]);
         dropdown.onChange((value) => {
           this.plugin.settings.lmStudioModel = value;
