@@ -1,4 +1,4 @@
-# Copilot Personal — Documentation v1.6.1
+# Copilot Personal — Documentation v1.6.2
 
 > AI assistant with advanced agent capabilities for Obsidian. Multimodal chat with real streaming, semantic RAG, autonomous agent (17 tools), 11 LLM providers with native tool calling and multi-provider fallback, PDF rendering with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (clean store / obfuscated distribution), full i18n with 12 languages, and intelligent note auto-save. 385 tests across 27 suites.
 
@@ -421,7 +421,7 @@ Create `src/i18n/{code}.ts` and register in `src/i18n/index.ts`. English is alwa
 - [x] **38-feature comprehensive validation**: DeepSeek (chat, streaming, tool calling, multi-turn) + Copilot AI Pro (budget chat, tools, usage tracking) all verified
 - [x] **0 TypeScript errors** (strict mode)
 
-### v1.6.1 (Current)
+### v1.6.2 (Current)
 - [x] **Custom Agent Instructions**: Settings field for system prompt additions. Injected in regular chat, agent mode, budget chat, and budget agent chat
 - [x] **Complete model lists per provider**: DeepSeek (8), OpenAI (27), Anthropic (11), Gemini (16), Mistral (20), Groq (11), Perplexity (5), xAI (9), OpenRouter (~85). Updated settingsTab.ts PROVIDER_MODELS and chatView.ts populateModelSelector
 - [x] **/search-history command**: Full-text search across saved chat history files. Shows snippets with context

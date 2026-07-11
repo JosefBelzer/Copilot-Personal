@@ -1,4 +1,4 @@
-# Copilot Personal v1.6.1 — Obsidian AI Agent Plugin
+# Copilot Personal v1.6.2 — Obsidian AI Agent Plugin
 <img src="https://img.shields.io/badge/tests-385%20passed-2ecc71?style=flat-square" />
 
 AI assistant for Obsidian. Multimodal chat with real streaming, RAG semantic search, autonomous agent (17 tools), 11 LLM providers, multi-provider fallback, PDF processing with `unpdf`, Free/Pro licensing with cloud validation + grace period, CircuitBreaker on all providers, dual-build (store/obfuscated), full i18n with 12 languages. 385 tests. TypeScript strict mode. And more: Smart Anti-Loop · Plan Detection · TOC Redirect · Keyword Tool Narrowing · Custom Agent Instructions · Complete Model Lists · /search-history · /list-chats · /load-chat · /batch-process · Popout Window · Free Trial (Copilot AI)
@@ -222,7 +222,7 @@ npx jest --verbose    # Run 385 tests across 27 suites
 
 ### Current Development
 
-Current development status for v1.6.1:
+Current development status for v1.6.2:
 
 | Feature | Status |
 |---|---|

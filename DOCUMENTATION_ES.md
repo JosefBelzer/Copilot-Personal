@@ -1,4 +1,4 @@
-# Copilot Personal — Documentación v1.6.1
+# Copilot Personal — Documentación v1.6.2
 
 > Asistente de IA con capacidades agentivas avanzadas para Obsidian. Chat multimodal con streaming real, RAG semántico, agente autónomo (17 herramientas), 11 proveedores LLM con tool calling nativo y fallback multi-proveedor, renderizado de PDFs con `unpdf`, sistema de licencias Free/Pro con validación cloud + grace period, CircuitBreaker en todos los providers, dual-build (store limpio / distribution ofuscado), y auto-guardado inteligente de notas. 385 tests.
 
@@ -337,7 +337,7 @@ Grundlagen_des_Qualitätsmanagements.pdf, página 27
 - [x] **0 errores TypeScript** (modo estricto)
 
 
-### v1.6.1 (Actual)
+### v1.6.2 (Actual)
 - [x] **Instrucciones personalizadas del agente**: Campo en Settings para instructions del system prompt. Inyectado en chat normal, agente, budget chat y budget agent chat
 - [x] **Listas completas de modelos por proveedor**: DeepSeek (8), OpenAI (27), Anthropic (11), Gemini (16), Mistral (20), Groq (11), Perplexity (5), xAI (9), OpenRouter (~85)
 - [x] **/search-history**: Busca texto completo en el historial de chat guardado. Muestra snippets con contexto
