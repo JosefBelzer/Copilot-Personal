@@ -175,11 +175,13 @@ export class BudgetManager {
     if (fingerprint) body["fingerprint"] = fingerprint;
 
     // Try native fetch for true SSE streaming (desktop Electron)
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     if (typeof fetch !== "undefined") {
       try {
         const controller = new AbortController();
         const timeout = window.setTimeout(() => controller.abort(), 30000);
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         const response = await fetch(`${this.workerUrl}/v1/budget-chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -212,18 +214,20 @@ export class BudgetManager {
               const dataLine = part.startsWith("data: ") ? part.slice(6) : part;
               if (dataLine === "[DONE]") break;
               try {
-                const parsed: Record<string, unknown> = JSON.parse(dataLine);
+                const parsed = JSON.parse(dataLine) as Record<string, unknown>;
                 const choices = parsed.choices as Array<{ delta?: { content?: string }; text?: string }> | undefined;
                 const content = choices?.[0]?.delta?.content || choices?.[0]?.text || "";
+                if (content) yield { content };
               } catch { /* skip malformed SSE chunks */ }
             }
           }
           // Flush remaining buffer
           if (buffer.trim()) {
             try {
-              const parsed: Record<string, unknown> = JSON.parse(buffer.startsWith("data: ") ? buffer.slice(6) : buffer);
+              const parsed = JSON.parse(buffer.startsWith("data: ") ? buffer.slice(6) : buffer) as Record<string, unknown>;
               const choices = parsed.choices as Array<{ delta?: { content?: string }; text?: string }> | undefined;
               const content = choices?.[0]?.delta?.content || choices?.[0]?.text || "";
+              if (content) yield { content };
             } catch { /* skip malformed SSE chunks */ }
           }
           yield { content: "", done: true };

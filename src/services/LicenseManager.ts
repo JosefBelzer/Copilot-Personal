@@ -6,6 +6,8 @@ import { WORKER_URL } from "./workerConfig";
 // Universal HTTP client: native fetch() in Electron, requestUrl fallback on mobile.
 async function fetchWithFallbackFn(url: string, options: RequestInit): Promise<Response> {
   if (typeof fetch !== "undefined") {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     return fetch(url, options);
   }
   const r = await requestUrl({ url, method: options.method, headers: options.headers as Record<string, string>, body: options.body as string });
@@ -85,7 +87,7 @@ export class LicenseManager {
   /** Demo key only works in debug/development mode */
   private static isDebugMode(): boolean {
     try {
-      return typeof process !== "undefined" && ((process?.env as Record<string, string | undefined>)?.NODE_ENV === "development" || (process?.env as Record<string, string | undefined>)?.COPILOT_DEBUG === "1");
+      return typeof process !== "undefined" && ((process as unknown as { env: Record<string, string | undefined> })?.env?.NODE_ENV === "development" || (process as unknown as { env: Record<string, string | undefined> })?.env?.COPILOT_DEBUG === "1");
     } catch { return false; }
   }
 

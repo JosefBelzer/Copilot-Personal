@@ -1808,7 +1808,7 @@ export class CopilotChatView extends ItemView {
           const trimmed = result.content.trim();
           if (trimmed.startsWith("[") && trimmed.includes('"name"') && trimmed.includes('"arguments"')) {
             try {
-              const parsed = JSON.parse(trimmed);
+              const parsed: unknown = JSON.parse(trimmed);
               if (Array.isArray(parsed)) {
                 result.toolCalls = parsed.map((tc: Record<string, unknown>) => ({
                   id: `call_${tc.name}_${Date.now()}`,
@@ -1833,8 +1833,8 @@ export class CopilotChatView extends ItemView {
               }
               if (partialMatch && partialMatch.length > 0) {
                 try {
-                  const recovered = partialMatch.map(m => JSON.parse(m));
-                  result.toolCalls = recovered.map((tc: Record<string, unknown>) => ({
+                  const recovered = partialMatch.map(m => JSON.parse(m) as Record<string, unknown>);
+                  result.toolCalls = recovered.map((tc) => ({
                     id: `call_${tc.name}_${Date.now()}`,
                     type: "function",
                     function: { name: String(tc.name), arguments: JSON.stringify(tc.arguments) }

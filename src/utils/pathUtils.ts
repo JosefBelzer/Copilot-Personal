@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Shared path utilities — normalize slashes, extract dirnames/basenames,
  * and handle .md extension auto-detection consistently across all tools.
  */
@@ -57,6 +57,7 @@ export function fetchWithFallback(url: string, options: RequestInit): Promise<Re
   // In Obsidian desktop (Electron), native fetch() supports ReadableStream / SSE.
   // On mobile, fall back to requestUrl which works on all platforms.
   if (typeof fetch !== "undefined") {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     return fetch(url, options);
   }
   // Mobile fallback: requestUrl (no streaming)
