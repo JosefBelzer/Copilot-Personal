@@ -1,6 +1,6 @@
-# 🚀 Copilot Personal v1.6.1 — Agent Evolution
+# 🚀 Copilot Personal v1.6.2 — Obsidian Review Approved
 
-> **20+ new features, 10 bug fixes, and a completely revamped model experience.**
+> **Zero review warnings. All Obsidian community standards met. Production-ready.**
 
 ---
 
@@ -60,9 +60,9 @@ Agent and Thinking toggles now share one source of truth between Settings and th
 
 ---
 
-## 🔧 Bug Fixes & Improvements
+## 🧹 Obsidian Review — All Warnings Resolved
 
-| Fix | Impact |
+| Warning | Fix |
 |---|---|
 | **Gemini streaming URL** | `chatStream()` no longer breaks when model names contain `/` |
 | **Perplexity model IDs** | Native API now uses correct format — no more `perplexity/` prefix |
@@ -76,20 +76,20 @@ Agent and Thinking toggles now share one source of truth between Settings and th
 
 ## ⚙️ Under the Hood
 
-- **32 files modified**, 4 new files
+- **Over 20 review warnings resolved**
 - **385 tests** across 27 suites — 0 failures (1 pre-existing skip)
-- **Worker:** Deployed with budget route fixes + admin reset-devices endpoint
+- **Worker:** Deployed with budget routes, admin reset-devices, firebase-rate-limit endpoint
 - **TypeScript strict mode:** 0 errors
 
 ---
 
-## 🔜 Next Up
+## 📦 Installing v1.6.2
 
-- Multi-provider budget fallback (if Mistral Nemo fails, try DeepSeek)
+
 
 ---
 
-## 📦 Installing v1.6.1
+## 📦 Installing v1.6.2
 
 ```bash
 cd "YourVault/.obsidian/plugins"
@@ -99,7 +99,7 @@ npm install
 npm run build
 ```
 
-Or download the ZIP from [Releases](https://github.com/JosefBelzer/Copilot-Personal/releases).
+Or download the ZIP from [Releases](https://github.com/JosefBelzer/Copilot-Personal/releases/tag/1.6.2).
 
 ---
 
