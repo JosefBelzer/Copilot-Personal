@@ -5,10 +5,10 @@ import { WORKER_URL } from "./workerConfig";
 
 // Universal HTTP client: native fetch() in Electron, requestUrl fallback on mobile.
 async function fetchWithFallbackFn(url: string, options: RequestInit): Promise<Response> {
-  if (typeof fetch !== "undefined") {
+  if (typeof window !== "undefined" && typeof window.fetch !== "undefined") {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    return fetch(url, options);
+    return window.fetch(url, options);
   }
   const r = await requestUrl({ url, method: options.method, headers: options.headers as Record<string, string>, body: options.body as string });
   return new Response(r.text, { status: r.status, headers: new Headers(r.headers) });

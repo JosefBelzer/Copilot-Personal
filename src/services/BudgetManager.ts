@@ -174,15 +174,14 @@ export class BudgetManager {
     const body: Record<string, unknown> = { messages, licenseKey };
     if (fingerprint) body["fingerprint"] = fingerprint;
 
-    // Try native fetch for true SSE streaming (desktop Electron)
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    if (typeof fetch !== "undefined") {
+    // Use native fetch for SSE streaming (Electron only). requestUrl does not support ReadableStream.
+    if (typeof window !== "undefined" && typeof window.fetch !== "undefined") {
       try {
         const controller = new AbortController();
         const timeout = window.setTimeout(() => controller.abort(), 30000);
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const response = await fetch(`${this.workerUrl}/v1/budget-chat`, {
+        // native fetch required for SSE streaming; requestUrl incompatible
+        const response = await window.fetch(`${this.workerUrl}/v1/budget-chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...body, stream: true }),
