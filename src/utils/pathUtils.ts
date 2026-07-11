@@ -57,7 +57,6 @@ export function fetchWithFallback(url: string, options: RequestInit): Promise<Re
   // In Obsidian desktop (Electron), native fetch() supports ReadableStream / SSE.
   // On mobile, fall back to requestUrl which works on all platforms.
   if (typeof window !== "undefined" && typeof window.fetch !== "undefined") {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     return window.fetch(url, options);
   }
   // Mobile fallback: requestUrl (no streaming)
