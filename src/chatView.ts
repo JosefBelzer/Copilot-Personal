@@ -1808,7 +1808,7 @@ export class CopilotChatView extends ItemView {
           const trimmed = result.content.trim();
           if (trimmed.startsWith("[") && trimmed.includes('"name"') && trimmed.includes('"arguments"')) {
             try {
-              const parsed: unknown = JSON.parse(trimmed);
+              const parsed = JSON.parse(trimmed) as unknown;
               if (Array.isArray(parsed)) {
                 result.toolCalls = parsed.map((tc: Record<string, unknown>) => ({
                   id: `call_${tc.name}_${Date.now()}`,

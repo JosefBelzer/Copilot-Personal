@@ -133,7 +133,7 @@ export function createExtractPdfImagesTool(app: App): AgentTool {
               canvasContext: ctx,
               canvas,
               viewport,
-            } as Parameters<typeof page.render>[0]).promise;
+            }).promise;
             const blob = await new Promise<Blob>((resolve, reject) => {
               canvas.toBlob((b) => b ? resolve(b) : reject(new Error("toBlob failed")), "image/png");
             });

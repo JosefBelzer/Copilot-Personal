@@ -286,7 +286,7 @@ interface WorkerErrorResponse {
 
 function parseWorkerError(text: string): WorkerErrorResponse {
   try {
-    const parsed: unknown = JSON.parse(text);
+    const parsed = JSON.parse(text) as unknown;
     if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
       return parsed as WorkerErrorResponse;
     }
