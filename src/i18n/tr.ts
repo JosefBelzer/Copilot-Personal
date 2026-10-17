@@ -105,7 +105,7 @@ export const tr: Record<string, string> = {
   "settings.chunkSizeDesc": "Parça başına yaklaşık token sayısı",
 
   // Web Search
-  "settings.webSearchDesc": "browser-use mikroservisi aracılığıyla web aramasına izin ver",
+  "settings.webSearchDesc": "Seçilen sağlayıcı ile web aramasına izin ver",
   "settings.webSearchProLocked": "🔒 Web araması bir Pro lisansı gerektirir",
   "settings.webSearchServerUrl": "Web arama sunucu URL'si",
   "settings.webSearchServerUrlDesc": "Python browser-use mikroservisinin URL'si",
@@ -481,7 +481,7 @@ export const tr: Record<string, string> = {
   //  TOOL: search_web
   // ═══════════════════════════════════════════════════════════════
 
-  "tools.searchWeb.description": "Otomatik bir tarayıcı kullanarak web araması yapar ve en alakalı sonuçları (başlık, URL, parçacık) döndürür.",
+  "tools.searchWeb.description": "Yapılandırılan sağlayıcıyla web araması yapar ve ilgili sonuçları döndürür (başlık, URL, alıntı).",
   "tools.searchWeb.paramQuery": "Web arama sorgusu.",
   "tools.searchWeb.error.emptyQuery": "Hata: boş sorgu.",
   "tools.searchWeb.noResults": "\"{query}\" için sonuç bulunamadı.",

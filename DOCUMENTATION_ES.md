@@ -66,7 +66,28 @@ npm run dev            # Dev mode con sourcemaps y watch
 2. Extrae en `TuVault/.obsidian/plugins/copilot-personal/`
 3. Activa el plugin en Settings → Community plugins → Copilot Personal
 
+### Búsqueda web con Parallel (opcional, Pro)
+
+En Settings → Copilot Personal → Web Search, elige **Parallel Search MCP** como
+proveedor y activa la búsqueda web. Usa `!search Obsidian linking research notes`
+en el chat o pide al agente que busque en la web. La opción de máximo de resultados
+limita cuántos resultados se muestran.
+
+[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) ofrece
+búsqueda web gratuita en modo Fast, sin cuenta, API key ni servidor local.
+El uso anónimo tiene límites. La búsqueda web del plugin sigue requiriendo Pro.
+Las consultas se envían a `https://search.parallel.ai/mcp`, sin adjuntar el token
+local, las API keys del LLM ni archivos del vault. El agente puede incluir texto
+de las notas en una consulta: revisa lo que le pides investigar.
+
+El servidor browser-use local sigue siendo el proveedor predeterminado y la
+búsqueda web comienza desactivada. Selecciona **Servidor browser-use local** para
+volver a usar la URL y el token guardados. Parallel tiene un tiempo de espera de
+30 segundos y muestra los errores sin cambiar de proveedor automáticamente.
+
 ### Servidor de búsqueda web (opcional)
+
+Para el proveedor predeterminado **Servidor browser-use local**:
 ```bash
 cd web_search_server
 pip install -r requirements.txt
@@ -314,7 +335,7 @@ Grundlagen_des_Qualitätsmanagements.pdf, página 27
 
 - **API keys:** Almacenadas en `data.json` local. Cada proveedor tiene su propio campo. Nunca se envían a servidores del autor del plugin.
 - **Datos del vault:** Enviados solo al proveedor LLM que configures (DeepSeek, OpenAI, etc.). Sin telemetría ni analytics.
-- **Web search:** Requiere un microservicio Python local (`web_search_server/`). El token de autenticación es configurable desde settings.
+- **Web search:** Elige el servicio browser-use local (URL/token configurables) o activa Parallel Search MCP. Parallel recibe las consultas por HTTPS; no recibe el token local ni las API keys del LLM.
 - **Validación de licencias:** Las keys Pro se validan contra el Cloudflare Worker en `copilot-personal-worker.copilot-personal.workers.dev`. Free tier no requiere conexión a internet.
 - **Path traversal:** Protección multicapa en `read_note` contra escapes de directorio (`..`, `%2e%2e`, paths absolutos).
 - **Timing attacks:** El endpoint admin del Worker usa comparación constant-time para tokens.

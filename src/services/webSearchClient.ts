@@ -1,6 +1,7 @@
 import { requestUrl } from "obsidian";
 import { CopilotSettings } from "../settings";
 import { t } from "../i18n";
+import { ParallelSearchClient } from "./parallelSearchClient";
 
 export interface WebSearchResult {
   title: string;
@@ -19,6 +20,7 @@ export interface WebSearchResponse {
 export class WebSearchClient {
   private static instance: WebSearchClient;
   private settings: CopilotSettings;
+  private parallelClient?: ParallelSearchClient;
 
   private constructor(settings: CopilotSettings) {
     this.settings = settings;
@@ -42,7 +44,11 @@ export class WebSearchClient {
     this.settings = settings;
   }
 
-  async search(query: string, maxSteps: number = 15, maxResults?: number): Promise<WebSearchResponse> {
+  async search(query: string, maxSteps: number = 15, maxResults?: number, signal?: AbortSignal): Promise<WebSearchResponse> {
+    if (this.settings.webSearchProvider === "parallel") {
+      this.parallelClient ??= new ParallelSearchClient();
+      return this.parallelClient.search(query, maxResults ?? this.settings.webSearchMaxResults, signal);
+    }
     const url = this.settings.webSearchServerUrl;
     if (!url) {
       throw new Error(t("webSearch.urlNotConfigured"));

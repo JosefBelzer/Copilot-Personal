@@ -103,7 +103,7 @@ export const ko: Record<string, string> = {
   "settings.chunkSizeDesc": "청크당 대략적인 토큰 수",
 
   // Settings — Web Search
-  "settings.webSearchDesc": "browser-use 마이크로서비스를 통한 웹 검색 허용",
+  "settings.webSearchDesc": "선택한 제공업체로 웹 검색 허용",
   "settings.webSearchProLocked": "🔒 웹 검색은 Pro 라이선스가 필요합니다",
   "settings.webSearchServerUrl": "웹 검색 서버 URL",
   "settings.webSearchServerUrlDesc": "browser-use Python 마이크로서비스의 URL",
@@ -429,7 +429,7 @@ export const ko: Record<string, string> = {
   "tools.searchVaultByTimeframe.result": "[{index}] {title} ({path})\n수정: {mtime}\n내용: {snippet}...",
 
   // Tool: search_web
-  "tools.searchWeb.description": "자동화된 브라우저를 사용하여 웹 검색을 수행하고 가장 관련성 높은 결과(제목, URL, 스니펫)를 반환합니다.",
+  "tools.searchWeb.description": "설정된 제공업체로 웹을 검색하고 관련 결과(제목, URL, 발췌문)를 반환합니다.",
   "tools.searchWeb.paramQuery": "웹 검색 쿼리.",
   "tools.searchWeb.error.emptyQuery": "오류: 빈 검색어입니다.",
   "tools.searchWeb.noResults": "\"{query}\"에 대한 결과를 찾을 수 없습니다.",

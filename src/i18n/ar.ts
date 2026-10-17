@@ -105,7 +105,7 @@ export const ar: Record<string, string> = {
   "settings.chunkSizeDesc": "عدد الرموز التقريبي لكل قطعة",
 
   // Web Search
-  "settings.webSearchDesc": "السماح بالبحث في الويب عبر خدمة browser-use المصغرة",
+  "settings.webSearchDesc": "السماح بالبحث على الويب باستخدام المزوّد المحدد",
   "settings.webSearchProLocked": "🔒 البحث في الويب يتطلب ترخيص Pro",
   "settings.webSearchServerUrl": "عنوان URL لخادم البحث في الويب",
   "settings.webSearchServerUrlDesc": "عنوان URL لخدمة browser-use المصغرة بلغة Python",
@@ -481,7 +481,7 @@ export const ar: Record<string, string> = {
   //  TOOL: search_web
   // ═══════════════════════════════════════════════════════════════
 
-  "tools.searchWeb.description": "يجري بحثاً في الويب باستخدام متصفح آلي ويعيد النتائج الأكثر صلة (العنوان، URL، المقتطف).",
+  "tools.searchWeb.description": "يبحث على الويب باستخدام المزوّد المحدد ويعيد النتائج ذات الصلة (العنوان والرابط والمقتطف).",
   "tools.searchWeb.paramQuery": "استعلام بحث الويب.",
   "tools.searchWeb.error.emptyQuery": "خطأ: استعلام فارغ.",
   "tools.searchWeb.noResults": "لم يتم العثور على نتائج لـ \"{query}\".",

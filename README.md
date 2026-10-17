@@ -79,7 +79,7 @@ src/
 │   ├── extractPdfImagesTool.ts      # extract_pdf_images (embedded images + fallback)
 │   ├── imageAnalysisTool.ts         # analyze_image (vision model)
 │   ├── semanticSearchTool.ts        # search_vault_semantic
-│   ├── webSearchTool.ts             # search_web (browser-use microservice)
+│   ├── webSearchTool.ts             # search_web (configured web search provider)
 │   └── additionalTools.ts           # list_notes, fulltext_search, vault_stats, etc.
 ├── search/                          # RAG semantic search
 │   ├── vectorStoreManager.ts        # In-memory cosine similarity + JSON persistence
@@ -90,7 +90,7 @@ src/
 ├── services/
 │   ├── LicenseManager.ts            # Cloud-first license validation + rate limiting
 │   ├── BudgetManager.ts              # Copilot AI usage tracking + free trial limits
-│   ├── webSearchClient.ts           # HTTP client for Python microservice
+│   ├── webSearchClient.ts           # Web search provider dispatch + local HTTP client
 │   └── lmStudioService.ts           # LM Studio model detection (/v1/models)
 ├── memory/
 │   └── MemoryManager.ts             # Persistent conversation summaries
@@ -135,7 +135,29 @@ npm run dev            # Dev mode with sourcemaps and watch
 2. Extract to `YourVault/.obsidian/plugins/copilot-personal/`
 3. Enable in Settings → Community plugins → Copilot Personal
 
+### Parallel web search (optional, Pro)
+
+In Settings → Copilot Personal → Web Search, choose **Parallel Search MCP** as
+**Web search provider**, then enable web search. Use `!search Obsidian linking
+research notes` in chat, or ask the agent to search the web. Results use the same
+title, URL and excerpt format as local search. **Max search results** limits how
+many results are displayed.
+
+[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) provides
+free web search in Fast mode without an account, API key or local server.
+Anonymous usage is rate limited. The plugin's Pro requirement still applies.
+Search queries are sent to `https://search.parallel.ai/mcp`; local server tokens,
+LLM API keys and vault files are not attached to these requests. An agent may
+include note content in a search query, so review what you ask it to research.
+
+The local browser-use service remains the default, and web search starts disabled.
+Select **Local browser-use server** to use your saved server URL and token again.
+Parallel search has a 30-second timeout and reports errors without switching
+providers automatically.
+
 ### Web Search Server (optional)
+
+For the default **Local browser-use server** provider:
 ```bash
 cd web_search_server
 pip install -r requirements.txt
@@ -194,7 +216,7 @@ uvicorn main:app --host 127.0.0.1 --port 8000
 - **API keys:** Stored locally in `data.json`. Each provider has its own field — switching providers won't leak keys. Masked (`type="password"`) in settings UI. Never sent to plugin author's servers.
 - **Vault data:** Sent only to your configured LLM provider. No telemetry or analytics.
 - **Vault enumeration:** This plugin calls `vault.getFiles()` and `vault.getMarkdownFiles()` to enable semantic search (RAG), file lookup tools (`find_files`, `read_note`), and auto-save post-processing. File contents are only read when explicitly requested by the user or the agent.
-- **Web search:** Requires a local Python microservice (`web_search_server/`). Authentication token is configurable in settings.
+- **Web search:** Choose the local browser-use service (configurable URL/token) or opt in to Parallel Search MCP. Parallel receives search queries over HTTPS; no local token or LLM API key is sent to it.
 - **License validation:** Pro keys are validated against the Cloudflare Worker. Free tier requires no internet connection.
 - **Path traversal:** Multi-layer protection against directory escape attacks in `read_note`.
 - **Timing-safe auth:** Admin endpoint uses constant-time comparison for secret tokens.

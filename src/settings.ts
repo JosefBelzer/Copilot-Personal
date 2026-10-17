@@ -38,6 +38,7 @@ export interface CopilotSettings {
 
   // Web search
   webSearchEnabled: boolean;
+  webSearchProvider: "browser-use" | "parallel";
   webSearchServerUrl: string;
   webSearchMaxResults: number;
   webSearchToken: string;
@@ -113,6 +114,7 @@ export const DEFAULT_SETTINGS: CopilotSettings = {
   excludedFolders: "",
 
   webSearchEnabled: false,
+  webSearchProvider: "browser-use",
   webSearchServerUrl: "http://localhost:8000/search",
   webSearchMaxResults: 3,
   webSearchToken: "copilot-default-token-change-me",

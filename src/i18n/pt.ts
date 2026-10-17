@@ -103,7 +103,7 @@ export const pt: Record<string, string> = {
   "settings.chunkSizeDesc": "Contagem aproximada de tokens por chunk",
 
   // Settings — Web Search
-  "settings.webSearchDesc": "Permitir pesquisa web via microsserviço browser-use",
+  "settings.webSearchDesc": "Permitir pesquisa na web com o provedor selecionado",
   "settings.webSearchProLocked": "🔒 Pesquisa web requer uma licença Pro",
   "settings.webSearchServerUrl": "URL do servidor de pesquisa web",
   "settings.webSearchServerUrlDesc": "URL do microsserviço Python browser-use",
@@ -429,7 +429,7 @@ export const pt: Record<string, string> = {
   "tools.searchVaultByTimeframe.result": "[{index}] {title} ({path})\nModificado: {mtime}\nConteúdo: {snippet}...",
 
   // Tool: search_web
-  "tools.searchWeb.description": "Realiza uma pesquisa web usando um navegador automatizado e retorna os resultados mais relevantes (título, url, trecho).",
+  "tools.searchWeb.description": "Pesquisa na web com o provedor configurado e retorna resultados relevantes (título, URL, trecho).",
   "tools.searchWeb.paramQuery": "A consulta de pesquisa web.",
   "tools.searchWeb.error.emptyQuery": "Erro: consulta vazia.",
   "tools.searchWeb.noResults": "Nenhum resultado encontrado para: \"{query}\".",

@@ -817,17 +817,33 @@ export class CopilotSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName(t("settings.webSearchServerUrl"))
-      .setDesc(t("settings.webSearchServerUrlDesc"))
-      .addText((text) =>
-        text
-          .setPlaceholder("http://localhost:8000/search")
-          .setValue(this.plugin.settings.webSearchServerUrl)
-          .onChange(async (value) => {
-            this.plugin.settings.webSearchServerUrl = value;
-            await this.plugin.saveSettings();
-          })
-      );
+      .setName(t("settings.webSearchProvider"))
+      .setDesc(t("settings.webSearchProviderDesc"))
+      .addDropdown((dropdown) => dropdown
+        .addOption("browser-use", t("settings.webSearchLocal"))
+        .addOption("parallel", "Parallel Search MCP")
+        .setValue(this.plugin.settings.webSearchProvider)
+        .setDisabled(!isPro)
+        .onChange(async (value) => {
+          this.plugin.settings.webSearchProvider = value as "browser-use" | "parallel";
+          await this.plugin.saveSettings();
+          this.display();
+        }));
+
+    if (this.plugin.settings.webSearchProvider !== "parallel") {
+      new Setting(containerEl)
+        .setName(t("settings.webSearchServerUrl"))
+        .setDesc(t("settings.webSearchServerUrlDesc"))
+        .addText((text) =>
+          text
+            .setPlaceholder("http://localhost:8000/search")
+            .setValue(this.plugin.settings.webSearchServerUrl)
+            .onChange(async (value) => {
+              this.plugin.settings.webSearchServerUrl = value;
+              await this.plugin.saveSettings();
+            })
+        );
+    }
 
     new Setting(containerEl)
       .setName(t("settings.webSearchMaxResults"))
@@ -845,19 +861,21 @@ export class CopilotSettingTab extends PluginSettingTab {
           })
       );
 
-    new Setting(containerEl)
-      .setName(t("settings.webSearchToken"))
-      .setDesc(t("settings.webSearchTokenDesc"))
-      .addText((text) => {
-        text.inputEl.type = "password";
-        text
-          .setPlaceholder("your-secure-token")
-          .setValue(this.plugin.settings.webSearchToken)
-          .onChange(async (value) => {
-            this.plugin.settings.webSearchToken = value;
-            await this.plugin.saveSettings();
-          });
-      });
+    if (this.plugin.settings.webSearchProvider !== "parallel") {
+      new Setting(containerEl)
+        .setName(t("settings.webSearchToken"))
+        .setDesc(t("settings.webSearchTokenDesc"))
+        .addText((text) => {
+          text.inputEl.type = "password";
+          text
+            .setPlaceholder("your-secure-token")
+            .setValue(this.plugin.settings.webSearchToken)
+            .onChange(async (value) => {
+              this.plugin.settings.webSearchToken = value;
+              await this.plugin.saveSettings();
+            });
+        });
+    }
 
     // === Vision ===
     new Setting(containerEl).setName(`${t("settings.sectionVision")}${caps.vision ? (isPro ? "" : " (🔒 Pro)") : " (⚠️ not supported)"}`).setHeading();

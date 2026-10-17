@@ -105,7 +105,7 @@ export const ru: Record<string, string> = {
   "settings.chunkSizeDesc": "Примерное количество токенов на фрагмент",
 
   // Web Search
-  "settings.webSearchDesc": "Разрешить веб-поиск через микросервис browser-use",
+  "settings.webSearchDesc": "Разрешить поиск в интернете через выбранного провайдера",
   "settings.webSearchProLocked": "🔒 Веб-поиск требует лицензию Pro",
   "settings.webSearchServerUrl": "URL сервера веб-поиска",
   "settings.webSearchServerUrlDesc": "URL микросервиса browser-use на Python",
@@ -481,7 +481,7 @@ export const ru: Record<string, string> = {
   //  TOOL: search_web
   // ═══════════════════════════════════════════════════════════════
 
-  "tools.searchWeb.description": "Выполняет веб-поиск с помощью автоматизированного браузера и возвращает наиболее релевантные результаты (заголовок, URL, фрагмент).",
+  "tools.searchWeb.description": "Ищет в интернете через настроенного провайдера и возвращает подходящие результаты (заголовок, URL, фрагмент).",
   "tools.searchWeb.paramQuery": "Поисковый запрос.",
   "tools.searchWeb.error.emptyQuery": "Ошибка: пустой запрос.",
   "tools.searchWeb.noResults": "Результаты для \"{query}\" не найдены.",

@@ -124,7 +124,7 @@ export const de: Record<string, string> = {
   "settings.chunkSizeDesc": "Ungefähre Token-Anzahl pro Chunk",
 
   // Web Search
-  "settings.webSearchDesc": "Websuche über den Browser-Use-Microservice erlauben",
+  "settings.webSearchDesc": "Websuche mit dem ausgewählten Anbieter erlauben",
   "settings.webSearchServerUrl": "Websuch-Server-URL",
   "settings.webSearchServerUrlDesc": "URL des Browser-Use-Python-Microservice",
   "settings.webSearchMaxResults": "Max. Suchergebnisse",
@@ -430,7 +430,7 @@ export const de: Record<string, string> = {
   "tools.searchVaultByTimeframe.result": "[{index}] {title} ({path})\nGeändert: {mtime}\nInhalt: {snippet}...",
 
   // TOOL: search_web
-  "tools.searchWeb.description": "Führt eine Websuche mit einem automatisierten Browser durch und gibt die relevantesten Ergebnisse zurück (Titel, URL, Auszug).",
+  "tools.searchWeb.description": "Durchsucht das Web mit dem konfigurierten Anbieter und liefert relevante Ergebnisse (Titel, URL, Auszug).",
   "tools.searchWeb.paramQuery": "Die Websuchabfrage.",
   "tools.searchWeb.error.emptyQuery": "Fehler: leere Abfrage.",
   "tools.searchWeb.noResults": "Keine Ergebnisse gefunden für: „{query}“.",

@@ -85,8 +85,11 @@ export const en: Record<string, string> = {
 
   // Web Search
   "settings.webSearch": "Enable web search",
-  "settings.webSearchDesc": "Allow web search via browser-use microservice",
+  "settings.webSearchDesc": "Allow web search using the selected provider",
   "settings.webSearchProLocked": "🔒 Web search requires a Pro license",
+  "settings.webSearchProvider": "Web search provider",
+  "settings.webSearchProviderDesc": "Parallel: free web search without an API key or local server. Queries are sent to Parallel. Web search still requires Pro.",
+  "settings.webSearchLocal": "Local browser-use server",
   "settings.webSearchServerUrl": "Web search server URL",
   "settings.webSearchServerUrlDesc": "URL of the browser-use Python microservice",
   "settings.webSearchMaxResults": "Max search results",
@@ -496,7 +499,7 @@ export const en: Record<string, string> = {
   //  TOOL: search_web
   // ═══════════════════════════════════════════════════════════════
 
-  "tools.searchWeb.description": "Performs a web search using an automated browser and returns the most relevant results (title, url, snippet).",
+  "tools.searchWeb.description": "Searches the web using the configured provider and returns relevant results (title, URL, snippet).",
   "tools.searchWeb.paramQuery": "The web search query.",
   "tools.searchWeb.error.emptyQuery": "Error: empty query.",
   "tools.searchWeb.noResults": "No results found for: \"{query}\".",
